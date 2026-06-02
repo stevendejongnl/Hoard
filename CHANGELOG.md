@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/stevendejongnl/printer/compare/v1.0.0...v1.0.1) (2026-06-02)
+
+
+### Bug Fixes
+
+* restore git credentials for semantic-release changelog push ([2be4a2e](https://github.com/stevendejongnl/printer/commit/2be4a2edc0112eae7ca7b9e4510137f4acb7c2d2))
+
 # 1.0.0 (2026-06-02)
 
 
