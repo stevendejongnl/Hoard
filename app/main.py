@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
-from app.routes import control, files, history, predict, spools, webcams
+from app.routes import chunks, control, files, history, predict, spools, webcams
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="printer", lifespan=lifespan)
 
 app.include_router(control.router)
+app.include_router(chunks.router)
 app.include_router(files.router)
 app.include_router(webcams.router)
 app.include_router(history.router)

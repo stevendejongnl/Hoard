@@ -1,7 +1,7 @@
 import { LitElement, css, html, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { PredictResult, Spool } from '../types';
-import { getSpools, predict, startPrint, uploadFile } from '../api';
+import { getSpools, predict, startPrint, uploadFileChunked } from '../api';
 
 @customElement('cost-predictor')
 export class CostPredictor extends LitElement {
@@ -16,6 +16,7 @@ export class CostPredictor extends LitElement {
   @state() result: PredictResult | null = null;
   @state() loading = false;
   @state() uploading = false;
+  @state() uploadProgress = '';
   @state() uploadError = '';
 
   async connectedCallback() {
@@ -100,21 +101,21 @@ export class CostPredictor extends LitElement {
   }
 
   private async _uploadFile(file: File) {
-    const MAX_MB = 100;
-    if (file.size > MAX_MB * 1024 * 1024) {
-      this.uploadError = `File too large (${(file.size / 1024 / 1024).toFixed(0)} MB). Cloudflare free plan limits uploads to ${MAX_MB} MB.`;
-      return;
-    }
     this.uploading = true;
     this.uploadError = '';
+    this.uploadProgress = '';
+    const totalChunks = Math.ceil(file.size / (50 * 1024 * 1024));
     try {
-      await uploadFile(file);
+      await uploadFileChunked(file, (sent, total) => {
+        this.uploadProgress = total > 1 ? `chunk ${sent}/${total}` : '';
+      });
       this._filename = file.name;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       this.uploadError = msg.includes('abort') ? 'Upload timed out — is Klipper running?' : `Upload failed: ${msg}`
     } finally {
       this.uploading = false;
+      this.uploadProgress = '';
     }
   }
 
@@ -143,7 +144,9 @@ export class CostPredictor extends LitElement {
               @dragover=${this._onDragOver}
               @dragleave=${this._onDragLeave}
               @drop=${this._onDrop}>
-              <span>${this.uploading ? 'Uploading…' : this.uploadError || 'drop .gcode or click to upload (max 100 MB)'}</span>
+              <span>${this.uploading
+                ? (this.uploadProgress ? `Uploading… ${this.uploadProgress}` : 'Uploading…')
+                : this.uploadError || 'drop .gcode or click to upload'}</span>
               <input
                 type="file"
                 accept=".gcode"
