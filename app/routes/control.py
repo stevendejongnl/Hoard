@@ -105,3 +105,12 @@ async def cancel_print() -> dict:
         return {"ok": True}
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
+
+
+@router.post("/print")
+async def start_print(filename: str) -> dict:
+    try:
+        await moonraker.post("/printer/print/start", filename=filename)
+        return {"ok": True, "filename": filename}
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
