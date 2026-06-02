@@ -54,6 +54,8 @@ export const powerOn = () => req('/api/control/power/on', { method: 'POST' })
 export const powerOff = () => req('/api/control/power/off', { method: 'POST' })
 export const firmwareRestart = () => req('/api/control/firmware_restart', { method: 'POST' })
 export const emergencyStop = () => req('/api/control/emergency_stop', { method: 'POST' })
+export const startPrint = (filename: string) =>
+  req(`/api/control/print?filename=${encodeURIComponent(filename)}`, { method: 'POST' })
 export const pausePrint = () => req('/api/control/pause', { method: 'POST' })
 export const resumePrint = () => req('/api/control/resume', { method: 'POST' })
 export const cancelPrint = () => req('/api/control/cancel', { method: 'POST' })

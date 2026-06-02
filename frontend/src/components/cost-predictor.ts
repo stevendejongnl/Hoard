@@ -1,7 +1,7 @@
 import { LitElement, css, html, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { PredictResult, Spool } from '../types';
-import { getSpools, predict } from '../api';
+import { getSpools, predict, startPrint } from '../api';
 
 @customElement('cost-predictor')
 export class CostPredictor extends LitElement {
@@ -183,7 +183,22 @@ export class CostPredictor extends LitElement {
           <span class="bd-value">${r.avg_watts}W (HA sensor)</span>
         </li>
       </ul>
+
+      <button class="print-btn" @click=${() => this._print()}>▶ Print now</button>
     `;
+  }
+
+  private async _print() {
+    if (!this.filename) return
+    const label = this.result && this.result.quantity > 1
+      ? `Print ${this.result.quantity}× ${this.filename}?`
+      : `Print ${this.filename}?`
+    if (!window.confirm(label)) return
+    try {
+      await startPrint(this.filename)
+    } catch (e) {
+      window.alert(`Failed to start print: ${e}`)
+    }
   }
 
   static styles = css`
@@ -398,6 +413,25 @@ export class CostPredictor extends LitElement {
       font-weight: 300;
       color: var(--text);
       text-align: right;
+    }
+
+    .print-btn {
+      margin-top: 14px;
+      width: 100%;
+      background: var(--cyan-dim);
+      border: 1px solid var(--cyan-border);
+      border-radius: 4px;
+      color: var(--cyan);
+      font-size: 11px;
+      font-weight: 500;
+      padding: 8px 0;
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    .print-btn:hover {
+      background: var(--cyan);
+      color: #000;
     }
   `;
 }

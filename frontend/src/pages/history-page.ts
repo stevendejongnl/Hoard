@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { PrintRecord, Spool } from '../types'
-import { getHistory, getSpools, assignSpool } from '../api'
+import { getHistory, getSpools, assignSpool, startPrint } from '../api'
 import '../components/cost-breakdown-popup'
 
 @customElement('history-page')
@@ -32,6 +32,12 @@ export class HistoryPage extends LitElement {
     this.total = history.total
     this.page = p
     this.loading = false
+  }
+
+  private async _print(filename: string) {
+    if (!window.confirm(`Print ${filename}?`)) return
+    try { await startPrint(filename) }
+    catch (e) { window.alert(`Failed: ${e}`) }
   }
 
   private fmtDate(iso: string) {
@@ -129,6 +135,7 @@ export class HistoryPage extends LitElement {
                   <th>Filament</th>
                   <th>Spool</th>
                   <th style="text-align:right">Total</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -143,6 +150,14 @@ export class HistoryPage extends LitElement {
                       ${r.cost_total != null
                         ? html`<cost-breakdown-popup .record=${r} style="color:#22d3ee;font-weight:600;font-size:13px">€${r.cost_total.toFixed(2)}</cost-breakdown-popup>`
                         : html`<span style="color:#555">—</span>`}
+                    </td>
+                    <td>
+                      <button
+                        @click=${() => this._print(r.filename)}
+                        style="background:transparent;border:1px solid #222;border-radius:4px;color:#888;font-size:10px;padding:3px 8px;cursor:pointer"
+                        onmouseover="this.style.borderColor='#22d3ee28';this.style.color='#22d3ee';this.style.background='#22d3ee14'"
+                        onmouseout="this.style.borderColor='#222';this.style.color='#888';this.style.background='transparent'"
+                      >▶</button>
                     </td>
                   </tr>
                 `)}

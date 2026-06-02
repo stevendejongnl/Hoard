@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { PrintRecord, Spool } from '../types';
-import { assignSpool, getHistory, getSpools } from '../api';
+import { assignSpool, getHistory, getSpools, startPrint } from '../api';
 import './spool-modal';
 import './cost-breakdown-popup';
 
@@ -29,6 +29,15 @@ export class HistoryPreview extends LitElement {
       console.error('[history-preview] Failed to load history:', e);
     } finally {
       this.loading = false;
+    }
+  }
+
+  private async _print(filename: string) {
+    if (!window.confirm(`Print ${filename}?`)) return
+    try {
+      await startPrint(filename)
+    } catch (e) {
+      window.alert(`Failed to start print: ${e}`)
     }
   }
 
@@ -106,6 +115,7 @@ export class HistoryPreview extends LitElement {
             <th>Duration</th>
             <th>Spool</th>
             <th class="right">Cost</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
@@ -146,6 +156,9 @@ export class HistoryPreview extends LitElement {
                   : html`<div class="cost-main" style="color:var(--text-dim)">—</div>
                     <div class="cost-sub">${record.filament_g.toFixed(1)} g</div>`
                 }
+              </td>
+              <td>
+                <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
               </td>
             </tr>
           `)}
@@ -284,6 +297,23 @@ export class HistoryPreview extends LitElement {
     .spool-assigned:hover {
       border-color: #444;
       color: var(--text);
+    }
+
+    .print-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text-muted);
+      font-size: 10px;
+      padding: 3px 8px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .print-btn:hover {
+      border-color: var(--cyan-border);
+      color: var(--cyan);
+      background: var(--cyan-dim);
     }
 
     .spool-select {
