@@ -238,7 +238,11 @@ export class FileBrowserModal extends LitElement {
     }
 
     input[type='file'] {
-      display: none;
+      position: absolute;
+      width: 0;
+      height: 0;
+      opacity: 0;
+      pointer-events: none;
     }
   `
 
