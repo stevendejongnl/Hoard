@@ -1,7 +1,7 @@
 import { LitElement, css, html, PropertyValues } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
 import type { PredictResult, Spool } from '../types';
-import { getSpools, predict, startPrint } from '../api';
+import { getSpools, predict, startPrint, uploadFile } from '../api';
 
 @customElement('cost-predictor')
 export class CostPredictor extends LitElement {
@@ -12,6 +12,8 @@ export class CostPredictor extends LitElement {
   @state() quantity: number = 1;
   @state() result: PredictResult | null = null;
   @state() loading = false;
+  @state() uploading = false;
+  @state() uploadError = '';
 
   async connectedCallback() {
     super.connectedCallback();
@@ -65,12 +67,21 @@ export class CostPredictor extends LitElement {
     this.shadowRoot?.querySelector<HTMLInputElement>('.hidden-input')?.click();
   }
 
-  private _onFileChange(e: Event) {
+  private async _onFileChange(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
-    // Trigger upload flow — emit event with file for parent to handle
-    this.dispatchEvent(new CustomEvent('upload-file', { bubbles: true, composed: true, detail: { file } }));
+    input.value = '';
+    this.uploading = true;
+    this.uploadError = '';
+    try {
+      await uploadFile(file);
+      this.filename = file.name;
+    } catch (err) {
+      this.uploadError = `Upload failed: ${err}`;
+    } finally {
+      this.uploading = false;
+    }
   }
 
   private _formatDuration(seconds: number): string {
@@ -93,8 +104,8 @@ export class CostPredictor extends LitElement {
 
           <div class="field">
             <label class="field-label">Or upload to Klipper</label>
-            <div class="drop-zone" @click=${this._onUploadClick}>
-              <span>drop .gcode or click to upload</span>
+            <div class="drop-zone ${this.uploading ? 'uploading' : ''}" @click=${this._onUploadClick}>
+              <span>${this.uploading ? 'Uploading…' : this.uploadError || 'drop .gcode or click to upload'}</span>
               <input
                 type="file"
                 accept=".gcode"
@@ -271,6 +282,12 @@ export class CostPredictor extends LitElement {
       cursor: pointer;
       position: relative;
       transition: border-color 0.15s;
+    }
+
+    .drop-zone.uploading {
+      border-color: var(--cyan-border);
+      color: var(--cyan);
+      cursor: wait;
     }
 
     .drop-zone:hover {
