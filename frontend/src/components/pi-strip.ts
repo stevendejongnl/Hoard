@@ -156,6 +156,30 @@ export class PiStrip extends LitElement {
       border-radius: 1px;
       transition: width 0.4s ease;
     }
+
+    @media (max-width: 600px) {
+      .strip {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .cell {
+        padding: 10px 12px;
+        border-right: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .cell.no-border {
+        border-right: none;
+      }
+
+      .value {
+        font-size: 16px;
+      }
+
+      .bar-track {
+        height: 4px;
+      }
+    }
   `;
 }
 
