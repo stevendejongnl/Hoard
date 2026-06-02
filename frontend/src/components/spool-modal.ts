@@ -198,7 +198,7 @@ export class SpoolModal extends LitElement {
   @state() material = ''
   @state() color = ''
   @state() colorHex = '#ffffff'
-  @state() costPerGram = ''
+  @state() totalPrice = ''
   @state() initialWeightG = ''
   @state() currentWeightG = ''
   @state() notes = ''
@@ -210,7 +210,9 @@ export class SpoolModal extends LitElement {
         this.material = this.spool.material ?? ''
         this.color = this.spool.color ?? ''
         this.colorHex = this.spool.color_hex ?? '#ffffff'
-        this.costPerGram = this.spool.cost_per_gram != null ? String(this.spool.cost_per_gram) : ''
+        const cpg = this.spool.cost_per_gram ?? 0
+        const wt = this.spool.initial_weight_g ?? 0
+        this.totalPrice = cpg && wt ? String(Math.round(cpg * wt * 100) / 100) : ''
         this.initialWeightG = this.spool.initial_weight_g != null ? String(this.spool.initial_weight_g) : ''
         this.currentWeightG = this.spool.current_weight_g != null ? String(this.spool.current_weight_g) : ''
         this.notes = this.spool.notes ?? ''
@@ -219,12 +221,19 @@ export class SpoolModal extends LitElement {
         this.material = ''
         this.color = ''
         this.colorHex = '#ffffff'
-        this.costPerGram = ''
+        this.totalPrice = ''
         this.initialWeightG = ''
         this.currentWeightG = ''
         this.notes = ''
       }
     }
+  }
+
+  private _derivedCostPerGram(): number {
+    const price = parseFloat(this.totalPrice)
+    const weight = parseFloat(this.initialWeightG)
+    if (!price || !weight) return 0
+    return Math.round((price / weight) * 100000) / 100000
   }
 
   private _close() {
@@ -238,9 +247,9 @@ export class SpoolModal extends LitElement {
       material: this.material,
       color: this.color,
       color_hex: this.colorHex || null,
-      cost_per_gram: this.costPerGram !== '' ? parseFloat(this.costPerGram) : 0,
+      cost_per_gram: this._derivedCostPerGram(),
       initial_weight_g: this.initialWeightG !== '' ? parseFloat(this.initialWeightG) : 0,
-      current_weight_g: this.currentWeightG !== '' ? parseFloat(this.currentWeightG) : 0,
+      current_weight_g: this.initialWeightG !== '' ? parseFloat(this.initialWeightG) : 0,
       notes: this.notes || null,
     }
 
@@ -288,7 +297,7 @@ export class SpoolModal extends LitElement {
                   @input=${(e: InputEvent) => {
                     this.brand = (e.target as HTMLInputElement).value
                   }}
-                  placeholder="e.g. Bambu Lab"
+                  placeholder="e.g. eSUN, Prusa"
                 />
               </div>
               <div class="form-field">
@@ -344,18 +353,20 @@ export class SpoolModal extends LitElement {
 
             <div class="form-row">
               <div class="form-field">
-                <label class="form-label">Cost per gram (€/g)</label>
+                <label class="form-label">Total price paid (€)</label>
                 <input
                   class="form-input"
                   type="number"
-                  step="0.001"
+                  step="0.01"
                   min="0"
-                  .value=${this.costPerGram}
+                  .value=${this.totalPrice}
                   @input=${(e: InputEvent) => {
-                    this.costPerGram = (e.target as HTMLInputElement).value
+                    this.totalPrice = (e.target as HTMLInputElement).value
+                    this.requestUpdate()
                   }}
-                  placeholder="0.020"
+                  placeholder="20.00"
                 />
+                ${this._derivedCostPerGram() > 0 ? html`<span style="font-size:9px;color:var(--text-muted)">= €${this._derivedCostPerGram().toFixed(4)}/g</span>` : ''}
               </div>
               <div class="form-field">
                 <label class="form-label">Initial weight (g)</label>
@@ -367,25 +378,11 @@ export class SpoolModal extends LitElement {
                   .value=${this.initialWeightG}
                   @input=${(e: InputEvent) => {
                     this.initialWeightG = (e.target as HTMLInputElement).value
+                    this.requestUpdate()
                   }}
                   placeholder="1000"
                 />
               </div>
-            </div>
-
-            <div class="form-field">
-              <label class="form-label">Current weight (g)</label>
-              <input
-                class="form-input"
-                type="number"
-                step="1"
-                min="0"
-                .value=${this.currentWeightG}
-                @input=${(e: InputEvent) => {
-                  this.currentWeightG = (e.target as HTMLInputElement).value
-                }}
-                placeholder="850"
-              />
             </div>
 
             <div class="form-field">

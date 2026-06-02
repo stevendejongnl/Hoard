@@ -26,10 +26,17 @@ export class TopNav extends LitElement {
       font-size: 15px;
       font-weight: 300;
       color: white;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .app-name:hover .muted {
+      color: var(--text);
     }
 
     .app-name .muted {
       color: var(--text-muted);
+      transition: color 0.15s;
     }
 
     .nav {
@@ -71,7 +78,7 @@ export class TopNav extends LitElement {
   render() {
     return html`
       <div class="topbar">
-        <span class="app-name">printer<span class="muted">.madebysteven.nl</span></span>
+        <span class="app-name" @click=${() => window.router.navigate('/')}>printer<span class="muted">.madebysteven.nl</span></span>
         <div class="nav">
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>

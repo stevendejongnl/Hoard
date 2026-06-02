@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: printer
+  namespace: printer
+  labels:
+    app: printer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: printer
+  template:
+    metadata:
+      labels:
+        app: printer
+    spec:
+      containers:
+        - name: printer
+          image: ghcr.io/stevendejongnl/printer:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8765
+              name: http
+          env:
+            - name: DATABASE_PATH
+              value: /data/printer.db
+            - name: STATIC_DIR
+              value: /app/static
+            - name: MOONRAKER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: MOONRAKER_URL
+            - name: MOONRAKER_WS
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: MOONRAKER_WS
+            - name: HA_URL
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: HA_URL
+            - name: HA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: HA_TOKEN
+            - name: INFLUXDB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: INFLUXDB_URL
+            - name: INFLUXDB_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: INFLUXDB_TOKEN
+            - name: INFLUXDB_ORG
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: INFLUXDB_ORG
+            - name: INFLUXDB_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: INFLUXDB_BUCKET
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /api/spools
+              port: 8765
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: printer-data

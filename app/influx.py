@@ -39,7 +39,10 @@ class InfluxClient:
         if material:
             tags["material"] = material
 
-        tag_str = ",".join(f"{k}={v}" for k, v in tags.items())
+        def _esc(v: str) -> str:
+            return v.replace(" ", r"\ ").replace(",", r"\,").replace("=", r"\=")
+
+        tag_str = ",".join(f"{_esc(k)}={_esc(v)}" for k, v in tags.items())
         fields = (
             f"duration_s={duration_s},"
             f"filament_g={filament_g},"

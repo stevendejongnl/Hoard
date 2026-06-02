@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: printer
+  namespace: printer
+spec:
+  selector:
+    app: printer
+  ports:
+    - port: 80
+      targetPort: 8765
+      name: http

@@ -9,10 +9,14 @@ log = logging.getLogger(__name__)
 class SSEHub:
     def __init__(self) -> None:
         self._queues: list[asyncio.Queue[str]] = []
+        self._cache: dict[str, dict[str, Any]] = {}  # last known value per event type
 
     def subscribe(self) -> asyncio.Queue[str]:
         q: asyncio.Queue[str] = asyncio.Queue()
         self._queues.append(q)
+        # replay cached values immediately so new clients don't wait up to 30s
+        for event, data in self._cache.items():
+            q.put_nowait(f"event: {event}\ndata: {json.dumps(data)}\n\n")
         return q
 
     def unsubscribe(self, q: asyncio.Queue[str]) -> None:
@@ -22,6 +26,7 @@ class SSEHub:
             pass
 
     async def broadcast(self, event: str, data: dict[str, Any]) -> None:
+        self._cache[event] = data
         if not self._queues:
             return
         msg = f"event: {event}\ndata: {json.dumps(data)}\n\n"
@@ -40,11 +45,16 @@ hub = SSEHub()
 
 async def _poll_ha(interval: int = 30) -> None:
     from app import ha
+    from app.routes.control import _get_switch_state
     while True:
         try:
             watts = await ha.get_current_power()
             price = await ha.get_current_price()
-            await hub.broadcast("power", {"watts": watts, "eur_per_kwh": price})
+            try:
+                switch = await _get_switch_state()
+            except Exception:
+                switch = "unknown"
+            await hub.broadcast("power", {"watts": watts, "eur_per_kwh": price, "switch": switch})
         except Exception as exc:
             log.warning("HA poll error: %s", exc)
         await asyncio.sleep(interval)
@@ -55,20 +65,18 @@ async def _poll_pi_stats(interval: int = 30) -> None:
     while True:
         try:
             data = await moonraker.get_proc_stats()
-            cpu_temp = data.get("moonraker_stats", [{}])[-1].get("cpu_temp", 0)
+            cpu_temp = data.get("cpu_temp", 0)
             mem = data.get("system_memory", {})
             mem_total = mem.get("total", 1)
             mem_used = mem.get("used", 0)
-            procs = data.get("moonraker_stats", [{}])
-            cpu_load = procs[-1].get("cpu_usage", 0) if procs else 0
-            disk = data.get("system_info", {}).get("disk_usage", {})
-            disk_pct = disk.get("usage_percent", 0)
+            cpu_usage = data.get("system_cpu_usage", {})
+            cpu_load = cpu_usage.get("cpu", 0) if isinstance(cpu_usage, dict) else 0
             uptime = data.get("system_uptime", 0)
             await hub.broadcast("pi_stats", {
                 "cpu_temp": round(cpu_temp, 1),
                 "cpu_load": round(cpu_load, 1),
                 "memory_pct": round(mem_used / mem_total * 100, 1) if mem_total else 0,
-                "disk_pct": round(disk_pct, 1),
+                "disk_pct": 0,
                 "uptime_s": int(uptime),
             })
         except Exception as exc:

@@ -55,19 +55,12 @@ export class SpoolsPreview extends LitElement {
         <div class="stats">
           <div class="stat-row">
             <span class="stat-label">Cost</span>
-            <span class="stat-value">€${spool.cost_per_gram.toFixed(3)}/g</span>
+            <span class="stat-value">€${(spool.cost_per_gram * spool.initial_weight_g).toFixed(2)}</span>
           </div>
           <div class="stat-row">
-            <span class="stat-label">Remaining</span>
-            <span class="stat-value">${spool.current_weight_g.toFixed(0)} g</span>
+            <span class="stat-label">Weight</span>
+            <span class="stat-value">${spool.initial_weight_g.toFixed(0)} g</span>
           </div>
-        </div>
-
-        <div class="progress-track">
-          <div
-            class="progress-fill"
-            style="width: ${pct}%; background: ${isActive ? 'var(--cyan)' : '#444'}"
-          ></div>
         </div>
       </div>
     `;

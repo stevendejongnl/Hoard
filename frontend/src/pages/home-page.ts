@@ -3,6 +3,8 @@ import { customElement, state } from 'lit/decorators.js'
 
 import '../components/live-status'
 import '../components/pi-strip'
+import '../components/printer-controls'
+import '../components/webcam-view'
 import '../components/history-preview'
 import '../components/cost-predictor'
 import '../components/spools-preview'
@@ -24,6 +26,8 @@ export class HomePage extends LitElement {
 
       <div class="main">
         <live-status></live-status>
+        <printer-controls style="margin-top:10px"></printer-controls>
+        <webcam-view style="margin-top:10px"></webcam-view>
         <pi-strip style="margin-top:10px"></pi-strip>
 
         <div class="divider"></div>

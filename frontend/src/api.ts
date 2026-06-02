@@ -35,6 +35,29 @@ export const updateSpool = (id: number, data: Partial<Spool>) =>
 export const deleteSpool = (id: number) =>
   fetch(`/api/spools/${id}`, { method: 'DELETE' })
 
+// Webcams
+export interface Webcam {
+  name: string
+  stream_url: string
+  snapshot_url: string
+  flip_horizontal: boolean
+  flip_vertical: boolean
+  rotation: number
+  enabled: boolean
+  aspect_ratio: string
+  target_fps?: number
+}
+export const getWebcams = () => req<Webcam[]>('/api/webcams')
+
+// Control
+export const powerOn = () => req('/api/control/power/on', { method: 'POST' })
+export const powerOff = () => req('/api/control/power/off', { method: 'POST' })
+export const firmwareRestart = () => req('/api/control/firmware_restart', { method: 'POST' })
+export const emergencyStop = () => req('/api/control/emergency_stop', { method: 'POST' })
+export const pausePrint = () => req('/api/control/pause', { method: 'POST' })
+export const resumePrint = () => req('/api/control/resume', { method: 'POST' })
+export const cancelPrint = () => req('/api/control/cancel', { method: 'POST' })
+
 // Predict
 export const predict = (filename: string, spoolId: number | null, quantity: number) => {
   const params = new URLSearchParams({ filename, quantity: String(quantity) })

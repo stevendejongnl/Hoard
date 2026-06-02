@@ -1,7 +1,9 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import type { PrintRecord } from '../types';
-import { getHistory } from '../api';
+import type { PrintRecord, Spool } from '../types';
+import { assignSpool, getHistory, getSpools } from '../api';
+import './spool-modal';
+import './cost-breakdown-popup';
 
 declare const window: Window & { router: { navigate: (path: string) => void } };
 
@@ -9,20 +11,63 @@ declare const window: Window & { router: { navigate: (path: string) => void } };
 export class HistoryPreview extends LitElement {
   @state() records: PrintRecord[] = [];
   @state() loading = true;
+  @state() private _assigningJobId: string | null = null;
+  @state() private _spools: Spool[] = [];
+  @state() private _spoolModalOpen = false;
+  private _pendingJobId: string | null = null;
 
   private _total = 0;
 
   async connectedCallback() {
     super.connectedCallback();
     try {
-      const data = await getHistory(3, 0);
+      const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()]);
       this.records = data.records;
       this._total = data.total;
+      this._spools = spools;
     } catch (e) {
       console.error('[history-preview] Failed to load history:', e);
     } finally {
       this.loading = false;
     }
+  }
+
+  private async _onSpoolSelect(jobId: string, e: Event) {
+    const val = (e.target as HTMLSelectElement).value;
+    if (!val) return;
+    if (val === '__new__') {
+      this._pendingJobId = jobId;
+      this._spoolModalOpen = true;
+      (e.target as HTMLSelectElement).value = '';
+      return;
+    }
+    try {
+      await assignSpool(jobId, parseInt(val));
+      const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()]);
+      this.records = data.records;
+      this._spools = spools;
+    } catch (err) {
+      console.error('assign failed', err);
+    }
+    this._assigningJobId = null;
+  }
+
+  private async _onSpoolSaved() {
+    this._spoolModalOpen = false;
+    // Reload spools, then auto-assign the newly created one (last in list)
+    this._spools = await getSpools();
+    const newest = this._spools[this._spools.length - 1];
+    if (newest && this._pendingJobId) {
+      try {
+        await assignSpool(this._pendingJobId, newest.id);
+        const data = await getHistory(3, 0);
+        this.records = data.records;
+      } catch (err) {
+        console.error('auto-assign failed', err);
+      }
+    }
+    this._pendingJobId = null;
+    this._assigningJobId = null;
   }
 
   private _formatDuration(seconds: number): string {
@@ -42,6 +87,13 @@ export class HistoryPreview extends LitElement {
     }
 
     return html`
+      <spool-modal
+        .open=${this._spoolModalOpen}
+        .spool=${null}
+        @spool-saved=${this._onSpoolSaved}
+        @close=${() => { this._spoolModalOpen = false; this._assigningJobId = null; }}
+      ></spool-modal>
+
       <div class="header">
         <span class="header-label">Recent prints</span>
         <a class="header-link" @click=${() => window.router.navigate('/history')}>view all →</a>
@@ -61,18 +113,39 @@ export class HistoryPreview extends LitElement {
             <tr>
               <td>
                 <div class="file-name">${record.filename}</div>
-                <div class="file-sub">${this._formatDate(record.time)} · ${record.filament_g.toFixed(1)} g</div>
+                <div class="file-sub">${record.time ? this._formatDate(record.time) : '—'} · ${record.filament_g.toFixed(1)} g</div>
               </td>
               <td class="duration">${this._formatDuration(record.duration_s)}</td>
               <td>
-                ${record.spool?.material
-                  ? html`<span class="spool-tag">${record.spool.material}</span>`
-                  : html`<span class="spool-tag spool-assign">assign →</span>`
+                ${this._assigningJobId === (record.job_id ?? record.filename)
+                  ? html`<select class="spool-select"
+                      @change=${(e: Event) => this._onSpoolSelect(record.job_id ?? record.filename, e)}
+                      @blur=${() => { if (!this._spoolModalOpen) this._assigningJobId = null }}>
+                      <option value="">pick spool…</option>
+                      ${this._spools.map(s => html`<option value=${s.id}>${s.brand} ${s.material}</option>`)}
+                      <option value="__new__">＋ create spool</option>
+                    </select>`
+                  : record.spool?.material
+                    ? html`<span class="spool-tag spool-assigned"
+                          title="Click to reassign"
+                          @click=${() => this._assigningJobId = (record.job_id ?? record.filename)}>
+                          ${record.spool.color_hex
+                            ? html`<span class="spool-dot" style="background:${record.spool.color_hex}"></span>`
+                            : ''}
+                          ${record.spool.material}
+                        </span>`
+                    : html`<span class="spool-tag spool-assign"
+                        @click=${() => this._assigningJobId = (record.job_id ?? record.filename)}>assign →</span>`
                 }
               </td>
               <td class="right">
-                <div class="cost-main">€${record.cost_total.toFixed(2)}</div>
-                <div class="cost-sub">€${record.cost_electricity.toFixed(2)} elec · €${record.cost_filament.toFixed(2)} fil</div>
+                ${record.cost_total != null
+                  ? html`<cost-breakdown-popup .record=${record}>
+                      <div class="cost-main">€${record.cost_total.toFixed(2)}</div>
+                    </cost-breakdown-popup>`
+                  : html`<div class="cost-main" style="color:var(--text-dim)">—</div>
+                    <div class="cost-sub">${record.filament_g.toFixed(1)} g</div>`
+                }
               </td>
             </tr>
           `)}
@@ -172,7 +245,19 @@ export class HistoryPreview extends LitElement {
       white-space: nowrap;
     }
 
+    .spool-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      margin-right: 5px;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+
     .spool-tag {
+      display: inline-flex;
+      align-items: center;
       font-size: 9px;
       background: var(--bg-surface);
       border: 1px solid var(--border);
@@ -185,6 +270,30 @@ export class HistoryPreview extends LitElement {
     .spool-assign {
       border-color: var(--cyan-border);
       color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .spool-assign:hover {
+      background: var(--cyan-dim);
+    }
+
+    .spool-assigned {
+      cursor: pointer;
+    }
+
+    .spool-assigned:hover {
+      border-color: #444;
+      color: var(--text);
+    }
+
+    .spool-select {
+      font-size: 9px;
+      background: var(--bg-raised);
+      border: 1px solid var(--cyan-border);
+      border-radius: 3px;
+      color: var(--text);
+      padding: 2px 6px;
+      outline: none;
       cursor: pointer;
     }
 

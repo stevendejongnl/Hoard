@@ -7,8 +7,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8765',
-      '/stream': { target: 'http://localhost:8765', ws: true },
+      '/api': 'http://localhost:8766',
+      '/stream': { target: 'http://localhost:8766', ws: true },
     },
   },
 })
