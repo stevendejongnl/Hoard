@@ -100,6 +100,11 @@ export class CostPredictor extends LitElement {
   }
 
   private async _uploadFile(file: File) {
+    const MAX_MB = 100;
+    if (file.size > MAX_MB * 1024 * 1024) {
+      this.uploadError = `File too large (${(file.size / 1024 / 1024).toFixed(0)} MB). Cloudflare free plan limits uploads to ${MAX_MB} MB.`;
+      return;
+    }
     this.uploading = true;
     this.uploadError = '';
     try {
@@ -138,7 +143,7 @@ export class CostPredictor extends LitElement {
               @dragover=${this._onDragOver}
               @dragleave=${this._onDragLeave}
               @drop=${this._onDrop}>
-              <span>${this.uploading ? 'Uploading…' : this.uploadError || 'drop .gcode or click to upload'}</span>
+              <span>${this.uploading ? 'Uploading…' : this.uploadError || 'drop .gcode or click to upload (max 100 MB)'}</span>
               <input
                 type="file"
                 accept=".gcode"
