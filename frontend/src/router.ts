@@ -1,0 +1,32 @@
+type Route = '/' | '/history' | '/spools'
+
+class Router {
+  private listeners: Array<(r: Route) => void> = []
+
+  get current(): Route {
+    const p = window.location.pathname
+    if (p === '/history') return '/history'
+    if (p === '/spools') return '/spools'
+    return '/'
+  }
+
+  navigate(path: Route): void {
+    window.history.pushState({}, '', path)
+    this.listeners.forEach(l => l(this.current))
+  }
+
+  listen(fn: (r: Route) => void): () => void {
+    this.listeners.push(fn)
+    window.addEventListener('popstate', () => fn(this.current))
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== fn)
+    }
+  }
+}
+
+export const router = new Router()
+
+declare global {
+  interface Window { router: Router }
+}
+window.router = router

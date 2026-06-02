@@ -1,0 +1,16 @@
+services:
+  printer:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8765:8765"
+    volumes:
+      - printer-data:/data
+    env_file:
+      - .env
+    environment:
+      DATABASE_PATH: /data/printer.db
+      STATIC_DIR: /app/static
+
+volumes:
+  printer-data:
