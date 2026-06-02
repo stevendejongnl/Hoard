@@ -12,7 +12,10 @@ router = APIRouter(prefix="/api/files", tags=["files"])
 async def list_files() -> list[dict[str, Any]]:
     try:
         files = await moonraker.get_files()
-        # Sort newest first
+        # Moonraker returns `path` — normalize to `filename` for the frontend
+        for f in files:
+            if "path" in f and "filename" not in f:
+                f["filename"] = f["path"]
         return sorted(files, key=lambda f: f.get("modified", 0), reverse=True)
     except Exception as exc:
         raise HTTPException(502, f"Moonraker error: {exc}") from exc

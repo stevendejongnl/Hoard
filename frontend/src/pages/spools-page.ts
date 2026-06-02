@@ -37,22 +37,8 @@ export class SpoolsPage extends LitElement {
     await this._reload()
   }
 
-  private _weightBar(spool: Spool) {
-    const pct = spool.initial_weight_g > 0
-      ? Math.max(0, Math.min(100, (spool.current_weight_g / spool.initial_weight_g) * 100))
-      : 0
-    const color = pct > 50 ? '#22d3ee' : pct > 20 ? '#f59e0b' : '#ef4444'
-    return html`
-      <div style="margin-top:8px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;color:#555;margin-bottom:3px">
-          <span>${spool.current_weight_g.toFixed(0)} g left</span>
-          <span>${spool.initial_weight_g.toFixed(0)} g</span>
-        </div>
-        <div style="height:4px;background:#222;border-radius:2px;overflow:hidden">
-          <div style="height:100%;width:${pct.toFixed(1)}%;background:${color};border-radius:2px;transition:width 0.3s"></div>
-        </div>
-      </div>
-    `
+  private _weightBar(_spool: Spool) {
+    return html``
   }
 
   private _spoolCard(spool: Spool) {
@@ -72,7 +58,7 @@ export class SpoolsPage extends LitElement {
         </div>
 
         <div style="font-size:12px;color:#555;margin-bottom:4px">${spool.material} · ${spool.color}</div>
-        <div style="font-size:12px;color:#555">€${spool.cost_per_gram.toFixed(3)}/g</div>
+        <div style="font-size:12px;color:#555">€${(spool.cost_per_gram * spool.initial_weight_g).toFixed(2)} · €${spool.cost_per_gram.toFixed(4)}/g</div>
 
         ${this._weightBar(spool)}
 

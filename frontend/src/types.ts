@@ -17,6 +17,7 @@ export interface Temps {
 export interface Power {
   watts: number
   eur_per_kwh: number
+  switch: 'on' | 'off' | 'unknown'
 }
 
 export interface PiStats {
@@ -42,15 +43,16 @@ export interface Spool {
 }
 
 export interface PrintRecord {
-  time: string
+  time: string | null
   filename: string
+  status?: string
   duration_s: number
   filament_g: number
-  avg_watts: number
-  avg_eur_per_kwh: number
-  cost_electricity: number
-  cost_filament: number
-  cost_total: number
+  avg_watts: number | null
+  avg_eur_per_kwh: number | null
+  cost_electricity: number | null
+  cost_filament: number | null
+  cost_total: number | null
   spool_id: string | null
   material: string | null
   spool: SpoolRef | null

@@ -271,7 +271,7 @@ export class FileBrowserModal extends LitElement {
 
   private get _filteredFiles(): GcodeFile[] {
     const q = this.search.toLowerCase()
-    return this.files.filter(f => f.filename.toLowerCase().includes(q))
+    return this.files.filter(f => f.filename?.toLowerCase().includes(q))
   }
 
   private _close() {

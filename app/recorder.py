@@ -76,10 +76,7 @@ async def _record_print(job: dict[str, Any]) -> None:
         log.error("recorder: influx write failed: %s", exc)
         return
 
-    # Link spool + deduct weight
     await db.link_print_spool(job_id, spool_id, filament_g)
-    if spool_id and filament_g > 0:
-        await db.deduct_spool_weight(spool_id, filament_g)
 
 
 def register_ws_handlers() -> None:

@@ -2,6 +2,7 @@ import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { PrintRecord, Spool } from '../types'
 import { getHistory, getSpools, assignSpool } from '../api'
+import '../components/cost-breakdown-popup'
 
 @customElement('history-page')
 export class HistoryPage extends LitElement {
@@ -50,41 +51,48 @@ export class HistoryPage extends LitElement {
   }
 
   private _spoolTag(record: PrintRecord) {
-    if (record.spool) {
-      const s = record.spool
-      const dot = s.color_hex
-        ? html`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color_hex};margin-right:4px;vertical-align:middle"></span>`
-        : html``
-      return html`<span style="display:inline-flex;align-items:center;background:#1a1a1a;border:1px solid #222;border-radius:4px;padding:2px 7px;font-size:12px;color:#e0e0e0">${dot}${s.brand ?? ''} ${s.material ?? ''}</span>`
-    }
-
     const jobId = record.job_id || record.filename
     const isAssigning = this.assigningJobId === jobId
 
-    return html`
-      <div style="display:flex;align-items:center;gap:6px">
-        <select
-          id="spool-select-${jobId}"
-          style="background:#1a1a1a;border:1px solid #333;color:#e0e0e0;border-radius:4px;padding:2px 6px;font-size:12px"
-        >
-          <option value="">— spool —</option>
-          ${this.spools.map(s => html`<option value="${s.id}">${s.brand} ${s.material}</option>`)}
-        </select>
-        <button
-          style="background:#22d3ee;color:#0e0e0e;border:none;border-radius:4px;padding:2px 8px;font-size:12px;cursor:pointer;opacity:${isAssigning ? '0.5' : '1'}"
-          ?disabled=${isAssigning}
-          @click=${async (e: Event) => {
-            const btn = e.target as HTMLButtonElement
-            const select = btn.parentElement!.querySelector('select') as HTMLSelectElement
-            const val = Number(select.value)
-            if (!val) return
-            this.assigningJobId = jobId
-            await this._assign(record, val)
-            this.assigningJobId = null
-          }}
-        >Assign</button>
-      </div>
-    `
+    if (isAssigning) {
+      return html`
+        <div style="display:flex;align-items:center;gap:6px">
+          <select
+            style="background:#1a1a1a;border:1px solid #22d3ee28;color:#e0e0e0;border-radius:4px;padding:2px 6px;font-size:11px;outline:none"
+            @change=${async (e: Event) => {
+              const val = Number((e.target as HTMLSelectElement).value)
+              if (!val) { this.assigningJobId = null; return }
+              this.assigningJobId = jobId
+              await this._assign(record, val)
+              this.assigningJobId = null
+            }}
+            @blur=${() => { this.assigningJobId = null }}
+          >
+            <option value="">pick spool…</option>
+            ${this.spools.map(s => html`<option value="${s.id}">${s.brand} ${s.material}</option>`)}
+          </select>
+        </div>
+      `
+    }
+
+    if (record.spool) {
+      const s = record.spool
+      const dot = s.color_hex
+        ? html`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color_hex};margin-right:5px;vertical-align:middle;flex-shrink:0"></span>`
+        : html``
+      return html`<span
+        title="Click to reassign"
+        style="display:inline-flex;align-items:center;background:#1a1a1a;border:1px solid #222;border-radius:4px;padding:2px 7px;font-size:11px;color:#e0e0e0;cursor:pointer"
+        @click=${() => { this.assigningJobId = jobId }}
+        @mouseenter=${(e: Event) => { (e.target as HTMLElement).style.borderColor = '#444' }}
+        @mouseleave=${(e: Event) => { (e.target as HTMLElement).style.borderColor = '#222' }}
+      >${dot}${s.brand ?? ''} ${s.material ?? ''}</span>`
+    }
+
+    return html`<span
+      style="display:inline-flex;align-items:center;background:transparent;border:1px solid #22d3ee28;border-radius:4px;padding:2px 7px;font-size:11px;color:#22d3ee;cursor:pointer"
+      @click=${() => { this.assigningJobId = jobId }}
+    >assign →</span>`
   }
 
   render() {
@@ -120,20 +128,22 @@ export class HistoryPage extends LitElement {
                   <th>Duration</th>
                   <th>Filament</th>
                   <th>Spool</th>
-                  <th>Cost breakdown</th>
-                  <th>Total</th>
+                  <th style="text-align:right">Total</th>
                 </tr>
               </thead>
               <tbody>
                 ${this.records.map(r => html`
                   <tr>
                     <td class="filename-cell" title="${r.filename}">${r.filename}</td>
-                    <td style="white-space:nowrap">${this.fmtDate(r.time)}</td>
+                    <td style="white-space:nowrap">${r.time ? this.fmtDate(r.time) : '—'}</td>
                     <td style="white-space:nowrap">${this.fmtDuration(r.duration_s)}</td>
                     <td style="white-space:nowrap">${r.filament_g.toFixed(1)} g</td>
                     <td>${this._spoolTag(r)}</td>
-                    <td style="white-space:nowrap;color:#888">€${r.cost_electricity.toFixed(2)} elec + €${r.cost_filament.toFixed(2)} fil</td>
-                    <td style="white-space:nowrap;color:#22d3ee;font-weight:600">€${r.cost_total.toFixed(2)}</td>
+                    <td style="white-space:nowrap;text-align:right">
+                      ${r.cost_total != null
+                        ? html`<cost-breakdown-popup .record=${r} style="color:#22d3ee;font-weight:600;font-size:13px">€${r.cost_total.toFixed(2)}</cost-breakdown-popup>`
+                        : html`<span style="color:#555">—</span>`}
+                    </td>
                   </tr>
                 `)}
               </tbody>

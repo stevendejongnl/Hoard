@@ -22,6 +22,9 @@ class MoonrakerClient:
         self._running = False
         self._req_id = 0
 
+    def _client_base(self) -> str:
+        return settings.moonraker_url
+
     # ── REST ──────────────────────────────────────────────────────────────────
 
     async def get(self, path: str, **params: Any) -> Any:
