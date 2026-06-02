@@ -5,6 +5,37 @@ import { getSpools, deleteSpool, updateSpool } from '../api'
 
 import '../components/spool-modal'
 
+const styles = html`<style>
+.page-wrap { max-width: 940px; margin: 0 auto; padding: 28px; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.page-title { font-size: 18px; font-weight: 600; color: #e0e0e0; }
+.add-btn { background: transparent; border: 1px solid #22d3ee44; color: #22d3ee; border-radius: 6px; padding: 8px 16px; font-size: 13px; cursor: pointer; min-height: 44px; }
+.add-btn:hover, .add-btn:active { background: #22d3ee14; }
+.spools-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.spool-card { background: #1a1a1a; border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.spool-card.active { border: 1px solid #22d3ee33; }
+.spool-card:not(.active) { border: 1px solid #222; }
+.card-header { display: flex; align-items: flex-start; justify-content: space-between; }
+.card-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.card-brand { font-weight: 600; color: #e0e0e0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.active-badge { font-size: 10px; font-weight: 600; background: #22d3ee22; color: #22d3ee; border: 1px solid #22d3ee44; border-radius: 4px; padding: 2px 6px; white-space: nowrap; margin-left: 6px; flex-shrink: 0; }
+.card-meta { font-size: 12px; color: #888; }
+.card-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.action-btn { flex: 1; background: transparent; border: 1px solid #333; color: #e0e0e0; border-radius: 6px; padding: 8px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; min-height: 44px; text-align: center; }
+.action-btn:hover, .action-btn:active { border-color: #555; }
+.action-btn.danger { color: #ef4444; border-color: #33181888; }
+.action-btn.danger:hover, .action-btn.danger:active { border-color: #ef4444; background: #ef444410; }
+.empty { color: #555; text-align: center; padding: 40px; }
+
+@media (max-width: 900px) {
+  .spools-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .page-wrap { padding: 16px; }
+  .spools-grid { grid-template-columns: 1fr; }
+}
+</style>`
+
 @customElement('spools-page')
 export class SpoolsPage extends LitElement {
   createRenderRoot() { return this }
@@ -48,35 +79,32 @@ export class SpoolsPage extends LitElement {
       : html``
 
     return html`
-      <div style="background:#1a1a1a;border:1px solid ${isActive ? '#22d3ee33' : '#222'};border-radius:8px;padding:14px;display:flex;flex-direction:column;gap:0">
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px">
-          <div style="display:flex;align-items:center;gap:6px;min-width:0">
+      <div class="spool-card ${isActive ? 'active' : ''}">
+        <div class="card-header">
+          <div class="card-name-row">
             ${dot}
-            <span style="font-weight:600;color:#e0e0e0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${spool.brand}</span>
+            <span class="card-brand">${spool.brand}</span>
           </div>
-          ${isActive ? html`<span style="font-size:10px;font-weight:600;background:#22d3ee22;color:#22d3ee;border:1px solid #22d3ee44;border-radius:4px;padding:1px 6px;white-space:nowrap;margin-left:6px">ACTIVE</span>` : html``}
+          ${isActive ? html`<span class="active-badge">ACTIVE</span>` : html``}
         </div>
 
-        <div style="font-size:12px;color:#555;margin-bottom:4px">${spool.material} · ${spool.color}</div>
-        <div style="font-size:12px;color:#555">€${(spool.cost_per_gram * spool.initial_weight_g).toFixed(2)} · €${spool.cost_per_gram.toFixed(4)}/g</div>
+        <div class="card-meta">${spool.material} · ${spool.color}</div>
+        <div class="card-meta">€${(spool.cost_per_gram * spool.initial_weight_g).toFixed(2)} · €${spool.cost_per_gram.toFixed(4)}/g</div>
 
         ${this._weightBar(spool)}
 
-        ${spool.notes ? html`<div style="font-size:11px;color:#444;margin-top:8px;font-style:italic">${spool.notes}</div>` : html``}
+        ${spool.notes ? html`<div style="font-size:11px;color:#444;font-style:italic">${spool.notes}</div>` : html``}
 
-        <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+        <div class="card-actions">
           ${!isActive ? html`
-            <button
-              style="flex:1;background:transparent;border:1px solid #333;color:#e0e0e0;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap"
-              @click=${() => this._setActive(spool.id)}
-            >Set active</button>
+            <button class="action-btn" @click=${() => this._setActive(spool.id)}>Set active</button>
           ` : html``}
           <button
-            style="flex:1;background:transparent;border:1px solid #333;color:#e0e0e0;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap"
+            class="action-btn"
             @click=${() => { this.editingSpool = spool; this.modalOpen = true }}
           >Edit</button>
           <button
-            style="flex:1;background:transparent;border:1px solid #33181888;color:#ef4444;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap"
+            class="action-btn danger"
             @click=${() => this._delete(spool.id)}
           >Delete</button>
         </div>
@@ -86,19 +114,20 @@ export class SpoolsPage extends LitElement {
 
   render() {
     return html`
-      <div style="max-width:940px;margin:0 auto;padding:28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <span style="font-size:18px;font-weight:600;color:#e0e0e0">Spools</span>
+      ${styles}
+      <div class="page-wrap">
+        <div class="page-header">
+          <span class="page-title">Spools</span>
           <button
-            style="background:transparent;border:1px solid #22d3ee44;color:#22d3ee;border-radius:6px;padding:6px 14px;font-size:13px;cursor:pointer"
+            class="add-btn"
             @click=${() => { this.editingSpool = null; this.modalOpen = true }}
           >+ add spool</button>
         </div>
 
         ${this.spools.length === 0
-          ? html`<div style="color:#555;text-align:center;padding:40px">No spools yet.</div>`
+          ? html`<div class="empty">No spools yet.</div>`
           : html`
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+            <div class="spools-grid">
               ${this.spools.map(s => this._spoolCard(s))}
             </div>
           `}

@@ -162,6 +162,14 @@ export class PrinterControls extends LitElement {
     .state-pill.error { color: #ef4444; border-color: #ef444430; background: #ef444408; }
     .state-pill.printing { color: var(--cyan); border-color: var(--cyan-border); background: var(--cyan-dim); }
     .state-pill.paused { color: #f59e0b; border-color: #f59e0b30; background: #f59e0b08; }
+
+    @media (max-width: 600px) {
+      .strip { padding: 10px 12px; gap: 8px; }
+      .group-label { display: none; }
+      .sep { display: none; }
+      .btn { padding: 4px 10px; font-size: 9px; }
+      .state-pill { font-size: 8px; }
+    }
   `
 
   connectedCallback() {

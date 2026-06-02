@@ -1,5 +1,5 @@
 import { LitElement, css, html } from 'lit'
-import { customElement, property } from 'lit/decorators.js'
+import { customElement, property, state } from 'lit/decorators.js'
 import type { PrintRecord } from '../types'
 
 function fmt(n: number | null | undefined, decimals = 4): string {
@@ -15,6 +15,7 @@ function fmtDur(s: number): string {
 @customElement('cost-breakdown-popup')
 export class CostBreakdownPopup extends LitElement {
   @property({ type: Object }) record!: PrintRecord
+  @state() private _open = false
 
   static styles = css`
     :host {
@@ -41,8 +42,27 @@ export class CostBreakdownPopup extends LitElement {
       text-align: left;
     }
 
-    :host(:hover) .popup {
+    :host(:hover) .popup,
+    .popup.open {
       display: block;
+    }
+
+    .popup-close {
+      display: none;
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: none;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 2px;
+    }
+
+    @media (max-width: 600px) {
+      .popup-close { display: block; }
+      .popup { right: 0; bottom: calc(100% + 6px); top: auto; min-width: 240px; }
     }
 
     .popup-title {
@@ -125,10 +145,11 @@ export class CostBreakdownPopup extends LitElement {
     const energyKwh = avgW != null ? avgW * durationH / 1000 : null
 
     return html`
-      <div class="trigger">
+      <div class="trigger" @click=${() => { this._open = !this._open }}>
         <slot></slot>
       </div>
-      <div class="popup">
+      <div class="popup ${this._open ? 'open' : ''}">
+        <button class="popup-close" @click=${(e: Event) => { e.stopPropagation(); this._open = false }}>×</button>
         <div class="popup-title">Cost breakdown</div>
 
         <div class="popup-row">
