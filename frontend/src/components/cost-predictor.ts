@@ -13,8 +13,6 @@ export class CostPredictor extends LitElement {
   @state() result: PredictResult | null = null;
   @state() loading = false;
 
-  private _fileInputRef: HTMLInputElement | null = null;
-
   async connectedCallback() {
     super.connectedCallback();
     try {
@@ -64,7 +62,7 @@ export class CostPredictor extends LitElement {
   }
 
   private _onUploadClick() {
-    this._fileInputRef?.click();
+    this.shadowRoot?.querySelector<HTMLInputElement>('.hidden-input')?.click();
   }
 
   private _onFileChange(e: Event) {
@@ -102,7 +100,6 @@ export class CostPredictor extends LitElement {
                 accept=".gcode"
                 class="hidden-input"
                 @change=${this._onFileChange}
-                @click=${(e: Event) => e.stopPropagation()}
               />
             </div>
           </div>
