@@ -78,8 +78,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git fetch origin main
-          RELEASE_SHA=$(git rev-parse origin/main)
+          RELEASE_SHA=$(gh api repos/${{ github.repository }}/commits/main --jq '.sha')
           gh api repos/${{ github.repository }}/dispatches \
             --method POST \
             --field event_type='release-created' \
