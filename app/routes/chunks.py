@@ -17,6 +17,9 @@ _CHUNK_DIR.mkdir(exist_ok=True)
 
 _UPLOAD_ID_RE = re.compile(r'^[A-Za-z0-9_-]{8,64}$')
 
+MAX_CHUNKS = 50                          # 50 × 50 MB = 2.5 GB ceiling
+MAX_CHUNK_BYTES = 55 * 1024 * 1024      # 55 MB — 50 MB client chunk + HTTP overhead
+
 
 def _safe_upload_dir(upload_id: str) -> Path:
     if not _UPLOAD_ID_RE.fullmatch(upload_id):
@@ -45,31 +48,41 @@ async def upload_chunk(
     total_chunks: int = Form(...),
 ) -> dict:
     safe_name = _safe_filename(filename)
-    if total_chunks < 1 or chunk_index < 0 or chunk_index >= total_chunks:
-        raise HTTPException(400, "Invalid chunk parameters")
+
+    if total_chunks < 1 or total_chunks > MAX_CHUNKS:
+        raise HTTPException(400, f"total_chunks must be 1–{MAX_CHUNKS}")
+    if chunk_index < 0 or chunk_index >= total_chunks:
+        raise HTTPException(400, "chunk_index out of range")
 
     upload_dir = _safe_upload_dir(upload_id)
     upload_dir.mkdir(exist_ok=True)
 
+    # Read chunk and enforce size cap before writing to disk
+    content = await file.read(MAX_CHUNK_BYTES + 1)
+    if len(content) > MAX_CHUNK_BYTES:
+        shutil.rmtree(upload_dir, ignore_errors=True)
+        raise HTTPException(413, f"Chunk exceeds {MAX_CHUNK_BYTES // 1024 // 1024} MB limit")
+
     chunk_path = upload_dir / f"chunk_{chunk_index:04d}"
-    content = await file.read()
     chunk_path.write_bytes(content)
 
-    log.info("chunk %d/%d for %s (upload_id=%s)", chunk_index + 1, total_chunks, safe_name, upload_id)
+    log.info("chunk %d/%d for %s (upload_id=%s, %d bytes)",
+             chunk_index + 1, total_chunks, safe_name, upload_id, len(content))
 
-    # Check if all chunks are present
     received = sorted(upload_dir.glob("chunk_*"))
     if len(received) < total_chunks:
         return {"status": "partial", "received": len(received), "total": total_chunks}
 
-    # All chunks present — reassemble and forward to Moonraker
+    # All chunks present — stream-assemble to a tempfile, then forward to Moonraker
+    tmp_path = upload_dir / "_assembled"
     try:
-        complete = bytearray()
-        for chunk_file in received:
-            complete.extend(chunk_file.read_bytes())
+        with tmp_path.open("wb") as out:
+            for chunk_file in received:
+                shutil.copyfileobj(chunk_file.open("rb"), out)
 
-        result = await moonraker.upload_file(safe_name, bytes(complete))
-        log.info("assembled and uploaded %s (%d bytes)", safe_name, len(complete))
+        assembled_bytes = tmp_path.read_bytes()
+        result = await moonraker.upload_file(safe_name, assembled_bytes)
+        log.info("assembled and uploaded %s (%d bytes)", safe_name, len(assembled_bytes))
         return {"status": "complete", "filename": safe_name, "result": result}
     except Exception as exc:
         raise HTTPException(502, f"Assembly/upload failed: {exc}") from exc
