@@ -52,7 +52,7 @@ class MoonrakerClient:
             r = await client.post(
                 f"{settings.moonraker_url}/server/files/upload",
                 files={"file": (filename, content, "application/octet-stream")},
-                timeout=60,
+                timeout=300,
             )
             r.raise_for_status()
             return r.json()

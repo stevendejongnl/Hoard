@@ -6,6 +6,7 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "256m"
     # SSE requires buffering disabled
     nginx.ingress.kubernetes.io/proxy-buffering: "off"
 spec:
