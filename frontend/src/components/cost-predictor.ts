@@ -67,11 +67,36 @@ export class CostPredictor extends LitElement {
     this.shadowRoot?.querySelector<HTMLInputElement>('.hidden-input')?.click();
   }
 
+  private _onDragOver(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    (e.currentTarget as HTMLElement).classList.add('drag-over');
+  }
+
+  private _onDragLeave(e: DragEvent) {
+    e.preventDefault();
+    (e.currentTarget as HTMLElement).classList.remove('drag-over');
+  }
+
+  private async _onDrop(e: DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    (e.currentTarget as HTMLElement).classList.remove('drag-over');
+    const file = e.dataTransfer?.files?.[0];
+    if (!file || !file.name.endsWith('.gcode')) return;
+    await this._uploadFile(file);
+  }
+
   private async _onFileChange(e: Event) {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
     if (!file) return;
     input.value = '';
+    await this._uploadFile(file);
+  }
+
+  private async _uploadFile(file: File) {
     this.uploading = true;
     this.uploadError = '';
     try {
@@ -104,7 +129,11 @@ export class CostPredictor extends LitElement {
 
           <div class="field">
             <label class="field-label">Or upload to Klipper</label>
-            <div class="drop-zone ${this.uploading ? 'uploading' : ''}" @click=${this._onUploadClick}>
+            <div class="drop-zone ${this.uploading ? 'uploading' : ''}"
+              @click=${this._onUploadClick}
+              @dragover=${this._onDragOver}
+              @dragleave=${this._onDragLeave}
+              @drop=${this._onDrop}>
               <span>${this.uploading ? 'Uploading…' : this.uploadError || 'drop .gcode or click to upload'}</span>
               <input
                 type="file"
@@ -288,6 +317,12 @@ export class CostPredictor extends LitElement {
       border-color: var(--cyan-border);
       color: var(--cyan);
       cursor: wait;
+    }
+
+    .drop-zone.drag-over {
+      border-color: var(--cyan);
+      background: var(--cyan-dim);
+      color: var(--cyan);
     }
 
     .drop-zone:hover {
