@@ -5,8 +5,11 @@ import { getSpools, predict, startPrint, uploadFile } from '../api';
 
 @customElement('cost-predictor')
 export class CostPredictor extends LitElement {
-  @property() filename: string = '';
+  // External property set by parent (file picker selection)
+  @property() set filename(val: string) { if (val) this._filename = val; }
+  get filename() { return this._filename; }
 
+  @state() private _filename: string = '';
   @state() spools: Spool[] = [];
   @state() selectedSpoolId: number | null = null;
   @state() quantity: number = 1;
@@ -28,16 +31,16 @@ export class CostPredictor extends LitElement {
   }
 
   updated(changedProps: PropertyValues) {
-    if (changedProps.has('filename') && this.filename) {
+    if ((changedProps.has('filename') || changedProps.has('_filename')) && this._filename) {
       this._runPredict();
     }
   }
 
   private async _runPredict() {
-    if (!this.filename) return;
+    if (!this._filename) return;
     this.loading = true;
     try {
-      this.result = await predict(this.filename, this.selectedSpoolId, this.quantity);
+      this.result = await predict(this._filename, this.selectedSpoolId, this.quantity);
     } catch (e) {
       console.error('[cost-predictor] Predict failed:', e);
     } finally {
@@ -101,7 +104,7 @@ export class CostPredictor extends LitElement {
     this.uploadError = '';
     try {
       await uploadFile(file);
-      this.filename = file.name;
+      this._filename = file.name;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       this.uploadError = msg.includes('abort') ? 'Upload timed out — is Klipper running?' : `Upload failed: ${msg}`
@@ -124,7 +127,7 @@ export class CostPredictor extends LitElement {
           <div class="field">
             <label class="field-label">File</label>
             <div class="file-display" @click=${this._openFileBrowser}>
-              ${this.filename || html`<span class="placeholder">No file selected</span>`}
+              ${this._filename || html`<span class="placeholder">No file selected</span>`}
             </div>
           </div>
 
@@ -227,13 +230,13 @@ export class CostPredictor extends LitElement {
   }
 
   private async _print() {
-    if (!this.filename) return
+    if (!this._filename) return
     const label = this.result && this.result.quantity > 1
-      ? `Print ${this.result.quantity}× ${this.filename}?`
-      : `Print ${this.filename}?`
+      ? `Print ${this.result.quantity}× ${this._filename}?`
+      : `Print ${this._filename}?`
     if (!window.confirm(label)) return
     try {
-      await startPrint(this.filename)
+      await startPrint(this._filename)
     } catch (e) {
       window.alert(`Failed to start print: ${e}`)
     }
