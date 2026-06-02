@@ -260,6 +260,14 @@ export class LiveStatus extends LitElement {
     .metric-value.watts {
       color: var(--cyan);
     }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+      .metrics-side { flex-direction: row; flex-wrap: wrap; border-top: 1px solid var(--border); border-right: none; }
+      .metric-cell { flex: 1 1 45%; border-right: 1px solid var(--border-sub); border-bottom: 1px solid var(--border-sub); }
+      .metric-value { font-size: 16px; }
+      .cost-value { font-size: 38px; }
+    }
   `;
 }
 

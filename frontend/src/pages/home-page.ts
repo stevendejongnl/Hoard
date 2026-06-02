@@ -22,6 +22,9 @@ export class HomePage extends LitElement {
       <style>
         .main { max-width: 940px; margin: 0 auto; padding: 28px 28px 60px; display: flex; flex-direction: column; gap: 0; }
         .divider { height: 1px; background: #222; margin: 28px 0; }
+        @media (max-width: 600px) {
+          .main { padding: 16px 16px 40px; }
+        }
       </style>
 
       <div class="main">

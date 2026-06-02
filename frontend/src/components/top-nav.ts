@@ -73,6 +73,13 @@ export class TopNav extends LitElement {
       50%  { opacity: 0.4; }
       100% { opacity: 1; }
     }
+
+    @media (max-width: 600px) {
+      .topbar { padding: 12px 16px; }
+      .app-name { font-size: 13px; }
+      .nav-link { font-size: 10px; }
+      .nav { gap: 12px; }
+    }
   `
 
   render() {

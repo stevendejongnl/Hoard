@@ -433,6 +433,10 @@ export class CostPredictor extends LitElement {
       background: var(--cyan);
       color: #000;
     }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr; }
+    }
   `;
 }
 

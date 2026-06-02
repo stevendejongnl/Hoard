@@ -226,6 +226,10 @@ export class SpoolsPreview extends LitElement {
       border-color: var(--cyan-border);
       color: var(--text-muted);
     }
+
+    @media (max-width: 600px) {
+      .grid { grid-template-columns: 1fr 1fr; }
+    }
   `;
 }
 

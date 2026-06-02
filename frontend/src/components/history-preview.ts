@@ -365,6 +365,33 @@ export class HistoryPreview extends LitElement {
       color: var(--cyan);
       text-decoration: underline;
     }
+
+    @media (max-width: 600px) {
+      th:nth-child(2),
+      td:nth-child(2) {
+        display: none;
+      }
+
+      .spool-tag {
+        font-size: 8px;
+        padding: 2px 5px;
+      }
+
+      .file-name {
+        max-width: 140px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .cost-main {
+        font-size: 11px;
+      }
+
+      .print-btn {
+        padding: 2px 6px;
+      }
+    }
   `;
 }
 
