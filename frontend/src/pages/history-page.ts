@@ -87,16 +87,14 @@ export class HistoryPage extends LitElement {
         ? html`<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color_hex};margin-right:5px;vertical-align:middle;flex-shrink:0"></span>`
         : html``
       return html`<span
+        class="spool-tag spool-tag--assigned"
         title="Click to reassign"
-        style="display:inline-flex;align-items:center;background:#1a1a1a;border:1px solid #222;border-radius:4px;padding:2px 7px;font-size:11px;color:#e0e0e0;cursor:pointer"
         @click=${() => { this.assigningJobId = jobId }}
-        @mouseenter=${(e: Event) => { (e.target as HTMLElement).style.borderColor = '#444' }}
-        @mouseleave=${(e: Event) => { (e.target as HTMLElement).style.borderColor = '#222' }}
       >${dot}${s.brand ?? ''} ${s.material ?? ''}</span>`
     }
 
     return html`<span
-      style="display:inline-flex;align-items:center;background:transparent;border:1px solid #22d3ee28;border-radius:4px;padding:2px 7px;font-size:11px;color:#22d3ee;cursor:pointer"
+      class="spool-tag spool-tag--unassigned"
       @click=${() => { this.assigningJobId = jobId }}
     >assign →</span>`
   }
@@ -106,26 +104,229 @@ export class HistoryPage extends LitElement {
 
     return html`
       <style>
-        .history-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        .history-table th { text-align: left; color: #555; font-weight: 500; padding: 6px 10px; border-bottom: 1px solid #222; white-space: nowrap; }
-        .history-table td { padding: 9px 10px; border-bottom: 1px solid #1a1a1a; color: #e0e0e0; vertical-align: middle; }
-        .history-table tr:last-child td { border-bottom: none; }
-        .history-table tr:hover td { background: #141414; }
-        .filename-cell { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #aaa; font-family: monospace; font-size: 12px; }
-        .pager-btn { background: #1a1a1a; border: 1px solid #222; color: #e0e0e0; border-radius: 6px; padding: 6px 16px; cursor: pointer; font-size: 13px; }
-        .pager-btn:disabled { opacity: 0.3; cursor: default; }
-        .pager-btn:not(:disabled):hover { border-color: #22d3ee; color: #22d3ee; }
+        /* ── Base layout ── */
+        .page-wrap {
+          max-width: 940px;
+          margin: 0 auto;
+          padding: 28px;
+        }
+        .page-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 20px;
+        }
+        .page-title {
+          font-size: 18px;
+          font-weight: 600;
+          color: #e0e0e0;
+        }
+        .page-count {
+          color: #555;
+          font-size: 13px;
+        }
+
+        /* ── Spool tags ── */
+        .spool-tag {
+          display: inline-flex;
+          align-items: center;
+          border-radius: 4px;
+          padding: 2px 7px;
+          font-size: 11px;
+          cursor: pointer;
+          min-height: 44px;
+          box-sizing: border-box;
+        }
+        .spool-tag--assigned {
+          background: #1a1a1a;
+          border: 1px solid #222;
+          color: #e0e0e0;
+        }
+        .spool-tag--assigned:hover,
+        .spool-tag--assigned:active {
+          border-color: #444;
+        }
+        .spool-tag--unassigned {
+          background: transparent;
+          border: 1px solid #22d3ee28;
+          color: #22d3ee;
+        }
+        .spool-tag--unassigned:hover,
+        .spool-tag--unassigned:active {
+          border-color: #22d3ee88;
+        }
+
+        /* ── Print (▶) button ── */
+        .print-btn {
+          background: transparent;
+          border: 1px solid #222;
+          border-radius: 4px;
+          color: #888;
+          font-size: 10px;
+          padding: 3px 8px;
+          cursor: pointer;
+          min-width: 44px;
+          min-height: 44px;
+          box-sizing: border-box;
+        }
+        .print-btn:hover,
+        .print-btn:active {
+          border-color: #22d3ee28;
+          color: #22d3ee;
+          background: #22d3ee14;
+        }
+
+        /* ── Pager ── */
+        .pager-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-top: 20px;
+        }
+        .pager-btn {
+          background: #1a1a1a;
+          border: 1px solid #222;
+          color: #e0e0e0;
+          border-radius: 6px;
+          padding: 6px 16px;
+          cursor: pointer;
+          font-size: 13px;
+        }
+        .pager-btn:disabled {
+          opacity: 0.3;
+          cursor: default;
+        }
+        .pager-btn:not(:disabled):hover,
+        .pager-btn:not(:disabled):active {
+          border-color: #22d3ee;
+          color: #22d3ee;
+        }
+        .pager-info {
+          color: #555;
+          font-size: 13px;
+        }
+
+        /* ── Desktop table ── */
+        .history-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 13px;
+        }
+        .history-table th {
+          text-align: left;
+          color: #555;
+          font-weight: 500;
+          padding: 6px 10px;
+          border-bottom: 1px solid #222;
+          white-space: nowrap;
+        }
+        .history-table td {
+          padding: 9px 10px;
+          border-bottom: 1px solid #1a1a1a;
+          color: #e0e0e0;
+          vertical-align: middle;
+        }
+        .history-table tr:last-child td {
+          border-bottom: none;
+        }
+        .history-table tr:hover td {
+          background: #141414;
+        }
+        .filename-cell {
+          max-width: 200px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #aaa;
+          font-family: monospace;
+          font-size: 12px;
+        }
+
+        /* ── Mobile cards ── */
+        .card-list {
+          display: none;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .print-card {
+          background: #141414;
+          border: 1px solid #222;
+          border-radius: 8px;
+          padding: 12px 14px;
+        }
+        .print-card__top {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+          margin-bottom: 4px;
+        }
+        .print-card__filename {
+          flex: 1;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          color: #aaa;
+          font-family: monospace;
+          font-size: 12px;
+        }
+        .print-card__meta {
+          color: #666;
+          font-size: 12px;
+          margin-bottom: 8px;
+        }
+        .print-card__bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+        .print-card__cost {
+          color: #22d3ee;
+          font-weight: 600;
+          font-size: 13px;
+          white-space: nowrap;
+        }
+        .print-card__cost--none {
+          color: #555;
+        }
+
+        /* ── Responsive breakpoints ── */
+        @media (max-width: 600px) {
+          .page-wrap {
+            padding: 16px;
+          }
+          .history-table {
+            display: none;
+          }
+          .card-list {
+            display: flex;
+          }
+          .pager-row {
+            margin-top: 16px;
+          }
+          .pager-btn {
+            padding: 10px 14px;
+          }
+        }
+
+        @media (min-width: 601px) {
+          .card-list {
+            display: none;
+          }
+        }
       </style>
 
-      <div style="max-width:940px;margin:0 auto;padding:28px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-          <span style="font-size:18px;font-weight:600;color:#e0e0e0">Print history</span>
-          <span style="color:#555;font-size:13px">${this.total} prints</span>
+      <div class="page-wrap">
+        <div class="page-header">
+          <span class="page-title">Print history</span>
+          <span class="page-count">${this.total} prints</span>
         </div>
 
         ${this.loading
           ? html`<div style="color:#555;text-align:center;padding:40px">Loading…</div>`
           : html`
+            <!-- Desktop table -->
             <table class="history-table">
               <thead>
                 <tr>
@@ -153,10 +354,8 @@ export class HistoryPage extends LitElement {
                     </td>
                     <td>
                       <button
+                        class="print-btn"
                         @click=${() => this._print(r.filename)}
-                        style="background:transparent;border:1px solid #222;border-radius:4px;color:#888;font-size:10px;padding:3px 8px;cursor:pointer"
-                        onmouseover="this.style.borderColor='#22d3ee28';this.style.color='#22d3ee';this.style.background='#22d3ee14'"
-                        onmouseout="this.style.borderColor='#222';this.style.color='#888';this.style.background='transparent'"
                       >▶</button>
                     </td>
                   </tr>
@@ -164,13 +363,39 @@ export class HistoryPage extends LitElement {
               </tbody>
             </table>
 
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px">
+            <!-- Mobile card list -->
+            <div class="card-list">
+              ${this.records.map(r => html`
+                <div class="print-card">
+                  <div class="print-card__top">
+                    <span class="print-card__filename" title="${r.filename}">${r.filename}</span>
+                    <button
+                      class="print-btn"
+                      @click=${() => this._print(r.filename)}
+                    >▶</button>
+                  </div>
+                  <div class="print-card__meta">
+                    ${r.time ? this.fmtDate(r.time) : '—'} · ${r.filament_g.toFixed(1)} g · ${this.fmtDuration(r.duration_s)}
+                  </div>
+                  <div class="print-card__bottom">
+                    ${this._spoolTag(r)}
+                    <span class="${r.cost_total != null ? 'print-card__cost' : 'print-card__cost print-card__cost--none'}">
+                      ${r.cost_total != null
+                        ? html`<cost-breakdown-popup .record=${r} style="color:#22d3ee;font-weight:600;font-size:13px">€${r.cost_total.toFixed(2)}</cost-breakdown-popup>`
+                        : html`—`}
+                    </span>
+                  </div>
+                </div>
+              `)}
+            </div>
+
+            <div class="pager-row">
               <button
                 class="pager-btn"
                 ?disabled=${this.page === 0}
                 @click=${() => this._loadPage(this.page - 1)}
               >← Previous</button>
-              <span style="color:#555;font-size:13px">Page ${this.page + 1} of ${totalPages || 1}</span>
+              <span class="pager-info">Page ${this.page + 1} of ${totalPages || 1}</span>
               <button
                 class="pager-btn"
                 ?disabled=${this.page >= totalPages - 1}
