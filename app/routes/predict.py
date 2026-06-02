@@ -1,3 +1,5 @@
+import math
+
 from fastapi import APIRouter, HTTPException
 
 from app import ha
@@ -5,8 +7,22 @@ from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/predict", tags=["predict"])
 
-# 1.75mm PLA+ typical average wattage fallback
 _FALLBACK_WATTS = 105.0
+# 1.75mm filament, PLA density 1.24 g/cm³: π × (0.875mm)² × 1.24 × 0.001
+_MM_TO_GRAMS = math.pi * (0.875 ** 2) * 1.24 * 0.001
+
+
+def _filament_grams(meta: dict) -> float:
+    """Extract filament weight in grams from Moonraker metadata.
+
+    PrusaSlicer/Bambu embed filament_weight_total (g).
+    Cura embeds filament_total (mm) — convert with 1.75mm PLA density.
+    """
+    if meta.get("filament_weight_total"):
+        return float(meta["filament_weight_total"])
+    if meta.get("filament_total"):
+        return float(meta["filament_total"]) * _MM_TO_GRAMS
+    return 0.0
 
 
 @router.get("")
@@ -17,7 +33,7 @@ async def predict(filename: str, spool_id: int | None = None, quantity: int = 1)
     except Exception as exc:
         raise HTTPException(502, f"Moonraker metadata error: {exc}") from exc
 
-    filament_g = float(meta.get("filament_weight_total") or 0)
+    filament_g = _filament_grams(meta)
     estimated_time_s = float(meta.get("estimated_time") or 0)
     layer_count = meta.get("layer_count")
 
