@@ -1,0 +1,10 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+*.db
+static/
+frontend/node_modules/
+frontend/dist/
+.pytest_cache/
+.superpowers/
