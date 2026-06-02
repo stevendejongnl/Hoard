@@ -11,9 +11,15 @@ export const getFiles = () => req<GcodeFile[]>('/api/files')
 export const getFileMetadata = (filename: string) =>
   req<GcodeFile>(`/api/files/metadata?filename=${encodeURIComponent(filename)}`)
 export const uploadFile = (file: File) => {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 60_000)
   const fd = new FormData()
   fd.append('file', file)
-  return req<{ item: { path: string } }>('/api/files/upload', { method: 'POST', body: fd })
+  return req<{ item: { path: string } }>('/api/files/upload', {
+    method: 'POST',
+    body: fd,
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timeout))
 }
 
 // History

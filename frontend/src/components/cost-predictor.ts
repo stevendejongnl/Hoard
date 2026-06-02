@@ -102,8 +102,9 @@ export class CostPredictor extends LitElement {
     try {
       await uploadFile(file);
       this.filename = file.name;
-    } catch (err) {
-      this.uploadError = `Upload failed: ${err}`;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err)
+      this.uploadError = msg.includes('abort') ? 'Upload timed out — is Klipper running?' : `Upload failed: ${msg}`
     } finally {
       this.uploading = false;
     }
