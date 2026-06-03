@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import type { GcodeFile } from '../types'
-import { getFiles, uploadFile } from '../api'
+import { getFiles, uploadFile, injectThumbnail } from '../api'
 
 function fmtDuration(s: number): string {
   const h = Math.floor(s / 3600)
@@ -146,6 +146,47 @@ export class FileBrowserModal extends LitElement {
       color: var(--text-muted, #555);
       font-size: 18px;
       flex-shrink: 0;
+      position: relative;
+    }
+
+    .thumb-gen-btn {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: none;
+      border: 1px dashed var(--border, #333);
+      border-radius: 4px;
+      color: var(--text-muted, #555);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .thumb-gen-btn:hover {
+      color: var(--cyan, #22d3ee);
+      border-color: var(--cyan, #22d3ee);
+    }
+
+    .thumb-generating {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      background: var(--bg-surface, #1a1a1a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--cyan, #22d3ee);
+      font-size: 18px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
 
     .file-item:hover {
@@ -275,6 +316,8 @@ export class FileBrowserModal extends LitElement {
   @state() selected: string | null = null
   @state() loading = true
   @state() thumbErrors = new Set<string>()
+  @state() thumbGenerating = new Set<string>()
+  @state() thumbVersion = new Map<string, number>()
 
   connectedCallback() {
     super.connectedCallback()
@@ -340,8 +383,36 @@ export class FileBrowserModal extends LitElement {
   }
 
   private _triggerUpload() {
-    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[type="file"]')
+    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[data-gcode-upload]')
     input?.click()
+  }
+
+  private _triggerThumbUpload(filename: string) {
+    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[data-stl-upload]')
+    if (!input) return
+    input.dataset.target = filename
+    input.click()
+  }
+
+  private async _onThumbUpload(e: Event) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    const target = input.dataset.target
+    if (!file || !target) return
+    input.value = ''
+
+    this.thumbGenerating = new Set([...this.thumbGenerating, target])
+    try {
+      await injectThumbnail(target, file)
+      this.thumbErrors = new Set([...this.thumbErrors].filter(f => f !== target))
+      const v = new Map(this.thumbVersion)
+      v.set(target, Date.now())
+      this.thumbVersion = v
+    } catch (err) {
+      console.error('Thumbnail inject failed', err)
+    } finally {
+      this.thumbGenerating = new Set([...this.thumbGenerating].filter(f => f !== target))
+    }
   }
 
   render() {
@@ -381,16 +452,28 @@ export class FileBrowserModal extends LitElement {
                         this.selected = f.filename
                       }}
                     >
-                      ${this.thumbErrors.has(f.filename)
-                        ? html`<div class="file-thumb-placeholder">◻</div>`
-                        : html`<img
-                            class="file-thumb"
-                            src="/api/files/thumbnail?filename=${encodeURIComponent(f.filename)}"
-                            alt=""
-                            @error=${() => {
-                              this.thumbErrors = new Set([...this.thumbErrors, f.filename])
-                            }}
-                          />`
+                      ${this.thumbGenerating.has(f.filename)
+                        ? html`<div class="thumb-generating">↻</div>`
+                        : this.thumbErrors.has(f.filename)
+                          ? html`
+                              <div class="file-thumb-placeholder">
+                                <button
+                                  class="thumb-gen-btn"
+                                  title="Generate preview from STL"
+                                  @click=${(e: Event) => {
+                                    e.stopPropagation()
+                                    this._triggerThumbUpload(f.filename)
+                                  }}
+                                >⊕</button>
+                              </div>`
+                          : html`<img
+                              class="file-thumb"
+                              src="/api/files/thumbnail?filename=${encodeURIComponent(f.filename)}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
+                              alt=""
+                              @error=${() => {
+                                this.thumbErrors = new Set([...this.thumbErrors, f.filename])
+                              }}
+                            />`
                       }
                       <div>
                         <div class="file-name">${f.filename}</div>
@@ -418,7 +501,8 @@ export class FileBrowserModal extends LitElement {
               ${this.selected ? this.selected : 'No file selected'}
             </div>
             <div class="footer-right">
-              <input type="file" accept=".gcode" @change=${this._onUpload} />
+              <input type="file" accept=".gcode" data-gcode-upload @change=${this._onUpload} />
+              <input type="file" accept=".stl" data-stl-upload @change=${this._onThumbUpload} />
               <button class="btn-ghost-dashed" @click=${this._triggerUpload}>↑ upload new</button>
               <button class="btn-ghost" @click=${this._close}>cancel</button>
               <button

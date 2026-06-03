@@ -75,6 +75,15 @@ class MoonrakerClient:
     async def get_file_metadata(self, filename: str) -> dict[str, Any]:
         return await self.get("/server/files/metadata", filename=filename)
 
+    async def download_file(self, filename: str) -> bytes:
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                f"{settings.moonraker_url}/server/files/gcodes/{filename}",
+                timeout=300,
+            )
+            r.raise_for_status()
+            return r.content
+
     async def get_history_job(self, job_id: str) -> dict[str, Any]:
         result = await self.get(f"/server/history/job", uid=job_id)
         return result.get("job", result)

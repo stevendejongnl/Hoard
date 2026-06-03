@@ -10,6 +10,16 @@ async function req<T>(path: string, opts?: RequestInit): Promise<T> {
 export const getFiles = () => req<GcodeFile[]>('/api/files')
 export const getFileMetadata = (filename: string) =>
   req<GcodeFile>(`/api/files/metadata?filename=${encodeURIComponent(filename)}`)
+export const injectThumbnail = (gcodeFilename: string, stlFile: File) => {
+  const fd = new FormData()
+  fd.append('stl_file', stlFile)
+  fd.append('gcode_filename', gcodeFilename)
+  return req<{ status: string; filename: string }>('/api/files/thumbnail/inject', {
+    method: 'POST',
+    body: fd,
+  })
+}
+
 export const uploadFile = (file: File) => {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 60_000)
