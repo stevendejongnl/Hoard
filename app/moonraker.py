@@ -129,6 +129,7 @@ class MoonrakerClient:
                 "objects": {
                     "print_stats": None,
                     "display_status": None,
+                    "motion_report": None,
                     "extruder": None,
                     "heater_bed": None,
                     "toolhead": None,
