@@ -91,23 +91,25 @@ async def _handle_status_update(params: list[Any]) -> None:
 
     ps = status.get("print_stats", {})
     if ps:
+        prev = hub._cache.get("printer_state", {})
         await hub.broadcast("printer_state", {
-            "state": ps.get("state", "standby"),
-            "filename": ps.get("filename", ""),
-            "progress": round(ps.get("progress", 0) * 100, 1),
-            "layer": ps.get("info", {}).get("current_layer"),
-            "layer_total": ps.get("info", {}).get("total_layer"),
-            "time_remaining": ps.get("print_duration", 0),
+            "state": ps.get("state", prev.get("state", "standby")),
+            "filename": ps.get("filename", prev.get("filename", "")),
+            "progress": round(ps.get("progress", prev.get("progress", 0) / 100) * 100, 1),
+            "layer": ps.get("info", {}).get("current_layer", prev.get("layer")),
+            "layer_total": ps.get("info", {}).get("total_layer", prev.get("layer_total")),
+            "time_remaining": ps.get("print_duration", prev.get("time_remaining", 0)),
         })
 
     extruder = status.get("extruder", {})
     bed = status.get("heater_bed", {})
     if extruder or bed:
+        prev = hub._cache.get("temps", {})
         await hub.broadcast("temps", {
-            "hotend_actual": round(extruder.get("temperature", 0), 1),
-            "hotend_target": round(extruder.get("target", 0), 1),
-            "bed_actual": round(bed.get("temperature", 0), 1),
-            "bed_target": round(bed.get("target", 0), 1),
+            "hotend_actual": round(extruder.get("temperature", prev.get("hotend_actual", 0)), 1),
+            "hotend_target": round(extruder.get("target", prev.get("hotend_target", 0)), 1),
+            "bed_actual": round(bed.get("temperature", prev.get("bed_actual", 0)), 1),
+            "bed_target": round(bed.get("target", prev.get("bed_target", 0)), 1),
         })
 
 
