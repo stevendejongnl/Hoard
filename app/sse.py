@@ -90,16 +90,34 @@ async def _handle_status_update(params: list[Any]) -> None:
     status = params[0] if isinstance(params[0], dict) else {}
 
     ps = status.get("print_stats", {})
-    if ps:
+    ds = status.get("display_status", {})
+
+    if ps or ds:
         prev = hub._cache.get("printer_state", {})
-        await hub.broadcast("printer_state", {
-            "state": ps.get("state", prev.get("state", "standby")),
-            "filename": ps.get("filename", prev.get("filename", "")),
-            "progress": round(ps.get("progress", prev.get("progress", 0) / 100) * 100, 1),
-            "layer": ps.get("info", {}).get("current_layer", prev.get("layer")),
-            "layer_total": ps.get("info", {}).get("total_layer", prev.get("layer_total")),
-            "time_remaining": ps.get("print_duration", prev.get("time_remaining", 0)),
-        })
+        updated: dict[str, Any] = {
+            "state": prev.get("state", "standby"),
+            "filename": prev.get("filename", ""),
+            "progress": prev.get("progress", 0),
+            "layer": prev.get("layer"),
+            "layer_total": prev.get("layer_total"),
+            "time_remaining": prev.get("time_remaining", 0),
+        }
+        if ps:
+            if "state" in ps:
+                updated["state"] = ps["state"]
+            if "filename" in ps:
+                updated["filename"] = ps["filename"]
+            if "print_duration" in ps:
+                updated["time_remaining"] = ps["print_duration"]
+            info = ps.get("info", {})
+            if "current_layer" in info:
+                updated["layer"] = info["current_layer"]
+            if "total_layer" in info:
+                updated["layer_total"] = info["total_layer"]
+        if ds:
+            if "progress" in ds:
+                updated["progress"] = round(ds["progress"] * 100, 1)
+        await hub.broadcast("printer_state", updated)
 
     extruder = status.get("extruder", {})
     bed = status.get("heater_bed", {})
