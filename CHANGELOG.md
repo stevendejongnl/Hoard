@@ -1,3 +1,9 @@
+## [1.5.4](https://github.com/stevendejongnl/printer/compare/v1.5.3...v1.5.4) (2026-06-03)
+
+### Bug Fixes
+
+* **webcam:** iOS snapshot polling fallback — MJPEG not supported in iOS Safari ([4440adb](https://github.com/stevendejongnl/printer/commit/4440adbb0a692d72851541429492a86174e704ad))
+
 ## [1.5.3](https://github.com/stevendejongnl/printer/compare/v1.5.2...v1.5.3) (2026-06-03)
 
 ### Bug Fixes
