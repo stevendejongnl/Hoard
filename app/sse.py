@@ -91,8 +91,9 @@ async def _handle_status_update(params: list[Any]) -> None:
 
     ps = status.get("print_stats", {})
     ds = status.get("display_status", {})
+    mr = status.get("motion_report", {})
 
-    if ps or ds:
+    if ps or ds or mr:
         prev = hub._cache.get("printer_state", {})
         updated: dict[str, Any] = {
             "state": prev.get("state", "standby"),
@@ -101,6 +102,8 @@ async def _handle_status_update(params: list[Any]) -> None:
             "layer": prev.get("layer"),
             "layer_total": prev.get("layer_total"),
             "time_remaining": prev.get("time_remaining", 0),
+            "filament_used": prev.get("filament_used", 0),
+            "speed": prev.get("speed", 0),
         }
         if ps:
             if "state" in ps:
@@ -109,14 +112,21 @@ async def _handle_status_update(params: list[Any]) -> None:
                 updated["filename"] = ps["filename"]
             if "print_duration" in ps:
                 updated["time_remaining"] = ps["print_duration"]
-            info = ps.get("info", {})
-            if "current_layer" in info:
-                updated["layer"] = info["current_layer"]
-            if "total_layer" in info:
-                updated["layer_total"] = info["total_layer"]
+            if "filament_used" in ps:
+                updated["filament_used"] = ps["filament_used"]
+            info = ps.get("info") or {}
+            cl = info.get("current_layer")
+            tl = info.get("total_layer")
+            if cl is not None:
+                updated["layer"] = cl
+            if tl is not None:
+                updated["layer_total"] = tl
         if ds:
             if "progress" in ds:
                 updated["progress"] = round(ds["progress"] * 100, 1)
+        if mr:
+            if "live_velocity" in mr:
+                updated["speed"] = round(mr["live_velocity"], 1)
         await hub.broadcast("printer_state", updated)
 
     extruder = status.get("extruder", {})
