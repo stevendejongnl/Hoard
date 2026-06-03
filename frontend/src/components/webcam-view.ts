@@ -2,13 +2,20 @@ import { LitElement, css, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { getWebcams, type Webcam } from '../api'
 
+// iOS Safari doesn't support MJPEG streams in <img> — detect and fall back to snapshot polling
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as Window & { MSStream?: unknown }).MSStream
+
 @customElement('webcam-view')
 export class WebcamView extends LitElement {
   @state() private cams: Webcam[] = []
-  @state() private active = 0       // index of selected cam
-  @state() private expanded = false  // collapsed by default
+  @state() private active = 0
+  @state() private expanded = false
   @state() private loading = true
   @state() private imgError = false
+  @state() private _useSnapshot = IS_IOS
+  @state() private _snapshotSrc = ''
+
+  private _snapshotInterval: ReturnType<typeof setInterval> | null = null
 
   static styles = css`
     :host { display: block; }
@@ -129,11 +136,60 @@ export class WebcamView extends LitElement {
       this.cams = []
     }
     this.loading = false
+    // Start snapshot polling immediately if on iOS
+    if (IS_IOS && this.expanded) this._startSnapshotPolling()
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this._stopSnapshotPolling()
+  }
+
+  private _startSnapshotPolling() {
+    if (this._snapshotInterval) return
+    const cam = this.cams[this.active]
+    if (!cam?.snapshot_url) { this.imgError = true; return }
+    this._useSnapshot = true
+    const fps = cam.target_fps ?? 5
+    this._snapshotSrc = `${cam.snapshot_url}?t=${Date.now()}`
+    this._snapshotInterval = setInterval(() => {
+      this._snapshotSrc = `${cam.snapshot_url}?t=${Date.now()}`
+    }, Math.max(200, 1000 / fps))
+  }
+
+  private _stopSnapshotPolling() {
+    if (this._snapshotInterval) {
+      clearInterval(this._snapshotInterval)
+      this._snapshotInterval = null
+    }
+  }
+
+  private _onStreamError() {
+    if (!this._useSnapshot && this.cams[this.active]?.snapshot_url) {
+      // MJPEG failed — fall back to snapshot polling
+      this._startSnapshotPolling()
+    } else {
+      this.imgError = true
+    }
   }
 
   private _toggle() {
     this.expanded = !this.expanded
     this.imgError = false
+    if (!this.expanded) {
+      this._stopSnapshotPolling()
+      if (IS_IOS) this._useSnapshot = true // reset for next open
+    } else {
+      if (IS_IOS) this._startSnapshotPolling()
+    }
+  }
+
+  private _switchCam(i: number) {
+    this._stopSnapshotPolling()
+    this.active = i
+    this.imgError = false
+    this._useSnapshot = IS_IOS
+    if (IS_IOS && this.expanded) this._startSnapshotPolling()
   }
 
   private _transform(cam: Webcam): string {
@@ -148,6 +204,7 @@ export class WebcamView extends LitElement {
     if (this.loading || this.cams.length === 0) return html``
 
     const cam = this.cams[this.active]
+    const src = this._useSnapshot ? this._snapshotSrc : cam.stream_url
 
     return html`
       <div
@@ -166,7 +223,7 @@ export class WebcamView extends LitElement {
               ${this.cams.map((c, i) => html`
                 <button
                   class="cam-tab ${i === this.active ? 'active' : ''}"
-                  @click=${() => { this.active = i; this.imgError = false }}
+                  @click=${() => this._switchCam(i)}
                 >${c.name}</button>
               `)}
             </div>
@@ -183,9 +240,9 @@ export class WebcamView extends LitElement {
           ` : html`
             <img
               class="stream-img"
-              src=${cam.stream_url}
+              src=${src}
               style="transform: ${this._transform(cam)}"
-              @error=${() => { this.imgError = true }}
+              @error=${this._onStreamError}
             />
           `}
         </div>
