@@ -2,6 +2,7 @@ import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { PrintRecord, Spool } from '../types';
 import { assignSpool, getHistory, getSpools, startPrint } from '../api';
+import { sseClient } from '../sse';
 import './spool-modal';
 import './cost-breakdown-popup';
 
@@ -15,11 +16,27 @@ export class HistoryPreview extends LitElement {
   @state() private _spools: Spool[] = [];
   @state() private _spoolModalOpen = false;
   private _pendingJobId: string | null = null;
+  private _unsubscribe: (() => void) | null = null;
 
   private _total = 0;
 
   async connectedCallback() {
     super.connectedCallback();
+    await this._load();
+    this._unsubscribe = sseClient.subscribe((payload) => {
+      if (payload.type === 'history_updated') {
+        this._load();
+      }
+    });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    this._unsubscribe?.();
+    this._unsubscribe = null;
+  }
+
+  private async _load() {
     try {
       const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()]);
       this.records = data.records;

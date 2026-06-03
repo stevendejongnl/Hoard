@@ -1,8 +1,12 @@
+import asyncio
 import logging
 from datetime import datetime, timezone
 from typing import Any
 
 log = logging.getLogger(__name__)
+
+# Delay before querying HA history — gives power sensors time to settle
+_HA_SETTLE_DELAY = 30
 
 
 async def handle_history_changed(params: list[Any]) -> None:
@@ -13,13 +17,15 @@ async def handle_history_changed(params: list[Any]) -> None:
     if event.get("action") != "added":
         return
     job = event.get("job", {})
-    await _record_print(job)
+    # Run in background so WS handler returns immediately
+    asyncio.create_task(_record_print(job))
 
 
 async def _record_print(job: dict[str, Any]) -> None:
     from app import db, ha
     from app.influx import influx
     from app.moonraker import moonraker
+    from app.sse import hub
 
     job_id: str = job.get("job_id", "")
     filename: str = job.get("filename", "")
@@ -29,6 +35,9 @@ async def _record_print(job: dict[str, Any]) -> None:
     if not job_id or not filename:
         log.warning("recorder: missing job_id or filename, skipping")
         return
+
+    log.info("recorder: print finished %s, waiting %ds for HA sensors to settle", filename, _HA_SETTLE_DELAY)
+    await asyncio.sleep(_HA_SETTLE_DELAY)
 
     start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
     end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc) if end_ts else datetime.now(timezone.utc)
@@ -77,6 +86,7 @@ async def _record_print(job: dict[str, Any]) -> None:
         return
 
     await db.link_print_spool(job_id, spool_id, filament_g)
+    await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
 
 
 def register_ws_handlers() -> None:

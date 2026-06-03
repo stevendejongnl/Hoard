@@ -2,6 +2,7 @@ import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { PrintRecord, Spool } from '../types'
 import { getHistory, getSpools, assignSpool, startPrint } from '../api'
+import { sseClient } from '../sse'
 import '../components/cost-breakdown-popup'
 
 @customElement('history-page')
@@ -14,15 +15,22 @@ export class HistoryPage extends LitElement {
   @state() loading = true
   @state() spools: Spool[] = []
   @state() assigningJobId: string | null = null
+  private _unsubscribe: (() => void) | null = null
 
   connectedCallback() {
     super.connectedCallback()
-    Promise.all([getSpools(), getHistory(20, 0)]).then(([spools, history]) => {
-      this.spools = spools
-      this.records = history.records
-      this.total = history.total
-      this.loading = false
+    this._loadPage(0)
+    this._unsubscribe = sseClient.subscribe((payload) => {
+      if (payload.type === 'history_updated') {
+        this._loadPage(this.page)
+      }
     })
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this._unsubscribe?.()
+    this._unsubscribe = null
   }
 
   private async _loadPage(p: number) {
