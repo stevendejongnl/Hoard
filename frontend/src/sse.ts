@@ -5,6 +5,7 @@ export type SSEPayload =
   | { type: 'temps'; data: Temps }
   | { type: 'power'; data: Power }
   | { type: 'pi_stats'; data: PiStats }
+  | { type: 'history_updated'; data: { job_id: string; filename: string } }
 
 type Handler = (payload: SSEPayload) => void
 
@@ -17,7 +18,7 @@ class SSEClient {
     if (this.es) return
     this.es = new EventSource('/stream')
 
-    const types: SSEPayload['type'][] = ['printer_state', 'temps', 'power', 'pi_stats']
+    const types: SSEPayload['type'][] = ['printer_state', 'temps', 'power', 'pi_stats', 'history_updated']
     for (const type of types) {
       this.es.addEventListener(type, (e: Event) => {
         const me = e as MessageEvent
