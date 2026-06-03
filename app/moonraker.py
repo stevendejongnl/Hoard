@@ -96,6 +96,24 @@ class MoonrakerClient:
     def on(self, method: str, handler: NotifyHandler) -> None:
         self._handlers.setdefault(method, []).append(handler)
 
+    async def _seed_initial_state(self) -> None:
+        await asyncio.sleep(2)
+        try:
+            result = await self.get(
+                "/printer/objects/query",
+                print_stats="",
+                display_status="",
+                motion_report="",
+                extruder="",
+                heater_bed="",
+            )
+            status = result.get("status", {})
+            if status:
+                for handler in self._handlers.get("notify_status_update", []):
+                    await handler([status])
+        except Exception as exc:
+            log.warning("Initial state seed error: %s", exc)
+
     async def connect_ws(self) -> None:
         self._running = True
         while self._running:
@@ -104,6 +122,7 @@ class MoonrakerClient:
                     self._ws = ws
                     log.info("Moonraker WS connected")
                     await self._subscribe(ws)
+                    asyncio.create_task(self._seed_initial_state())
                     async for raw in ws:
                         await self._dispatch(raw)
             except ConnectionClosed:
