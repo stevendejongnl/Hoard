@@ -1,7 +1,7 @@
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse, Response
 
 from app.config import settings
@@ -58,6 +58,39 @@ async def file_thumbnail(filename: str) -> Response:
         raise
     except Exception as exc:
         raise HTTPException(502, f"Thumbnail error: {exc}") from exc
+
+
+@router.post("/thumbnail/inject")
+async def inject_thumbnail(
+    stl_file: UploadFile,
+    gcode_filename: str = Form(...),
+) -> dict[str, Any]:
+    from app.gcode_thumbnail import has_thumbnails, inject_thumbnails
+    from app.thumbnail import render_stl_thumbnails
+
+    stl_bytes = await stl_file.read()
+
+    try:
+        gcode_bytes = await moonraker.download_file(gcode_filename)
+    except Exception as exc:
+        raise HTTPException(502, f"Could not download gcode: {exc}") from exc
+
+    if has_thumbnails(gcode_bytes):
+        return {"status": "already_has_thumbnails", "filename": gcode_filename}
+
+    try:
+        thumbnails = render_stl_thumbnails(stl_bytes)
+    except Exception as exc:
+        raise HTTPException(422, f"STL render failed: {exc}") from exc
+
+    modified = inject_thumbnails(gcode_bytes, thumbnails)
+
+    try:
+        await moonraker.upload_file(gcode_filename, modified)
+    except Exception as exc:
+        raise HTTPException(502, f"Re-upload failed: {exc}") from exc
+
+    return {"status": "ok", "filename": gcode_filename}
 
 
 @router.post("/upload", status_code=201)
