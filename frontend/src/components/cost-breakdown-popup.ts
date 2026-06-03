@@ -1,6 +1,7 @@
 import { LitElement, css, html } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import type { PrintRecord } from '../types'
+import { recalculateCost } from '../api'
 
 function fmt(n: number | null | undefined, decimals = 4): string {
   return n != null ? `€${n.toFixed(decimals)}` : '—'
@@ -16,6 +17,7 @@ function fmtDur(s: number): string {
 export class CostBreakdownPopup extends LitElement {
   @property({ type: Object }) record!: PrintRecord
   @state() private _open = false
+  @state() private _recalculating = false
 
   static styles = css`
     :host {
@@ -133,7 +135,36 @@ export class CostBreakdownPopup extends LitElement {
       color: var(--cyan, #22d3ee);
       letter-spacing: -0.5px;
     }
+
+    .recalc-btn {
+      margin-top: 10px;
+      width: 100%;
+      background: none;
+      border: 1px dashed var(--border, #333);
+      border-radius: 4px;
+      color: var(--text-muted, #555);
+      font-size: 10px;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .recalc-btn:hover { color: var(--cyan, #22d3ee); border-color: var(--cyan, #22d3ee); }
+    .recalc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   `
+
+  private async _recalculate(e: Event) {
+    e.stopPropagation()
+    if (!this.record.job_id) return
+    this._recalculating = true
+    try {
+      await recalculateCost(this.record.job_id)
+      this.dispatchEvent(new CustomEvent('cost-recalculated', { bubbles: true, composed: true }))
+    } catch (err) {
+      console.error('Recalculate failed', err)
+    } finally {
+      this._recalculating = false
+    }
+  }
 
   render() {
     const r = this.record
@@ -199,6 +230,14 @@ export class CostBreakdownPopup extends LitElement {
           <span class="total-label">Total</span>
           <span class="total-value">${fmt(r.cost_total, 4)}</span>
         </div>
+
+        ${r.spool && (r.cost_total == null || r.cost_total === 0) ? html`
+          <button
+            class="recalc-btn"
+            ?disabled=${this._recalculating}
+            @click=${this._recalculate}
+          >${this._recalculating ? 'Recalculating…' : '↻ Recalculate cost from HA'}</button>
+        ` : ''}
       </div>
     `
   }

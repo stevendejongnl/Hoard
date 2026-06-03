@@ -167,7 +167,7 @@ export class HistoryPreview extends LitElement {
               </td>
               <td class="right">
                 ${record.cost_total != null
-                  ? html`<cost-breakdown-popup .record=${record}>
+                  ? html`<cost-breakdown-popup .record=${record} @cost-recalculated=${() => this._load()}>
                       <div class="cost-main">€${record.cost_total.toFixed(2)}</div>
                     </cost-breakdown-popup>`
                   : html`<div class="cost-main" style="color:var(--text-dim)">—</div>

@@ -162,3 +162,14 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
         logging.getLogger(__name__).error("assign_spool cost recalc failed for %s: %s", job_id, exc)
 
     return {"job_id": job_id, "spool_id": body.spool_id}
+
+
+@router.post("/{job_id}/recalculate")
+async def recalculate_cost(job_id: str) -> dict[str, Any]:
+    """Recalculate cost for a print job using its existing spool assignment."""
+    existing = await db.get_print_spool(job_id)
+    if not existing or not existing.get("spool_id"):
+        raise HTTPException(400, "No spool assigned — assign a spool first")
+    spool_id = existing["spool_id"]
+    body = SpoolAssign(spool_id=spool_id)
+    return await assign_spool(job_id, body)
