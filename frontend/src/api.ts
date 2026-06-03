@@ -80,6 +80,8 @@ export const assignSpool = (jobId: string, spoolId: number) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ spool_id: spoolId }),
   })
+export const recalculateCost = (jobId: string) =>
+  req(`/api/history/${encodeURIComponent(jobId)}/recalculate`, { method: 'POST' })
 
 // Spools
 export const getSpools = () => req<Spool[]>('/api/spools')

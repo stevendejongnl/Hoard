@@ -51,9 +51,14 @@ async def _record_print(job: dict[str, Any]) -> None:
     except Exception as exc:
         log.warning("recorder: metadata fetch failed for %s: %s", filename, exc)
 
-    # HA historical averages over the print duration
+    # HA historical averages — with fallback if exact window returns nothing
+    from datetime import timedelta
     avg_watts = await ha.avg_power_over(start_dt, end_dt)
     avg_price = await ha.avg_price_over(start_dt, end_dt)
+    if avg_watts < 1:
+        avg_watts = await ha.avg_power_over(end_dt - timedelta(hours=27), end_dt)
+    if avg_price < 0.001:
+        avg_price = await ha.avg_price_hours(27)
 
     # Costs
     energy_kwh = avg_watts * (duration_s / 3600) / 1000
