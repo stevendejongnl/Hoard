@@ -141,6 +141,18 @@ class MoonrakerClient:
             msg = json.loads(raw)
         except json.JSONDecodeError:
             return
+
+        # Subscription result carries the initial full status — process it like a notification
+        if "result" in msg and isinstance(msg.get("result"), dict):
+            status = msg["result"].get("status")
+            if status and isinstance(status, dict):
+                for handler in self._handlers.get("notify_status_update", []):
+                    try:
+                        await handler([status])
+                    except Exception as exc:
+                        log.error("Handler initial_state error: %s", exc)
+            return
+
         method = msg.get("method")
         if method and method in self._handlers:
             params = msg.get("params", [])
