@@ -117,12 +117,35 @@ export class FileBrowserModal extends LitElement {
 
     .file-item {
       display: grid;
-      grid-template-columns: 1fr auto auto;
-      gap: 16px;
+      grid-template-columns: 44px 1fr auto auto;
+      gap: 12px;
       align-items: center;
-      padding: 11px 20px;
+      padding: 8px 20px;
       border-bottom: 1px solid var(--border-sub, #1a1a1a);
       cursor: pointer;
+    }
+
+    .file-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: var(--bg-surface, #1a1a1a);
+      display: block;
+      flex-shrink: 0;
+    }
+
+    .file-thumb-placeholder {
+      width: 44px;
+      height: 44px;
+      border-radius: 4px;
+      background: var(--bg-surface, #1a1a1a);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted, #555);
+      font-size: 18px;
+      flex-shrink: 0;
     }
 
     .file-item:hover {
@@ -251,6 +274,7 @@ export class FileBrowserModal extends LitElement {
   @state() search = ''
   @state() selected: string | null = null
   @state() loading = true
+  @state() thumbErrors = new Set<string>()
 
   connectedCallback() {
     super.connectedCallback()
@@ -266,6 +290,7 @@ export class FileBrowserModal extends LitElement {
 
   private async _loadFiles() {
     this.loading = true
+    this.thumbErrors = new Set()
     try {
       this.files = await getFiles()
     } finally {
@@ -356,6 +381,17 @@ export class FileBrowserModal extends LitElement {
                         this.selected = f.filename
                       }}
                     >
+                      ${this.thumbErrors.has(f.filename)
+                        ? html`<div class="file-thumb-placeholder">◻</div>`
+                        : html`<img
+                            class="file-thumb"
+                            src="/api/files/thumbnail?filename=${encodeURIComponent(f.filename)}"
+                            alt=""
+                            @error=${() => {
+                              this.thumbErrors = new Set([...this.thumbErrors, f.filename])
+                            }}
+                          />`
+                      }
                       <div>
                         <div class="file-name">${f.filename}</div>
                         <div class="file-sub">
