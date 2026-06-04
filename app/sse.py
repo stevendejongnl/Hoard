@@ -85,7 +85,11 @@ async def _poll_pi_stats(interval: int = 30) -> None:
         await asyncio.sleep(interval)
 
 
+_standby_task: asyncio.Task[None] | None = None
+
+
 async def _handle_status_update(params: list[Any]) -> None:
+    global _standby_task
     if not params:
         return
     status = params[0] if isinstance(params[0], dict) else {}
@@ -128,6 +132,28 @@ async def _handle_status_update(params: list[Any]) -> None:
         if mr:
             if "live_velocity" in mr:
                 updated["speed"] = round(mr["live_velocity"], 1)
+
+        new_state = updated.get("state")
+        prev_state = prev.get("state")
+
+        # Klipper briefly reports "standby" during firmware_restart before restoring
+        # the active print. Delay broadcasting standby for 8s so the frontend doesn't
+        # flash "Printer idle" during normal firmware-restart / klippy-reconnect cycles.
+        if new_state == "standby" and prev_state in ("printing", "paused"):
+            if _standby_task:
+                _standby_task.cancel()
+
+            async def _delayed_standby(payload: dict[str, Any]) -> None:
+                await asyncio.sleep(8)
+                await hub.broadcast("printer_state", payload)
+
+            _standby_task = asyncio.create_task(_delayed_standby(updated))
+            return
+
+        if _standby_task:
+            _standby_task.cancel()
+            _standby_task = None
+
         await hub.broadcast("printer_state", updated)
 
     extruder = status.get("extruder", {})
