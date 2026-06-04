@@ -240,9 +240,23 @@ export class HistoryPage extends LitElement {
           color: #22d3ee;
         }
         .pager-info {
+          display: flex;
+          align-items: center;
+          gap: 6px;
           color: #555;
           font-size: 13px;
         }
+        .pager-select {
+          background: #1a1a1a;
+          border: 1px solid #333;
+          color: #e0e0e0;
+          border-radius: 4px;
+          padding: 3px 6px;
+          font-size: 13px;
+          outline: none;
+          cursor: pointer;
+        }
+        .pager-select:focus { border-color: #22d3ee; }
 
         /* ── Desktop table ── */
         .history-table {
@@ -471,7 +485,19 @@ export class HistoryPage extends LitElement {
                 ?disabled=${this.page === 0}
                 @click=${() => this._loadPage(this.page - 1)}
               >← Previous</button>
-              <span class="pager-info">Page ${this.page + 1} of ${totalPages || 1}</span>
+              <span class="pager-info">
+                Page
+                <select
+                  class="pager-select"
+                  .value="${String(this.page + 1)}"
+                  @change="${(e: Event) => this._loadPage(parseInt((e.target as HTMLSelectElement).value, 10) - 1)}"
+                >
+                  ${Array.from({ length: totalPages || 1 }, (_, i) => html`
+                    <option value="${i + 1}" ?selected="${i === this.page}">${i + 1}</option>
+                  `)}
+                </select>
+                of ${totalPages || 1}
+              </span>
               <button
                 class="pager-btn"
                 ?disabled=${this.page >= totalPages - 1}
