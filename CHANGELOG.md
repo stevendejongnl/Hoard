@@ -1,3 +1,9 @@
+## [1.14.4](https://github.com/stevendejongnl/printer/compare/v1.14.3...v1.14.4) (2026-06-04)
+
+### Bug Fixes
+
+* per-print InfluxDB isolation — timestamp delete, timestamp matching, restore endpoint, job_id tag ([d94a282](https://github.com/stevendejongnl/printer/commit/d94a28288f82f68fde5ba6daeb52c23ec09b316b))
+
 ## [1.14.3](https://github.com/stevendejongnl/printer/compare/v1.14.2...v1.14.3) (2026-06-04)
 
 ### Bug Fixes
