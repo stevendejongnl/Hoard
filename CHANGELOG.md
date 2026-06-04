@@ -1,3 +1,9 @@
+## [1.13.0](https://github.com/stevendejongnl/printer/compare/v1.12.3...v1.13.0) (2026-06-04)
+
+### Features
+
+* layer from Z+metadata, progress+finish in page title ([2915d85](https://github.com/stevendejongnl/printer/commit/2915d85a5c6eeacbb3bcb13b371087c898d0012a))
+
 ## [1.12.3](https://github.com/stevendejongnl/printer/compare/v1.12.2...v1.12.3) (2026-06-04)
 
 ### Bug Fixes
