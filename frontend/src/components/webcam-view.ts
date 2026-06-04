@@ -14,8 +14,10 @@ export class WebcamView extends LitElement {
   @state() private imgError = false
   @state() private _useSnapshot = IS_IOS
   @state() private _snapshotSrc = ''
+  @state() private _streamPaused = false
 
   private _snapshotInterval: ReturnType<typeof setInterval> | null = null
+  private _errorCount = 0
 
   static styles = css`
     :host { display: block; }
@@ -130,19 +132,33 @@ export class WebcamView extends LitElement {
 
   async connectedCallback() {
     super.connectedCallback()
+    document.addEventListener('visibilitychange', this._onVisibilityChange)
     try {
       this.cams = await getWebcams()
     } catch {
       this.cams = []
     }
     this.loading = false
-    // Start snapshot polling immediately if on iOS
     if (IS_IOS && this.expanded) this._startSnapshotPolling()
   }
 
   disconnectedCallback() {
     super.disconnectedCallback()
+    document.removeEventListener('visibilitychange', this._onVisibilityChange)
     this._stopSnapshotPolling()
+  }
+
+  private _onVisibilityChange = () => {
+    if (document.hidden) {
+      this._stopSnapshotPolling()
+      this._streamPaused = true
+    } else {
+      this._streamPaused = false
+      if (this.expanded && !this.imgError) {
+        this._errorCount = 0
+        if (IS_IOS || this._useSnapshot) this._startSnapshotPolling()
+      }
+    }
   }
 
   private _startSnapshotPolling() {
@@ -164,22 +180,31 @@ export class WebcamView extends LitElement {
     }
   }
 
+  private _onStreamLoad() {
+    this._errorCount = 0
+  }
+
   private _onStreamError() {
+    this._errorCount++
     if (!this._useSnapshot && this.cams[this.active]?.snapshot_url) {
       // MJPEG failed — fall back to snapshot polling
+      this._errorCount = 0
       this._startSnapshotPolling()
-    } else {
+    } else if (this._errorCount >= 5) {
+      // 5 consecutive snapshot failures (~1s) → show error
       this.imgError = true
     }
+    // transient errors: interval will retry automatically
   }
 
   private _toggle() {
     this.expanded = !this.expanded
     this.imgError = false
+    this._errorCount = 0
     if (!this.expanded) {
       this._stopSnapshotPolling()
-      if (IS_IOS) this._useSnapshot = true // reset for next open
-    } else {
+      if (IS_IOS) this._useSnapshot = true
+    } else if (!document.hidden) {
       if (IS_IOS) this._startSnapshotPolling()
     }
   }
@@ -188,8 +213,9 @@ export class WebcamView extends LitElement {
     this._stopSnapshotPolling()
     this.active = i
     this.imgError = false
+    this._errorCount = 0
     this._useSnapshot = IS_IOS
-    if (IS_IOS && this.expanded) this._startSnapshotPolling()
+    if (IS_IOS && this.expanded && !document.hidden) this._startSnapshotPolling()
   }
 
   private _transform(cam: Webcam): string {
@@ -237,12 +263,15 @@ export class WebcamView extends LitElement {
           <span class="cam-label">${cam.name}</span>
           ${this.imgError ? html`
             <div class="stream-error">stream unavailable</div>
+          ` : this._streamPaused ? html`
+            <div class="stream-error">paused</div>
           ` : html`
             <img
               class="stream-img"
               src=${src}
               style="transform: ${this._transform(cam)}"
               @error=${this._onStreamError}
+              @load=${this._onStreamLoad}
             />
           `}
         </div>
