@@ -54,17 +54,27 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     except Exception as exc:
         log.warning("recorder: metadata fetch failed for %s: %s", filename, exc)
 
-    # HA historical averages — with fallback if exact window returns nothing
     from datetime import timedelta
-    avg_watts = await ha.avg_power_over(start_dt, end_dt)
+
+    # Try exact energy delta first (long-term statistics, works for all history)
+    energy_kwh = await ha.energy_used_kwh(start_dt, end_dt)
+    avg_watts = 0.0
+    if energy_kwh is not None and energy_kwh > 0:
+        avg_watts = round(energy_kwh * 1000 / (duration_s / 3600), 1) if duration_s > 0 else 0.0
+    else:
+        energy_kwh = None
+        avg_watts = await ha.avg_power_over(start_dt, end_dt)
+        if avg_watts < 1:
+            avg_watts = await ha.avg_power_over(end_dt - timedelta(hours=27), end_dt)
+
     avg_price = await ha.avg_price_over(start_dt, end_dt)
-    if avg_watts < 1:
-        avg_watts = await ha.avg_power_over(end_dt - timedelta(hours=27), end_dt)
     if avg_price < 0.001:
         avg_price = await ha.avg_price_hours(27)
 
+    if energy_kwh is None:
+        energy_kwh = avg_watts * (duration_s / 3600) / 1000
+
     # Costs
-    energy_kwh = avg_watts * (duration_s / 3600) / 1000
     cost_electricity = round(energy_kwh * avg_price, 4)
 
     active_spool = await db.get_active_spool()
@@ -98,13 +108,12 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
 
 
-async def startup_reconcile(lookback: int = 100) -> None:
-    """Scan recent print history on startup and restore costs for any prints missing InfluxDB entries.
+async def startup_reconcile(lookback: int = 1000) -> None:
+    """On startup, scan ALL print history and restore costs for any prints missing InfluxDB entries.
 
-    Runs at every pod start so a restart during a recorder settle-delay doesn't permanently lose data.
+    Uses the cumulative energy sensor (long-term statistics) for historical accuracy.
+    Runs concurrently (max 5 at a time) so a full backfill of 800+ prints takes a few minutes.
     """
-    from datetime import timedelta
-
     try:
         result = await moonraker.get("/server/history/list", limit=lookback, order="desc")
         jobs = [j for j in result.get("jobs", []) if j.get("status") == "completed"]
@@ -120,7 +129,7 @@ async def startup_reconcile(lookback: int = 100) -> None:
 
     def _minute(iso: str) -> int:
         try:
-            from datetime import datetime, timezone
+            from datetime import datetime
             dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
             return int(dt.timestamp()) // 60
         except Exception:
@@ -130,37 +139,44 @@ async def startup_reconcile(lookback: int = 100) -> None:
     for r in influx_records:
         influx_by_file_minute[(r.get("filename", ""), _minute(r.get("time", "")))] = True
 
-    restored = 0
+    missing = []
     for job in jobs:
         job_id = job.get("job_id", "")
         filename = job.get("filename", "")
         end_ts = float(job.get("end_time") or 0)
         if not job_id or not filename or not end_ts:
             continue
-
         record_minute = int(end_ts) // 60
-        found = influx_by_file_minute.get((filename, record_minute))
+        found = any(
+            influx_by_file_minute.get((filename, record_minute + d))
+            for d in range(-5, 6)
+        )
         if not found:
-            for delta in range(1, 6):
-                if influx_by_file_minute.get((filename, record_minute - delta)):
-                    found = True
-                    break
-                if influx_by_file_minute.get((filename, record_minute + delta)):
-                    found = True
-                    break
+            missing.append(job)
 
-        if found:
-            continue
+    if not missing:
+        log.info("reconcile: all %d prints have cost data — nothing to do", len(jobs))
+        return
 
-        log.info("reconcile: missing cost for %s (%s) — restoring", job_id, filename)
-        # Re-run the recorder logic without the settle delay (historical data is already stable)
-        await _record_print(job, skip_settle=True)
-        restored += 1
+    log.info("reconcile: %d/%d prints missing cost data — starting backfill", len(missing), len(jobs))
 
-    if restored:
-        log.info("reconcile: restored costs for %d print(s)", restored)
-    else:
-        log.info("reconcile: all %d recent prints have cost data", len(jobs))
+    sem = asyncio.Semaphore(5)
+    restored = 0
+    errors = 0
+
+    async def _restore_one(job: dict) -> None:
+        nonlocal restored, errors
+        async with sem:
+            try:
+                await _record_print(job, skip_settle=True)
+                restored += 1
+            except Exception as exc:
+                log.warning("reconcile: failed %s: %s", job.get("job_id"), exc)
+                errors += 1
+
+    await asyncio.gather(*[_restore_one(j) for j in missing])
+
+    log.info("reconcile: complete — %d restored, %d errors (out of %d missing)", restored, errors, len(missing))
 
 
 def register_ws_handlers() -> None:

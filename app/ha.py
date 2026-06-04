@@ -7,6 +7,7 @@ from app.config import settings
 
 _POWER_SENSOR = "sensor.3d_printer_power"
 _PRICE_SENSOR = "sensor.electricity_price_all_in"
+_ENERGY_SENSOR = "sensor.3d_printer_energy"
 
 
 def _headers() -> dict[str, str]:
@@ -103,3 +104,61 @@ async def avg_price_hours(hours: int = 27) -> float:
     end = datetime.now(timezone.utc)
     start = end - timedelta(hours=hours)
     return await avg_price_over(start, end)
+
+
+async def energy_used_kwh(start: datetime, end: datetime) -> float | None:
+    """Get exact kWh used between start and end using HA long-term statistics.
+
+    Uses the cumulative energy sensor (kWh meter) which HA stores in its statistics
+    database indefinitely — works for any historical print, not just the last 10 days.
+    Returns None if statistics are unavailable for the period.
+    """
+    from datetime import timedelta
+    # Widen the window slightly so we always capture a data point just before start
+    req_start = (start - timedelta(hours=1)).isoformat()
+    req_end = (end + timedelta(minutes=10)).isoformat()
+    async with httpx.AsyncClient() as client:
+        try:
+            r = await client.post(
+                f"{settings.ha_url}/api/statistics_during_period",
+                headers=_headers(),
+                json={
+                    "start_time": req_start,
+                    "end_time": req_end,
+                    "statistic_ids": [_ENERGY_SENSOR],
+                    "period": "5minute",
+                    "units": {"energy": "kWh"},
+                },
+                timeout=30,
+            )
+            r.raise_for_status()
+            data = r.json()
+        except Exception:
+            return None
+
+    stats = data.get(_ENERGY_SENSOR, [])
+    if not stats:
+        return None
+
+    # Find the cumulative sum (kWh meter reading) just before print start and at print end
+    sum_before_start: float | None = None
+    sum_at_end: float | None = None
+
+    for stat in stats:
+        s = stat.get("sum")
+        if s is None:
+            continue
+        try:
+            stat_end_dt = datetime.fromisoformat(stat["end"].replace("Z", "+00:00"))
+        except Exception:
+            continue
+        if stat_end_dt <= start:
+            sum_before_start = s
+        if stat_end_dt <= end:
+            sum_at_end = s
+
+    if sum_at_end is None or sum_before_start is None:
+        return None
+
+    delta = sum_at_end - sum_before_start
+    return max(0.0, round(delta, 4))
