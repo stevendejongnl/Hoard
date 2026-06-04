@@ -416,11 +416,14 @@ export class FileBrowserModal extends LitElement {
   }
 
   render() {
+    // Don't render modal content at all when closed — avoids 180 thumbnail requests on page load
+    if (!this.open) return html`<div class="overlay hidden"></div>`
+
     const filtered = this._filteredFiles
 
     return html`
       <div
-        class="overlay ${this.open ? '' : 'hidden'}"
+        class="overlay"
         @click=${this._onOverlayClick}
       >
         <div class="modal">
