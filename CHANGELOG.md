@@ -1,3 +1,9 @@
+## [1.8.0](https://github.com/stevendejongnl/printer/compare/v1.7.4...v1.8.0) (2026-06-04)
+
+### Features
+
+* render gcode toolpath as thumbnail fallback when no embedded thumbnail exists ([a990b0c](https://github.com/stevendejongnl/printer/commit/a990b0c614f69af06d77db418f16a89f5668695e))
+
 ## [1.7.4](https://github.com/stevendejongnl/printer/compare/v1.7.3...v1.7.4) (2026-06-04)
 
 ### Bug Fixes
