@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import math
 from datetime import datetime, timedelta, timezone
@@ -165,19 +166,23 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
             end_dt = datetime.now(timezone.utc)
             start_dt = end_dt - timedelta(seconds=duration_s or 3600)
 
-        # Fetch actual HA prices + wattage over the print duration
-        avg_watts = await ha.avg_power_over(start_dt, end_dt)
-        avg_price = await ha.avg_price_over(start_dt, end_dt)
+        # Try exact energy delta first, fall back to power-sensor average
+        energy_kwh = await ha.energy_used_kwh(start_dt, end_dt)
+        avg_watts = 0.0
+        if energy_kwh is not None and energy_kwh > 0:
+            avg_watts = round(energy_kwh * 1000 / (duration_s / 3600), 1) if duration_s > 0 else 0.0
+        else:
+            energy_kwh = None
+            avg_watts = await ha.avg_power_over(start_dt, end_dt)
+            if avg_watts < 1:
+                avg_watts = await ha.avg_power_over(end_dt - timedelta(hours=27), end_dt)
 
-        # Fallback to recent avg if HA has no history that far back
-        if avg_watts < 1:
-            avg_watts = await ha.avg_power_over(
-                end_dt - timedelta(hours=27), end_dt
-            )
+        avg_price = await ha.avg_price_over(start_dt, end_dt)
         if avg_price < 0.001:
             avg_price = await ha.avg_price_hours(27)
 
-        energy_kwh = avg_watts * (duration_s / 3600) / 1000
+        if energy_kwh is None:
+            energy_kwh = avg_watts * (duration_s / 3600) / 1000
         cost_electricity = round(energy_kwh * avg_price, 4)
         cost_filament = round(filament_g * spool["cost_per_gram"], 4)
         cost_total = round(cost_filament + cost_electricity, 4)
@@ -240,14 +245,25 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
     else:
         raise HTTPException(422, "Job missing start_time / end_time")
 
-    avg_watts = await ha.avg_power_over(start_dt, end_dt)
+    # Try exact energy delta first (uses long-term statistics, works for all history)
+    energy_kwh = await ha.energy_used_kwh(start_dt, end_dt)
+    avg_watts = 0.0
+    if energy_kwh is not None and energy_kwh > 0:
+        avg_watts = round(energy_kwh * 1000 / (duration_s / 3600), 1) if duration_s > 0 else 0.0
+    else:
+        # Fallback: time-weighted average of power sensor (only recent history)
+        energy_kwh = None
+        avg_watts = await ha.avg_power_over(start_dt, end_dt)
+        if avg_watts < 1:
+            avg_watts = await ha.avg_power_over(end_dt - timedelta(hours=27), end_dt)
+
     avg_price = await ha.avg_price_over(start_dt, end_dt)
-    if avg_watts < 1:
-        avg_watts = await ha.avg_power_over(end_dt - timedelta(hours=27), end_dt)
     if avg_price < 0.001:
         avg_price = await ha.avg_price_hours(27)
 
-    energy_kwh = avg_watts * (duration_s / 3600) / 1000
+    if energy_kwh is None:
+        energy_kwh = avg_watts * (duration_s / 3600) / 1000
+
     cost_electricity = round(energy_kwh * avg_price, 4)
 
     # Spool info (if any) for filament cost
@@ -282,7 +298,7 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
     )
 
     log = logging.getLogger(__name__)
-    log.info("restore: %s cost=€%.4f (%.1fW, %.4f€/kWh)", job_id, cost_total, avg_watts, avg_price)
+    log.info("restore: %s cost=€%.4f (%.1fkWh @ €%.4f/kWh)", job_id, cost_total, energy_kwh, avg_price)
     return {
         "job_id": job_id,
         "avg_watts": round(avg_watts, 1),
