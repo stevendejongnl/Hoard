@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { PrintRecord, Spool } from '../types';
-import { assignSpool, getHistory, getSpools } from '../api';
+import { assignSpool, getHistory, getSpools, injectThumbnail } from '../api';
 import { sseClient } from '../sse';
 import './spool-modal';
 import './cost-breakdown-popup';
@@ -18,6 +18,8 @@ export class HistoryPreview extends LitElement {
   @state() private _spoolModalOpen = false;
   private _pendingJobId: string | null = null;
   private _unsubscribe: (() => void) | null = null;
+  @state() private _thumbErrors = new Set<string>();
+  @state() private _thumbGenerating = new Set<string>();
 
   private _total = 0;
 
@@ -53,6 +55,31 @@ export class HistoryPreview extends LitElement {
   private _print(filename: string) {
     const modal = this.shadowRoot?.querySelector<any>('print-ready-modal')
     modal?.tryPrint(filename)
+  }
+
+  private _triggerStlUpload(filename: string) {
+    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[data-stl]')
+    if (!input) return
+    input.dataset.target = filename
+    input.click()
+  }
+
+  private async _onStlUpload(e: Event) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    const target = input.dataset.target
+    if (!file || !target) return
+    input.value = ''
+    this._thumbGenerating = new Set([...this._thumbGenerating, target])
+    try {
+      await injectThumbnail(target, file)
+      this._thumbErrors = new Set([...this._thumbErrors].filter(f => f !== target))
+    } catch (err) {
+      console.error('STL inject failed', err)
+    } finally {
+      this._thumbGenerating = new Set([...this._thumbGenerating].filter(f => f !== target))
+      await this._load()
+    }
   }
 
   private async _onSpoolSelect(jobId: string, e: Event) {
@@ -111,6 +138,7 @@ export class HistoryPreview extends LitElement {
 
     return html`
       <print-ready-modal></print-ready-modal>
+      <input type="file" accept=".stl" data-stl style="display:none" @change=${this._onStlUpload} />
       <spool-modal
         .open=${this._spoolModalOpen}
         .spool=${null}
@@ -138,13 +166,19 @@ export class HistoryPreview extends LitElement {
           ${this.records.map((record) => html`
             <tr>
               <td class="td-thumb">
-                <img
-                  class="row-thumb"
-                  src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}"
-                  alt=""
-                  loading="lazy"
-                  @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                />
+                ${this._thumbGenerating.has(record.filename)
+                  ? html`<div class="thumb-spin">↻</div>`
+                  : this._thumbErrors.has(record.filename)
+                    ? html`<button class="thumb-add" title="Add preview from STL"
+                        @click=${(e: Event) => { e.stopPropagation(); this._triggerStlUpload(record.filename) }}>⊕</button>`
+                    : html`<img
+                        class="row-thumb"
+                        src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}"
+                        alt=""
+                        loading="lazy"
+                        @error=${() => { this._thumbErrors = new Set([...this._thumbErrors, record.filename]) }}
+                      />`
+                }
               </td>
               <td>
                 <div class="file-name">${record.filename}</div>
@@ -250,6 +284,27 @@ export class HistoryPreview extends LitElement {
       display: block;
       background: var(--bg-surface);
     }
+    .thumb-add {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      border: 1px dashed var(--border, #333);
+      background: none;
+      color: var(--text-muted, #555);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .thumb-add:hover { color: var(--cyan, #22d3ee); border-color: var(--cyan, #22d3ee); }
+    .thumb-spin {
+      width: 40px; height: 40px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--cyan, #22d3ee); font-size: 18px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     thead th {
       font-size: 9px;
