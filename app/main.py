@@ -12,7 +12,7 @@ from app import db, recorder, sse
 from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
-from app.routes import chunks, control, files, history, predict, spools, webcams
+from app.routes import chunks, control, files, history, predict, projects, spools, webcams
 from app.sse import hub
 
 _APP_VERSION = os.getenv("APP_VERSION", "dev")
@@ -51,6 +51,7 @@ app.include_router(webcams.router)
 app.include_router(history.router)
 app.include_router(predict.router)
 app.include_router(spools.router)
+app.include_router(projects.router)
 
 
 @app.get("/api/version")

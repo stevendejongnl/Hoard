@@ -32,6 +32,43 @@ async def init_db(path: str) -> None:
                 filament_used_g REAL
             )
         """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS projects (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                name       TEXT    NOT NULL,
+                notes      TEXT,
+                created_at INTEGER NOT NULL
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS project_files (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                type       TEXT    NOT NULL CHECK(type IN ('gcode', 'stl')),
+                filename   TEXT    NOT NULL,
+                label      TEXT
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS project_links (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                url        TEXT    NOT NULL,
+                label      TEXT
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS project_prints (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                project_id      INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                project_file_id INTEGER REFERENCES project_files(id) ON DELETE SET NULL,
+                job_id          TEXT    NOT NULL,
+                duration_s      REAL,
+                filament_g      REAL,
+                cost_total      REAL,
+                UNIQUE(project_id, job_id)
+            )
+        """)
         await db.commit()
 
 
@@ -136,3 +173,191 @@ async def get_print_spool(job_id: str) -> dict[str, Any] | None:
         ) as cur:
             row = await cur.fetchone()
             return dict(row) if row else None
+
+
+async def list_projects() -> list[dict[str, Any]]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT p.*,
+                      COALESCE(COUNT(pp.id), 0)  AS print_count,
+                      SUM(pp.duration_s)          AS total_duration_s,
+                      SUM(pp.cost_total)           AS total_cost,
+                      SUM(pp.filament_g)           AS total_filament_g
+               FROM projects p
+               LEFT JOIN project_prints pp ON pp.project_id = p.id
+               GROUP BY p.id
+               ORDER BY p.created_at DESC"""
+        ) as cur:
+            return [dict(r) for r in await cur.fetchall()]
+
+
+async def get_project(project_id: int) -> dict[str, Any] | None:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT p.*,
+                      COALESCE(COUNT(pp.id), 0)  AS print_count,
+                      SUM(pp.duration_s)          AS total_duration_s,
+                      SUM(pp.cost_total)           AS total_cost,
+                      SUM(pp.filament_g)           AS total_filament_g
+               FROM projects p
+               LEFT JOIN project_prints pp ON pp.project_id = p.id
+               WHERE p.id = ?
+               GROUP BY p.id""",
+            (project_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            if not row:
+                return None
+            result = dict(row)
+
+        async with db.execute(
+            "SELECT * FROM project_files WHERE project_id = ? ORDER BY id",
+            (project_id,),
+        ) as cur:
+            files = [dict(r) for r in await cur.fetchall()]
+
+        for f in files:
+            async with db.execute(
+                """SELECT COALESCE(COUNT(id), 0) AS print_count,
+                          SUM(duration_s)         AS total_duration_s,
+                          SUM(cost_total)          AS total_cost,
+                          SUM(filament_g)          AS total_filament_g
+                   FROM project_prints WHERE project_file_id = ?""",
+                (f["id"],),
+            ) as cur:
+                f.update(dict(await cur.fetchone()))
+
+        async with db.execute(
+            "SELECT * FROM project_links WHERE project_id = ? ORDER BY id",
+            (project_id,),
+        ) as cur:
+            links = [dict(r) for r in await cur.fetchall()]
+
+        async with db.execute(
+            "SELECT * FROM project_prints WHERE project_id = ? ORDER BY id",
+            (project_id,),
+        ) as cur:
+            prints = [dict(r) for r in await cur.fetchall()]
+
+        result["files"] = files
+        result["links"] = links
+        result["prints"] = prints
+        return result
+
+
+async def create_project(name: str) -> dict[str, Any]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute(
+            "INSERT INTO projects (name, notes, created_at) VALUES (?, NULL, ?)",
+            (name, int(time.time())),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM projects WHERE id = ?", (cur.lastrowid,)) as c:
+            row = dict(await c.fetchone())
+    row.update({
+        "print_count": 0, "total_duration_s": None,
+        "total_cost": None, "total_filament_g": None,
+        "files": [], "links": [], "prints": [],
+    })
+    return row
+
+
+async def update_project(project_id: int, data: dict[str, Any]) -> dict[str, Any] | None:
+    async with _conn() as db:
+        sets = ", ".join(f"{k} = :{k}" for k in data)
+        await db.execute(
+            f"UPDATE projects SET {sets} WHERE id = :_id",
+            {**data, "_id": project_id},
+        )
+        await db.commit()
+    return await get_project(project_id)
+
+
+async def delete_project(project_id: int) -> None:
+    async with _conn() as db:
+        await db.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+        await db.commit()
+
+
+async def add_project_file(
+    project_id: int, file_type: str, filename: str, label: str | None
+) -> dict[str, Any]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute(
+            "INSERT INTO project_files (project_id, type, filename, label) VALUES (?, ?, ?, ?)",
+            (project_id, file_type, filename, label),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM project_files WHERE id = ?", (cur.lastrowid,)) as c:
+            return dict(await c.fetchone())
+
+
+async def get_project_file(file_id: int) -> dict[str, Any] | None:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM project_files WHERE id = ?", (file_id,)) as c:
+            row = await c.fetchone()
+            return dict(row) if row else None
+
+
+async def delete_project_file(file_id: int) -> None:
+    async with _conn() as db:
+        await db.execute("DELETE FROM project_files WHERE id = ?", (file_id,))
+        await db.commit()
+
+
+async def add_project_link(
+    project_id: int, url: str, label: str | None
+) -> dict[str, Any]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute(
+            "INSERT INTO project_links (project_id, url, label) VALUES (?, ?, ?)",
+            (project_id, url, label),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM project_links WHERE id = ?", (cur.lastrowid,)) as c:
+            return dict(await c.fetchone())
+
+
+async def delete_project_link(link_id: int) -> None:
+    async with _conn() as db:
+        await db.execute("DELETE FROM project_links WHERE id = ?", (link_id,))
+        await db.commit()
+
+
+async def add_project_print(
+    project_id: int,
+    project_file_id: int | None,
+    job_id: str,
+    duration_s: float | None,
+    filament_g: float | None,
+    cost_total: float | None,
+) -> dict[str, Any]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute(
+            """INSERT OR IGNORE INTO project_prints
+               (project_id, project_file_id, job_id, duration_s, filament_g, cost_total)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (project_id, project_file_id, job_id, duration_s, filament_g, cost_total),
+        )
+        await db.commit()
+        async with db.execute(
+            "SELECT * FROM project_prints WHERE project_id = ? AND job_id = ?",
+            (project_id, job_id),
+        ) as c:
+            return dict(await c.fetchone())
+
+
+async def delete_project_print(project_id: int, job_id: str) -> None:
+    async with _conn() as db:
+        await db.execute(
+            "DELETE FROM project_prints WHERE project_id = ? AND job_id = ?",
+            (project_id, job_id),
+        )
+        await db.commit()
