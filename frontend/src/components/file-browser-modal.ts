@@ -468,7 +468,7 @@ export class FileBrowserModal extends LitElement {
                               </div>`
                           : html`<img
                               class="file-thumb"
-                              src="/api/files/thumbnail?filename=${encodeURIComponent(f.filename)}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
+                              src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(f.filename)}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
                               alt=""
                               @error=${() => {
                                 this.thumbErrors = new Set([...this.thumbErrors, f.filename])

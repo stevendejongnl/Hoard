@@ -1,9 +1,35 @@
 import base64
 import io
+import re
 
 
 def has_thumbnails(gcode_bytes: bytes) -> bool:
     return b"; thumbnail begin" in gcode_bytes[:8192]
+
+
+def extract_thumbnail_png(gcode_bytes: bytes, prefer_size: int = 300) -> bytes | None:
+    """Parse Cura-format thumbnail comments and return the PNG closest to prefer_size."""
+    # Only scan first 64 KB — thumbnails are always at the top
+    header = gcode_bytes[:65536].decode("ascii", errors="ignore")
+
+    pattern = re.compile(
+        r"; thumbnail begin (\d+)x(\d+) \d+\n(.*?); thumbnail end",
+        re.DOTALL,
+    )
+    best: tuple[int, bytes] | None = None
+    for m in pattern.finditer(header):
+        w = int(m.group(1))
+        h = int(m.group(2))
+        raw = m.group(3)
+        b64 = "".join(line.lstrip("; ").rstrip() for line in raw.splitlines())
+        try:
+            png = base64.b64decode(b64)
+        except Exception:
+            continue
+        size = w * h
+        if best is None or abs(w - prefer_size) < abs(best[0] - prefer_size):
+            best = (w, png)
+    return best[1] if best else None
 
 
 def inject_thumbnails(
