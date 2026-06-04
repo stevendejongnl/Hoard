@@ -60,6 +60,7 @@ export interface PrintRecord {
   material: string | null
   spool: SpoolRef | null
   job_id?: string
+  project?: { id: number; name: string } | null
 }
 
 export interface SpoolRef {

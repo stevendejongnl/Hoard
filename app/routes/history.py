@@ -113,6 +113,11 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
                 "color_hex": ps.get("color_hex"),
             }
 
+        # Project link from SQLite
+        proj = await db.get_project_for_job(job_id)
+        if proj:
+            record["project"] = {"id": proj["id"], "name": proj["name"]}
+
     return {"records": records, "total": total, "limit": limit, "offset": offset}
 
 
