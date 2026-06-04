@@ -1,3 +1,9 @@
+## [1.18.0](https://github.com/stevendejongnl/printer/compare/v1.17.0...v1.18.0) (2026-06-04)
+
+### Features
+
+* backfill all prints — energy sensor statistics for accurate historical costs, concurrent reconcile ([e6b388e](https://github.com/stevendejongnl/printer/commit/e6b388e7d5f766045960f9a1a7eda16031cee4e5))
+
 ## [1.17.0](https://github.com/stevendejongnl/printer/compare/v1.16.2...v1.17.0) (2026-06-04)
 
 ### Features
