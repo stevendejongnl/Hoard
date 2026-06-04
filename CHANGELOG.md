@@ -1,3 +1,9 @@
+## [1.12.0](https://github.com/stevendejongnl/printer/compare/v1.11.2...v1.12.0) (2026-06-04)
+
+### Features
+
+* STL upload button on history rows + fix always-inject (drop already_has_thumbnails guard) ([3f7a201](https://github.com/stevendejongnl/printer/commit/3f7a201471ba9a81ebb8b5d27fef510acf104bee))
+
 ## [1.11.2](https://github.com/stevendejongnl/printer/compare/v1.11.1...v1.11.2) (2026-06-04)
 
 ### Bug Fixes
