@@ -1,3 +1,9 @@
+## [1.13.1](https://github.com/stevendejongnl/printer/compare/v1.13.0...v1.13.1) (2026-06-04)
+
+### Bug Fixes
+
+* use all-in electricity price sensor (spot + energiebelasting + BTW) ([94d7792](https://github.com/stevendejongnl/printer/commit/94d7792b1bd6aadca80bb0d500ad18c41ac2d690))
+
 ## [1.13.0](https://github.com/stevendejongnl/printer/compare/v1.12.3...v1.13.0) (2026-06-04)
 
 ### Features
