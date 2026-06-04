@@ -1,3 +1,9 @@
+## [1.11.0](https://github.com/stevendejongnl/printer/compare/v1.10.0...v1.11.0) (2026-06-04)
+
+### Features
+
+* add DELETE /api/files/thumbnail/cache endpoint for cache invalidation ([3942fe9](https://github.com/stevendejongnl/printer/commit/3942fe9a3fced257ef9d681269232cbc5603364c))
+
 ## [1.10.0](https://github.com/stevendejongnl/printer/compare/v1.9.0...v1.10.0) (2026-06-04)
 
 ### Features
