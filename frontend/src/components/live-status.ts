@@ -65,7 +65,7 @@ export class LiveStatus extends LitElement {
 
   private _finishTime(): string | null {
     const ps = this.printerState;
-    if (!ps || ps.state !== 'printing' || ps.progress <= 0) return null;
+    if (!ps || ps.state !== 'printing' || ps.progress <= 0 || ps.time_remaining === 0) return null;
     const elapsed = ps.time_remaining;
     const total = elapsed / (ps.progress / 100);
     const remaining = total - elapsed;
@@ -152,7 +152,7 @@ export class LiveStatus extends LitElement {
             <span class="ml">Speed</span>
             <span class="mv">${ps.speed > 0 ? ps.speed + ' mm/s' : '—'}</span>
             <span class="ml">Elapsed</span>
-            <span class="mv">${this._fmt(elapsed)}</span>
+            <span class="mv">${elapsed > 0 ? this._fmt(elapsed) : '—'}</span>
           </div>
           <div class="metric-row">
             <span class="ml">Filament</span>
