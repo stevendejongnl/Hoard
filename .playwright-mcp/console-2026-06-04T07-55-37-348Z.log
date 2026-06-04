@@ -1,0 +1,2 @@
+[    1617ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://printer.madebysteven.nl/api/files/thumbnail/from-gcode?filename=Piedistallo%2Bper%2Blego%2BF1%2B2Posti.gcode:0
+[    1620ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://printer.madebysteven.nl/api/files/thumbnail/from-gcode?filename=helicopter-blade.gcode:0

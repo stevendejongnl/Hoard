@@ -1,3 +1,5 @@
+import base64 as _b64
+import logging
 import time
 from typing import Any
 
@@ -6,7 +8,9 @@ from fastapi import APIRouter, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse, Response
 
 from app.config import settings
+from app.gcode_thumbnail import extract_thumbnail_png, inject_thumbnails
 from app.moonraker import moonraker
+from app.thumbnail import render_stl_thumbnails
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
@@ -59,12 +63,11 @@ async def file_metadata(filename: str) -> dict[str, Any]:
         raise HTTPException(502, f"Moonraker error: {exc}") from exc
 
 
+log = logging.getLogger(__name__)
+
+
 @router.get("/thumbnail")
 async def file_thumbnail(filename: str) -> Response:
-    import base64
-    import logging
-    log = logging.getLogger(__name__)
-
     cached = _cache_get(filename)
     if cached is not False:
         if cached is None:
@@ -129,11 +132,6 @@ async def file_thumbnail(filename: str) -> Response:
 @router.get("/thumbnail/from-gcode")
 async def thumbnail_from_gcode(filename: str) -> Response:
     """Return best thumbnail: Moonraker .thumbs/ (3D) → embedded → toolpath render."""
-    from app.gcode_thumbnail import extract_thumbnail_png
-    import base64 as _b64
-    import logging
-    log = logging.getLogger(__name__)
-
     cached = _cache_get(filename)
     if cached is not False:
         if cached is None:
@@ -196,9 +194,6 @@ async def inject_thumbnail(
     stl_file: UploadFile,
     gcode_filename: str = Form(...),
 ) -> dict[str, Any]:
-    from app.gcode_thumbnail import inject_thumbnails
-    from app.thumbnail import render_stl_thumbnails
-
     stl_bytes = await stl_file.read()
 
     try:

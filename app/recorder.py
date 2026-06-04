@@ -3,6 +3,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
+from app import db, ha
+from app.influx import influx
+from app.moonraker import moonraker
+from app.sse import hub
+
 log = logging.getLogger(__name__)
 
 # Delay before querying HA history — gives power sensors time to settle
@@ -22,11 +27,6 @@ async def handle_history_changed(params: list[Any]) -> None:
 
 
 async def _record_print(job: dict[str, Any]) -> None:
-    from app import db, ha
-    from app.influx import influx
-    from app.moonraker import moonraker
-    from app.sse import hub
-
     job_id: str = job.get("job_id", "")
     filename: str = job.get("filename", "")
     start_ts: float = job.get("start_time", 0)
@@ -95,5 +95,4 @@ async def _record_print(job: dict[str, Any]) -> None:
 
 
 def register_ws_handlers() -> None:
-    from app.moonraker import moonraker
     moonraker.on("notify_history_changed", handle_history_changed)

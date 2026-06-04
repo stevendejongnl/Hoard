@@ -1,13 +1,14 @@
+import logging
 import math
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app import db
+from app import db, ha
 from app.influx import influx
-from app.moonraker import moonraker  # noqa: F401 — used in assign_spool
+from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
@@ -104,9 +105,6 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
 
     # Recalculate costs using actual HA history for the print's time window
     try:
-        from datetime import datetime, timedelta, timezone
-        from app import ha
-
         job_data = await moonraker.get("/server/history/job", uid=job_id)
         job = job_data.get("job", {})
         filename = job.get("filename", job_id)
@@ -158,7 +156,6 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
             cost_total=cost_total,
         )
     except Exception as exc:
-        import logging
         logging.getLogger(__name__).error("assign_spool cost recalc failed for %s: %s", job_id, exc)
 
     return {"job_id": job_id, "spool_id": body.spool_id}

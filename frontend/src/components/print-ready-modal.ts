@@ -16,6 +16,7 @@ export class PrintReadyModal extends LitElement {
   @state() private _printerState: PrinterState | null = null
 
   private _unsub: (() => void) | null = null
+  private _retryTimer: ReturnType<typeof setInterval> | null = null
 
   connectedCallback() {
     super.connectedCallback()
@@ -23,6 +24,7 @@ export class PrintReadyModal extends LitElement {
       if (payload.type === 'power') this._power = payload.data
       if (payload.type === 'printer_state') {
         this._printerState = payload.data
+        // SSE shortcut: if Klipper reports standby while we're waiting, try immediately
         if (this._step === 'waiting' && payload.data.state === 'standby') {
           this._doStartPrint()
         }
@@ -33,6 +35,17 @@ export class PrintReadyModal extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback()
     this._unsub?.()
+    this._stopRetry()
+  }
+
+  private _startRetry() {
+    this._stopRetry()
+    // Poll every 5 s — more reliable than waiting for a specific SSE event
+    this._retryTimer = setInterval(() => this._doStartPrint(), 5000)
+  }
+
+  private _stopRetry() {
+    if (this._retryTimer) { clearInterval(this._retryTimer); this._retryTimer = null }
   }
 
   async tryPrint(filename: string) {

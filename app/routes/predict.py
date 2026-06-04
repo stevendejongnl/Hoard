@@ -2,7 +2,7 @@ import math
 
 from fastapi import APIRouter, HTTPException
 
-from app import ha
+from app import db, ha
 from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/predict", tags=["predict"])
@@ -41,14 +41,12 @@ async def predict(filename: str, spool_id: int | None = None, quantity: int = 1)
     cost_per_gram = 0.0
     material = None
     if spool_id is not None:
-        from app import db
         spools = await db.list_spools()
         spool = next((s for s in spools if s["id"] == spool_id), None)
         if spool:
             cost_per_gram = spool["cost_per_gram"]
             material = spool["material"]
     else:
-        from app import db
         active = await db.get_active_spool()
         if active:
             cost_per_gram = active["cost_per_gram"]

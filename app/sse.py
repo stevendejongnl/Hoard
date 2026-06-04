@@ -3,6 +3,10 @@ import json
 import logging
 from typing import Any
 
+from app import ha
+from app.moonraker import moonraker
+from app.routes.control import _get_switch_state
+
 log = logging.getLogger(__name__)
 
 
@@ -44,8 +48,6 @@ hub = SSEHub()
 # ── Background tasks ──────────────────────────────────────────────────────────
 
 async def _poll_ha(interval: int = 30) -> None:
-    from app import ha
-    from app.routes.control import _get_switch_state
     while True:
         try:
             watts = await ha.get_current_power()
@@ -61,7 +63,6 @@ async def _poll_ha(interval: int = 30) -> None:
 
 
 async def _poll_pi_stats(interval: int = 30) -> None:
-    from app.moonraker import moonraker
     while True:
         try:
             data = await moonraker.get_proc_stats()
@@ -141,6 +142,11 @@ async def _handle_status_update(params: list[Any]) -> None:
         })
 
 
+async def _handle_klippy_ready(params: list[Any]) -> None:
+    """Klipper reconnected — re-seed state immediately."""
+    asyncio.create_task(moonraker._seed_initial_state())
+
+
 def register_ws_handlers() -> None:
-    from app.moonraker import moonraker
     moonraker.on("notify_status_update", _handle_status_update)
+    moonraker.on("notify_klippy_ready", _handle_klippy_ready)

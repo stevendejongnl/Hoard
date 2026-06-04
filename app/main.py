@@ -8,8 +8,12 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
+from app import db, recorder, sse
 from app.config import settings
+from app.influx import influx
+from app.moonraker import moonraker
 from app.routes import chunks, control, files, history, predict, spools, webcams
+from app.sse import hub
 
 _APP_VERSION = os.getenv("APP_VERSION", "dev")
 
@@ -19,9 +23,6 @@ log = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from app import db, recorder, sse
-    from app.moonraker import moonraker
-
     await db.init_db(settings.database_path)
 
     sse.register_ws_handlers()
@@ -38,7 +39,6 @@ async def lifespan(app: FastAPI):
     ws_task.cancel()
     ha_task.cancel()
     pi_task.cancel()
-    from app.influx import influx
     influx.close()
 
 
@@ -60,8 +60,6 @@ async def version():
 
 @app.get("/stream")
 async def stream(request: Request):
-    from app.sse import hub
-
     q = hub.subscribe()
 
     async def generate():

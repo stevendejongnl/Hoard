@@ -1,5 +1,6 @@
 import base64
 import io
+import math
 import re
 from PIL import Image, ImageDraw
 
@@ -37,8 +38,6 @@ def extract_thumbnail_png(gcode_bytes: bytes, prefer_size: int = 300) -> bytes |
 
 def render_toolpath_thumbnail(gcode_bytes: bytes, size: int = 300) -> bytes | None:
     """Render an isometric 3D toolpath preview coloured by layer height."""
-    import math
-
     text = gcode_bytes.decode("ascii", errors="ignore")
 
     # Parse extrusion moves (G1 with E field) — skip travel moves
