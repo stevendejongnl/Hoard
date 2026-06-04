@@ -356,6 +356,7 @@ export class HistoryPage extends LitElement {
                         style="width:40px;height:40px;border-radius:4px;object-fit:cover;display:block;background:var(--bg-surface,#1a1a1a)"
                         src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(r.filename)}"
                         alt=""
+                        loading="lazy"
                         @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
                       />
                     </td>
