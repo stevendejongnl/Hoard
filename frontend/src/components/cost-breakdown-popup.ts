@@ -67,8 +67,8 @@ export class CostBreakdownPopup extends LitElement {
     }
 
     @media (max-width: 600px) {
-      /* Disable hover-open on touch — only _open class controls visibility */
-      :host(:hover) .popup { display: none; }
+      /* Suppress hover-open on touch, but never hide an explicitly-opened popup */
+      :host(:hover) .popup:not(.open) { display: none; }
       .popup-close { display: block; }
       .popup.open {
         position: fixed;
