@@ -473,7 +473,6 @@ export class FileBrowserModal extends LitElement {
                               class="file-thumb"
                               src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(f.filename)}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
                               alt=""
-                              loading="lazy"
                               @error=${() => {
                                 this.thumbErrors = new Set([...this.thumbErrors, f.filename])
                               }}
