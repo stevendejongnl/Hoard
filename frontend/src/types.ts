@@ -7,6 +7,7 @@ export interface PrinterState {
   time_remaining: number // elapsed seconds (print_duration)
   filament_used: number  // mm
   speed: number          // mm/s
+  z_position: number     // mm
 }
 
 export interface Temps {
@@ -90,4 +91,7 @@ export interface GcodeFile {
   modified: number
   filament_weight_total?: number
   estimated_time?: number
+  layer_height?: number
+  first_layer_height?: number
+  layer_count?: number
 }
