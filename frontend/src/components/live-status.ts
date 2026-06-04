@@ -1,6 +1,6 @@
 import { LitElement, css, html, svg } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import type { PrinterState, Temps, Power, Spool } from '../types';
+import type { PrinterState, Temps, Power, Spool, GcodeFile } from '../types';
 import { sseClient } from '../sse';
 import { getSpools, getFileMetadata } from '../api';
 
@@ -11,6 +11,7 @@ export class LiveStatus extends LitElement {
   @state() power: Power | null = null;
   @state() activeSpool: Spool | null = null;
   @state() fileEstimatedTime: number | null = null;
+  @state() private _fileMeta: Pick<GcodeFile, 'layer_height' | 'first_layer_height' | 'layer_count'> | null = null;
 
   private _unsubscribe: (() => void) | null = null;
   private _lastFilename = '';
@@ -46,12 +47,36 @@ export class LiveStatus extends LitElement {
     if (!filename || filename === this._lastFilename) return;
     this._lastFilename = filename;
     this.fileEstimatedTime = null;
+    this._fileMeta = null;
     try {
       const meta = await getFileMetadata(filename);
-      this.fileEstimatedTime = (meta as any).estimated_time ?? null;
+      this.fileEstimatedTime = meta.estimated_time ?? null;
+      this._fileMeta = {
+        layer_height: meta.layer_height,
+        first_layer_height: meta.first_layer_height,
+        layer_count: meta.layer_count,
+      };
     } catch {
       // metadata unavailable — fine
     }
+  }
+
+  private _computeLayer(ps: PrinterState): { current: number | null; total: number | null } {
+    // Prefer Klipper's own SET_PRINT_STATS_INFO tracking
+    if (ps.layer !== null && ps.layer_total) {
+      return { current: ps.layer, total: ps.layer_total };
+    }
+    // Fall back: derive from Z position + slicer metadata
+    const m = this._fileMeta;
+    const z = ps.z_position ?? 0;
+    if (!m?.layer_height || !m?.first_layer_height || !m?.layer_count || z <= 0) {
+      return { current: null, total: null };
+    }
+    const current = Math.min(
+      Math.max(1, Math.floor((z - m.first_layer_height) / m.layer_height) + 1),
+      m.layer_count,
+    );
+    return { current, total: m.layer_count };
   }
 
   private _fmt(seconds: number): string {
@@ -120,7 +145,8 @@ export class LiveStatus extends LitElement {
     const finish = this._finishTime();
     const elapsed = ps.time_remaining;
     const filamentM = ps.filament_used ? (ps.filament_used / 1000).toFixed(2) : null;
-    const hasLayers = ps.layer_total && ps.layer_total > 0;
+    const { current: currentLayer, total: totalLayers } = this._computeLayer(ps);
+    const hasLayers = totalLayers && totalLayers > 0;
     const stateLabel = ps.state === 'paused' ? 'PAUSED' : 'PRINTING';
 
     return html`
@@ -164,7 +190,7 @@ export class LiveStatus extends LitElement {
           </div>
           <div class="metric-row">
             <span class="ml">Layer</span>
-            <span class="mv">${hasLayers ? `${ps.layer} / ${ps.layer_total}` : '—'}</span>
+            <span class="mv">${hasLayers ? `${currentLayer} / ${totalLayers}` : '—'}</span>
             <span class="ml">Finish</span>
             <span class="mv">${finish ?? '—'}</span>
           </div>

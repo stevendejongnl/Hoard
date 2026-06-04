@@ -109,6 +109,7 @@ async def _handle_status_update(params: list[Any]) -> None:
             "time_remaining": prev.get("time_remaining", 0),
             "filament_used": prev.get("filament_used", 0),
             "speed": prev.get("speed", 0),
+            "z_position": prev.get("z_position", 0),
         }
         if ps:
             if "state" in ps:
@@ -132,6 +133,9 @@ async def _handle_status_update(params: list[Any]) -> None:
         if mr:
             if "live_velocity" in mr:
                 updated["speed"] = round(mr["live_velocity"], 1)
+            pos = mr.get("live_position")
+            if pos and len(pos) >= 3:
+                updated["z_position"] = round(pos[2], 3)
 
         new_state = updated.get("state")
         prev_state = prev.get("state")
