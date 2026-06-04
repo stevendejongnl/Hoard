@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { Project } from '../types'
-import { getProject, deleteProject, addProjectLink, deleteProjectLink } from '../api'
+import { getProject, deleteProject, addProjectLink, deleteProjectLink, refreshProjectPrint } from '../api'
 import { router } from '../router'
 import '../components/markdown-editor'
 import '../components/project-files-section'
@@ -40,6 +40,18 @@ export class ProjectDetailPage extends LitElement {
     } finally {
       this.loading = false
     }
+  }
+
+  @state() private _refreshing = false
+
+  private async _refreshCosts() {
+    if (!this.project || this._refreshing) return
+    this._refreshing = true
+    this.requestUpdate()
+    const prints = this.project.prints ?? []
+    await Promise.all(prints.map(p => refreshProjectPrint(this.project!.id, p.job_id).catch(() => null)))
+    this.project = await getProject(this.project.id)
+    this._refreshing = false
   }
 
   private async _delete() {
@@ -103,6 +115,15 @@ export class ProjectDetailPage extends LitElement {
           ${this._stat('total cost', p.total_cost != null ? '€' + p.total_cost.toFixed(2) : '—')}
           ${this._stat('filament', p.total_filament_g != null ? p.total_filament_g.toFixed(0) + 'g' : '—')}
         </div>
+        ${p.print_count > 0 ? html`
+          <div style="display: flex; justify-content: flex-end;">
+            <button
+              style="background: transparent; border: 1px solid #333; color: #555; border-radius: 4px; padding: 4px 10px; font-size: 10px; cursor: pointer;"
+              ?disabled=${this._refreshing}
+              @click=${this._refreshCosts}
+            >${this._refreshing ? 'refreshing…' : '↻ refresh costs'}</button>
+          </div>
+        ` : ''}
 
         <!-- notes (markdown editor) -->
         <markdown-editor

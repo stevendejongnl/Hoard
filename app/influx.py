@@ -88,6 +88,34 @@ from(bucket: "{self._bucket}")
                 results.append(row)
         return results
 
+    def query_by_end_time(self, filename: str, end_time_s: float) -> dict[str, Any] | None:
+        """Find the InfluxDB record for a specific print using filename + end timestamp (±5 min)."""
+        from datetime import timedelta
+        dt = datetime.fromtimestamp(end_time_s, tz=timezone.utc)
+        start = (dt - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        stop = (dt + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        safe = filename.replace("\\", "\\\\").replace('"', '\\"')
+        flux = f"""
+from(bucket: "{self._bucket}")
+  |> range(start: {start}, stop: {stop})
+  |> filter(fn: (r) => r._measurement == "print_job" and r.filename == "{safe}")
+  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+  |> limit(n: 1)
+"""
+        try:
+            tables = self._client.query_api().query(flux, org=self._org)
+            for table in tables:
+                for record in table.records:
+                    row = dict(record.values)
+                    row["time"] = record.get_time().isoformat().replace("+00:00", "Z")
+                    for tag in ("filename", "spool_id", "material"):
+                        if tag not in row:
+                            row[tag] = record.values.get(tag)
+                    return row
+        except Exception:
+            pass
+        return None
+
     def count_history(self) -> int:
         flux = f"""
 from(bucket: "{self._bucket}")

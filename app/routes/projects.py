@@ -149,16 +149,60 @@ async def link_print(project_id: int, body: PrintLink) -> dict[str, Any]:
         filament_mm = job.get("filament_used") or 0.0
         filament_g = round(filament_mm * _MM_TO_GRAMS, 2)
         filename = job.get("filename", "")
-        for h in influx.query_history(limit=500):
-            if h.get("filename") == filename:
+        end_time = job.get("end_time")
+        # Prefer timestamp-based lookup so two prints of the same file get distinct costs
+        if end_time and filename:
+            h = influx.query_by_end_time(filename, float(end_time))
+            if h:
                 cost_total = h.get("cost_total")
-                break
+        # Fallback: scan by filename only (covers edge cases with missing end_time)
+        if cost_total is None and filename:
+            for h in influx.query_history(limit=500):
+                if h.get("filename") == filename:
+                    cost_total = h.get("cost_total")
+                    break
     except Exception:
         pass
     return await db.add_project_print(
         project_id, body.project_file_id, body.job_id,
         duration_s, filament_g, cost_total,
     )
+
+
+@router.patch("/{project_id}/prints/{job_id}/refresh", status_code=200)
+async def refresh_print_stats(project_id: int, job_id: str) -> dict[str, Any]:
+    """Re-fetch duration/filament/cost from Moonraker+InfluxDB for an already-linked print."""
+    duration_s: float | None = None
+    filament_g: float | None = None
+    cost_total: float | None = None
+    try:
+        job_data = await moonraker.get("/server/history/job", uid=job_id)
+        job = job_data.get("job", {})
+        duration_s = job.get("print_duration")
+        filament_mm = job.get("filament_used") or 0.0
+        filament_g = round(filament_mm * _MM_TO_GRAMS, 2)
+        filename = job.get("filename", "")
+        end_time = job.get("end_time")
+        if end_time and filename:
+            h = influx.query_by_end_time(filename, float(end_time))
+            if h:
+                cost_total = h.get("cost_total")
+        if cost_total is None and filename:
+            for h in influx.query_history(limit=500):
+                if h.get("filename") == filename:
+                    cost_total = h.get("cost_total")
+                    break
+    except Exception:
+        pass
+    async with db._conn() as conn:
+        await conn.execute(
+            """UPDATE project_prints
+               SET duration_s = ?, filament_g = ?, cost_total = ?
+               WHERE project_id = ? AND job_id = ?""",
+            (duration_s, filament_g, cost_total, project_id, job_id),
+        )
+        await conn.commit()
+    return {"job_id": job_id, "duration_s": duration_s, "filament_g": filament_g, "cost_total": cost_total}
 
 
 @router.delete("/{project_id}/prints/{job_id}", status_code=204)

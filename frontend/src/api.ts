@@ -197,3 +197,8 @@ export const unlinkProjectPrint = (projectId: number, jobId: string) =>
   fetch(`/api/projects/${projectId}/prints/${encodeURIComponent(jobId)}`, {
     method: 'DELETE',
   })
+
+export const refreshProjectPrint = (projectId: number, jobId: string) =>
+  req<ProjectPrint>(`/api/projects/${projectId}/prints/${encodeURIComponent(jobId)}/refresh`, {
+    method: 'PATCH',
+  })
