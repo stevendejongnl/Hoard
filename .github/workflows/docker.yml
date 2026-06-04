@@ -55,6 +55,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/printer:latest
             ${{ env.REGISTRY }}/${{ env.OWNER }}/printer:${{ env.VERSION }}
+          build-args: APP_VERSION=${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

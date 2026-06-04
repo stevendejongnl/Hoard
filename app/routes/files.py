@@ -33,6 +33,9 @@ async def file_metadata(filename: str) -> dict[str, Any]:
 
 @router.get("/thumbnail")
 async def file_thumbnail(filename: str) -> Response:
+    import base64
+    import logging
+    log = logging.getLogger(__name__)
     try:
         meta = await moonraker.get_file_metadata(filename)
         thumbs: list[dict[str, Any]] = meta.get("thumbnails", [])
@@ -40,20 +43,42 @@ async def file_thumbnail(filename: str) -> Response:
             raise HTTPException(404, "No thumbnails")
         # Pick the largest thumbnail
         thumb = max(thumbs, key=lambda t: t.get("width", 0) * t.get("height", 0))
+        log.debug("thumbnail meta for %s: %s", filename, thumb)
+
+        # Moonraker may return base64 data inline (no file fetch needed)
+        inline_data = thumb.get("data", "")
+        if inline_data:
+            try:
+                png_bytes = base64.b64decode(inline_data)
+                return Response(
+                    content=png_bytes,
+                    media_type="image/png",
+                    headers={"Cache-Control": "public, max-age=3600"},
+                )
+            except Exception:
+                pass  # fall through to relative_path
+
         rel_path = thumb.get("relative_path", "")
         if not rel_path:
-            raise HTTPException(404, "No thumbnail path")
+            raise HTTPException(404, "No thumbnail path or data")
+
+        # Try both with and without "gcodes/" prefix to handle different Moonraker versions
         async with httpx.AsyncClient() as client:
-            r = await client.get(
+            for url in [
                 f"{settings.moonraker_url}/server/files/gcodes/{rel_path}",
-                timeout=10,
-            )
-            r.raise_for_status()
-        return Response(
-            content=r.content,
-            media_type=r.headers.get("content-type", "image/png"),
-            headers={"Cache-Control": "public, max-age=3600"},
-        )
+                f"{settings.moonraker_url}/server/files/{rel_path}",
+            ]:
+                try:
+                    r = await client.get(url, timeout=10)
+                    if r.status_code == 200:
+                        return Response(
+                            content=r.content,
+                            media_type=r.headers.get("content-type", "image/png"),
+                            headers={"Cache-Control": "public, max-age=3600"},
+                        )
+                except Exception:
+                    continue
+        raise HTTPException(404, f"Thumbnail file not found: {rel_path}")
     except HTTPException:
         raise
     except Exception as exc:

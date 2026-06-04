@@ -1,9 +1,21 @@
 import { LitElement, html, css } from 'lit'
-import { customElement, property } from 'lit/decorators.js'
+import { customElement, property, state } from 'lit/decorators.js'
 
 @customElement('top-nav')
 export class TopNav extends LitElement {
   @property({ type: Boolean }) printing: boolean = false
+  @state() private _version = ''
+
+  async connectedCallback() {
+    super.connectedCallback()
+    try {
+      const r = await fetch('/api/version')
+      if (r.ok) {
+        const data = await r.json() as { version: string }
+        this._version = data.version
+      }
+    } catch { /* version display is non-critical */ }
+  }
 
   static styles = css`
     :host {
@@ -37,6 +49,18 @@ export class TopNav extends LitElement {
     .app-name .muted {
       color: var(--text-muted);
       transition: color 0.15s;
+    }
+
+    .version-badge {
+      font-size: 9px;
+      color: var(--text-dim, #333);
+      border: 1px solid var(--border, #222);
+      border-radius: 3px;
+      padding: 1px 5px;
+      margin-left: 8px;
+      font-weight: 400;
+      vertical-align: middle;
+      letter-spacing: 0.02em;
     }
 
     .nav {
@@ -85,7 +109,9 @@ export class TopNav extends LitElement {
   render() {
     return html`
       <div class="topbar">
-        <span class="app-name" @click=${() => window.router.navigate('/')}>printer<span class="muted">.madebysteven.nl</span></span>
+        <span class="app-name" @click=${() => window.router.navigate('/')}>
+          printer<span class="muted">.madebysteven.nl</span>${this._version ? html`<span class="version-badge">v${this._version}</span>` : ''}
+        </span>
         <div class="nav">
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>
