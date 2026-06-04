@@ -1,3 +1,9 @@
+## [1.9.0](https://github.com/stevendejongnl/printer/compare/v1.8.3...v1.9.0) (2026-06-04)
+
+### Features
+
+* print-ready modal — power on + firmware restart flow before starting a print ([d7077dd](https://github.com/stevendejongnl/printer/commit/d7077dd67fe6fb50d163efbe552956ec0eced1fb))
+
 ## [1.8.3](https://github.com/stevendejongnl/printer/compare/v1.8.2...v1.8.3) (2026-06-04)
 
 ### Bug Fixes
