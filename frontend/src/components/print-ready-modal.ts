@@ -4,7 +4,13 @@ import type { Power, PrinterState } from '../types'
 import { sseClient } from '../sse'
 import { startPrint, powerOn, firmwareRestart } from '../api'
 
-type Step = 'needs-power' | 'needs-firmware' | 'waiting' | 'done' | 'error'
+// Power plug → Pi boots → Moonraker starts → Klipper connects
+type Step =
+  | 'needs-power'      // plug is off
+  | 'waiting-power'    // plug turned on, waiting for Pi/Moonraker to come up
+  | 'needs-firmware'   // power on, Klipper not yet connected
+  | 'waiting-klippy'   // firmware restart sent, waiting for standby
+  | 'error'
 
 @customElement('print-ready-modal')
 export class PrintReadyModal extends LitElement {
@@ -13,7 +19,6 @@ export class PrintReadyModal extends LitElement {
   @state() private _step: Step = 'needs-power'
   @state() private _busy = false
   @state() private _power: Power | null = null
-  @state() private _printerState: PrinterState | null = null
 
   private _unsub: (() => void) | null = null
   private _retryTimer: ReturnType<typeof setInterval> | null = null
@@ -21,11 +26,16 @@ export class PrintReadyModal extends LitElement {
   connectedCallback() {
     super.connectedCallback()
     this._unsub = sseClient.subscribe((payload) => {
-      if (payload.type === 'power') this._power = payload.data
+      if (payload.type === 'power') {
+        this._power = payload.data
+        // Plug came on → advance to firmware step
+        if (this._step === 'waiting-power' && payload.data.switch === 'on') {
+          this._step = 'needs-firmware'
+        }
+      }
       if (payload.type === 'printer_state') {
-        this._printerState = payload.data
-        // SSE shortcut: if Klipper reports standby while we're waiting, try immediately
-        if (this._step === 'waiting' && payload.data.state === 'standby') {
+        // Klipper became ready → start the print
+        if (this._step === 'waiting-klippy' && payload.data.state === 'standby') {
           this._doStartPrint()
         }
       }
@@ -40,7 +50,6 @@ export class PrintReadyModal extends LitElement {
 
   private _startRetry() {
     this._stopRetry()
-    // Poll every 5 s — more reliable than waiting for a specific SSE event
     this._retryTimer = setInterval(() => this._doStartPrint(), 5000)
   }
 
@@ -64,8 +73,7 @@ export class PrintReadyModal extends LitElement {
     this._busy = true
     try {
       await powerOn()
-      this._step = 'waiting'
-      this._startRetry()
+      this._step = 'waiting-power'
     } catch {
       this._step = 'error'
     } finally {
@@ -77,7 +85,7 @@ export class PrintReadyModal extends LitElement {
     this._busy = true
     try {
       await firmwareRestart()
-      this._step = 'waiting'
+      this._step = 'waiting-klippy'
       this._startRetry()
     } catch {
       this._step = 'error'
@@ -95,9 +103,7 @@ export class PrintReadyModal extends LitElement {
       this._open = false
       this._emit()
     } catch {
-      // Still not ready — keep retrying (don't set error, just keep waiting)
-      this._busy = false
-      return
+      // Not ready yet — keep retrying silently
     } finally {
       this._busy = false
     }
@@ -141,16 +147,21 @@ export class PrintReadyModal extends LitElement {
             ${this._busy ? 'Powering on…' : '⚡ Power on'}
           </button>
         `
+      case 'waiting-power':
+        return html`
+          <p class="msg waiting">Waiting for printer to power on…</p>
+          <div class="spinner">↻</div>
+        `
       case 'needs-firmware':
         return html`
-          <p class="msg">Firmware not connected. Restart it to connect.</p>
+          <p class="msg">Printer is powered on. Connect firmware to continue.</p>
           <button class="btn-primary" ?disabled=${this._busy} @click=${this._firmwareRestart}>
-            ${this._busy ? 'Restarting…' : '↻ Firmware restart'}
+            ${this._busy ? 'Connecting…' : '↻ Connect firmware'}
           </button>
         `
-      case 'waiting':
+      case 'waiting-klippy':
         return html`
-          <p class="msg waiting">Waiting for printer to be ready…</p>
+          <p class="msg waiting">Firmware connecting, waiting for Klipper…</p>
           <div class="spinner">↻</div>
         `
       case 'error':
@@ -158,8 +169,6 @@ export class PrintReadyModal extends LitElement {
           <p class="msg error">Something went wrong. Check the printer.</p>
           <button class="btn-ghost" @click=${this._close}>Close</button>
         `
-      default:
-        return html``
     }
   }
 
