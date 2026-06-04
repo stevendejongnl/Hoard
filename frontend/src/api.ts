@@ -84,6 +84,9 @@ export const assignSpool = (jobId: string, spoolId: number) =>
 export const recalculateCost = (jobId: string) =>
   req(`/api/history/${encodeURIComponent(jobId)}/recalculate`, { method: 'POST' })
 
+export const restoreCost = (jobId: string) =>
+  req(`/api/history/${encodeURIComponent(jobId)}/restore`, { method: 'POST' })
+
 // Spools
 export const getSpools = () => req<Spool[]>('/api/spools')
 export const createSpool = (data: Partial<Spool>) =>

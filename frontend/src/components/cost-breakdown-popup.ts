@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import type { PrintRecord } from '../types'
-import { recalculateCost } from '../api'
+import { recalculateCost, restoreCost } from '../api'
 
 function fmt(n: number | null | undefined, decimals = 4): string {
   return n != null ? `€${n.toFixed(decimals)}` : '—'
@@ -188,6 +188,20 @@ export class CostBreakdownPopup extends LitElement {
     }
   }
 
+  private async _restore(e: Event) {
+    e.stopPropagation()
+    if (!this.record.job_id) return
+    this._recalculating = true
+    try {
+      await restoreCost(this.record.job_id)
+      this.dispatchEvent(new CustomEvent('cost-recalculated', { bubbles: true, composed: true }))
+    } catch (err) {
+      console.error('Restore failed', err)
+    } finally {
+      this._recalculating = false
+    }
+  }
+
   render() {
     const r = this.record
     const filG = r.filament_g ?? 0
@@ -260,6 +274,21 @@ export class CostBreakdownPopup extends LitElement {
             ?disabled=${this._recalculating}
             @click=${this._recalculate}
           >${this._recalculating ? 'Recalculating…' : '↻ Recalculate cost from HA'}</button>
+        ` : ''}
+        ${!r.spool || (r.cost_total != null && r.cost_total > 0.001) ? '' : html`
+          <button
+            class="recalc-btn"
+            ?disabled=${this._recalculating}
+            @click=${this._restore}
+          >${this._recalculating ? 'Restoring…' : '↻ Restore cost from HA history'}</button>
+        `}
+        ${r.cost_total != null && r.cost_total > 0 && r.cost_total < 0.01 ? html`
+          <button
+            class="recalc-btn"
+            style="border-color: #ef444444; color: #ef4444;"
+            ?disabled=${this._recalculating}
+            @click=${this._restore}
+          >${this._recalculating ? 'Restoring…' : '⚠ Cost looks wrong — restore from HA'}</button>
         ` : ''}
       </div>
     `

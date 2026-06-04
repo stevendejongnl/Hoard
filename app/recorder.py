@@ -84,6 +84,7 @@ async def _record_print(job: dict[str, Any]) -> None:
             cost_electricity=cost_electricity,
             cost_filament=cost_filament,
             cost_total=cost_total,
+            job_id=job_id,
         )
         log.info("recorder: wrote print_job %s cost=€%.4f", filename, cost_total)
     except Exception as exc:
