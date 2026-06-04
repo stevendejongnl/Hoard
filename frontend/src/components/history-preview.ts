@@ -1,7 +1,7 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import type { PrintRecord, Spool } from '../types';
-import { assignSpool, getHistory, getSpools, injectThumbnail } from '../api';
+import type { PrintRecord, Spool, Project } from '../types';
+import { assignSpool, getHistory, getSpools, injectThumbnail, getProjects, linkProjectPrint, unlinkProjectPrint } from '../api';
 import { sseClient } from '../sse';
 import './spool-modal';
 import './cost-breakdown-popup';
@@ -20,6 +20,9 @@ export class HistoryPreview extends LitElement {
   private _unsubscribe: (() => void) | null = null;
   @state() private _thumbErrors = new Set<string>();
   @state() private _thumbGenerating = new Set<string>();
+  @state() private _projectModal: string | null = null
+  @state() private _projects: Project[] = []
+  @state() private _assignedProjectIds: Map<string, number> = new Map()
 
   private _total = 0;
 
@@ -120,6 +123,27 @@ export class HistoryPreview extends LitElement {
     this._assigningJobId = null;
   }
 
+  private async _openProjectPicker(jobId: string) {
+    if (this._projects.length === 0) {
+      this._projects = await getProjects()
+    }
+    this._projectModal = jobId
+  }
+
+  private async _assignProject(jobId: string, projectId: number) {
+    await linkProjectPrint(projectId, { job_id: jobId })
+    this._assignedProjectIds = new Map([...this._assignedProjectIds, [jobId, projectId]])
+    this._projectModal = null
+  }
+
+  private async _unassignProject(jobId: string, projectId: number) {
+    await unlinkProjectPrint(projectId, jobId)
+    const updated = new Map(this._assignedProjectIds)
+    updated.delete(jobId)
+    this._assignedProjectIds = updated
+    this._projectModal = null
+  }
+
   private _formatDuration(seconds: number): string {
     const h = Math.floor(seconds / 3600);
     const m = Math.floor((seconds % 3600) / 60);
@@ -216,8 +240,9 @@ export class HistoryPreview extends LitElement {
                     <div class="cost-sub">${record.filament_g.toFixed(1)} g</div>`
                 }
               </td>
-              <td>
+              <td style="display: flex; align-items: center; gap: 6px; padding: 11px 0;">
                 <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
+                <button class="print-btn" @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}>+ proj</button>
               </td>
             </tr>
           `)}
@@ -231,6 +256,38 @@ export class HistoryPreview extends LitElement {
           </tr>
         </tfoot>
       </table>
+
+      ${this._projectModal ? html`
+        <div
+          style="position: fixed; inset: 0; background: #00000088; display: flex; align-items: center; justify-content: center; z-index: 100;"
+          @click=${(e: Event) => { if (e.target === e.currentTarget) this._projectModal = null }}
+        >
+          <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; width: 360px; max-height: 60vh; display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 13px; font-weight: 600; color: #e0e0e0;">Assign to project</span>
+              <span style="cursor: pointer; color: #555; font-size: 16px;" @click=${() => { this._projectModal = null }}>✕</span>
+            </div>
+            <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+              ${this._projects.length === 0
+                ? html`<div style="color: #555; font-size: 11px; padding: 8px;">No projects yet.</div>`
+                : this._projects.map(proj => {
+                  const isAssigned = this._assignedProjectIds.get(this._projectModal!) === proj.id
+                  return html`
+                    <div
+                      style="padding: 8px 10px; background: ${isAssigned ? '#22d3ee14' : '#141414'}; border: 1px solid ${isAssigned ? '#22d3ee33' : '#222'}; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                      @click=${() => isAssigned
+                        ? this._unassignProject(this._projectModal!, proj.id)
+                        : this._assignProject(this._projectModal!, proj.id)}
+                    >
+                      <span style="font-size: 11px; color: #ccc;">${proj.name}</span>
+                      <span style="font-size: 10px; color: ${isAssigned ? '#22d3ee' : '#333'};">${isAssigned ? '✓' : '+'}</span>
+                    </div>
+                  `
+                })}
+            </div>
+          </div>
+        </div>
+      ` : ''}
     `;
   }
 
