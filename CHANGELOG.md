@@ -1,3 +1,9 @@
+## [1.10.0](https://github.com/stevendejongnl/printer/compare/v1.9.0...v1.10.0) (2026-06-04)
+
+### Features
+
+* isometric 3D toolpath preview with height-based colour gradient ([f0e3b1b](https://github.com/stevendejongnl/printer/commit/f0e3b1b790c57119e5f68985536511e24601dcb9))
+
 ## [1.9.0](https://github.com/stevendejongnl/printer/compare/v1.8.3...v1.9.0) (2026-06-04)
 
 ### Features
