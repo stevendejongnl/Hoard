@@ -1,3 +1,9 @@
+## [1.15.1](https://github.com/stevendejongnl/printer/compare/v1.15.0...v1.15.1) (2026-06-04)
+
+### Bug Fixes
+
+* project link under filename instead of next to play button, truncated ([6b49bc2](https://github.com/stevendejongnl/printer/commit/6b49bc25e42ff5f29fb594529272d8a2ddbd8579))
+
 ## [1.15.0](https://github.com/stevendejongnl/printer/compare/v1.14.5...v1.15.0) (2026-06-04)
 
 ### Features
