@@ -1,3 +1,9 @@
+## [1.14.2](https://github.com/stevendejongnl/printer/compare/v1.14.1...v1.14.2) (2026-06-04)
+
+### Bug Fixes
+
+* mobile responsive — nav, projects grid, stats bar, modal widths ([3468c2b](https://github.com/stevendejongnl/printer/commit/3468c2b0f19b72690a5d0dbf7bc9548fab00f70c))
+
 ## [1.14.1](https://github.com/stevendejongnl/printer/compare/v1.14.0...v1.14.1) (2026-06-04)
 
 ### Bug Fixes
