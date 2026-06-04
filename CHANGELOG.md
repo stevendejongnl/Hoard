@@ -1,3 +1,9 @@
+## [1.16.1](https://github.com/stevendejongnl/printer/compare/v1.16.0...v1.16.1) (2026-06-04)
+
+### Bug Fixes
+
+* full history — correct total from Moonraker totals endpoint, extend InfluxDB range to 10y ([9480347](https://github.com/stevendejongnl/printer/commit/94803475c3459a9b978d179dd54abc7e70f4d1ef))
+
 ## [1.16.0](https://github.com/stevendejongnl/printer/compare/v1.15.2...v1.16.0) (2026-06-04)
 
 ### Features
