@@ -1,4 +1,5 @@
 import type { GcodeFile, PredictResult, PrintRecord, Spool } from './types'
+import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch(path, opts)
@@ -123,3 +124,76 @@ export const predict = (filename: string, spoolId: number | null, quantity: numb
   if (spoolId !== null) params.set('spool_id', String(spoolId))
   return req<PredictResult>(`/api/predict?${params}`)
 }
+
+// Projects
+export const getProjects = () => req<Project[]>('/api/projects')
+
+export const createProject = (name: string) =>
+  req<Project>('/api/projects', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  })
+
+export const getProject = (id: number) => req<Project>(`/api/projects/${id}`)
+
+export const updateProject = (id: number, data: { name?: string; notes?: string }) =>
+  req<Project>(`/api/projects/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+
+export const deleteProject = (id: number) =>
+  fetch(`/api/projects/${id}`, { method: 'DELETE' })
+
+export const addProjectFile = (
+  projectId: number,
+  data: { type: string; filename: string; label?: string },
+) =>
+  req<ProjectFile>(`/api/projects/${projectId}/files`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+
+export const uploadProjectStl = (projectId: number, file: File, label?: string) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  if (label) fd.append('label', label)
+  return req<ProjectFile>(`/api/projects/${projectId}/files/upload`, {
+    method: 'POST',
+    body: fd,
+  })
+}
+
+export const deleteProjectFile = (projectId: number, fileId: number) =>
+  fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
+
+export const addProjectLink = (
+  projectId: number,
+  data: { url: string; label?: string },
+) =>
+  req<ProjectLink>(`/api/projects/${projectId}/links`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+
+export const deleteProjectLink = (projectId: number, linkId: number) =>
+  fetch(`/api/projects/${projectId}/links/${linkId}`, { method: 'DELETE' })
+
+export const linkProjectPrint = (
+  projectId: number,
+  data: { job_id: string; project_file_id?: number },
+) =>
+  req<ProjectPrint>(`/api/projects/${projectId}/prints`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+
+export const unlinkProjectPrint = (projectId: number, jobId: string) =>
+  fetch(`/api/projects/${projectId}/prints/${encodeURIComponent(jobId)}`, {
+    method: 'DELETE',
+  })

@@ -95,3 +95,46 @@ export interface GcodeFile {
   first_layer_height?: number
   layer_count?: number
 }
+
+export interface Project {
+  id: number
+  name: string
+  notes: string | null
+  created_at: number
+  print_count: number
+  total_duration_s: number | null
+  total_cost: number | null
+  total_filament_g: number | null
+  files?: ProjectFile[]
+  links?: ProjectLink[]
+  prints?: ProjectPrint[]
+}
+
+export interface ProjectFile {
+  id: number
+  project_id: number
+  type: 'gcode' | 'stl'
+  filename: string
+  label: string | null
+  print_count?: number
+  total_duration_s?: number | null
+  total_cost?: number | null
+  total_filament_g?: number | null
+}
+
+export interface ProjectLink {
+  id: number
+  project_id: number
+  url: string
+  label: string | null
+}
+
+export interface ProjectPrint {
+  id: number
+  project_id: number
+  project_file_id: number | null
+  job_id: string
+  duration_s: number | null
+  filament_g: number | null
+  cost_total: number | null
+}

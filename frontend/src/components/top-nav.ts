@@ -114,6 +114,7 @@ export class TopNav extends LitElement {
         </span>
         <div class="nav">
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
+          <span class="nav-link" @click=${() => window.router.navigate('/projects')}>projects</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>
           ${this.printing
             ? html`<span class="status-badge"><span class="dot">●</span> printing</span>`
