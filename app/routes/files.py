@@ -85,6 +85,24 @@ async def file_thumbnail(filename: str) -> Response:
         raise HTTPException(502, f"Thumbnail error: {exc}") from exc
 
 
+@router.get("/thumbnail/from-gcode")
+async def thumbnail_from_gcode(filename: str) -> Response:
+    """Extract thumbnail directly from Cura-embedded gcode comments."""
+    from app.gcode_thumbnail import extract_thumbnail_png
+    try:
+        gcode_bytes = await moonraker.download_file(filename)
+    except Exception as exc:
+        raise HTTPException(502, f"Could not download gcode: {exc}") from exc
+    png = extract_thumbnail_png(gcode_bytes)
+    if not png:
+        raise HTTPException(404, "No embedded thumbnail in gcode")
+    return Response(
+        content=png,
+        media_type="image/png",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @router.post("/thumbnail/inject")
 async def inject_thumbnail(
     stl_file: UploadFile,
