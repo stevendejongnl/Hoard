@@ -1,4 +1,4 @@
-type Route = '/' | '/history' | '/spools'
+type Route = '/' | '/history' | '/spools' | '/projects' | `/projects/${string}`
 
 class Router {
   private listeners: Array<(r: Route) => void> = []
@@ -7,7 +7,18 @@ class Router {
     const p = window.location.pathname
     if (p === '/history') return '/history'
     if (p === '/spools') return '/spools'
+    if (p === '/projects') return '/projects'
+    if (p.startsWith('/projects/')) return p as `/projects/${string}`
     return '/'
+  }
+
+  get projectId(): number | null {
+    const p = window.location.pathname
+    if (p.startsWith('/projects/')) {
+      const id = parseInt(p.split('/')[2], 10)
+      return isNaN(id) ? null : id
+    }
+    return null
   }
 
   navigate(path: Route): void {

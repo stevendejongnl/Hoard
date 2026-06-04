@@ -8,6 +8,8 @@ import './top-nav'
 import '../pages/home-page'
 import '../pages/history-page'
 import '../pages/spools-page'
+import '../pages/projects-page'
+import '../pages/project-detail-page'
 
 @customElement('printer-app')
 export class PrinterApp extends LitElement {
@@ -60,13 +62,18 @@ export class PrinterApp extends LitElement {
   }
 
   render() {
+    const route = this.route
     return html`
       <top-nav .printing=${this.printing}></top-nav>
-      ${this.route === '/history'
+      ${route === '/history'
         ? html`<history-page></history-page>`
-        : this.route === '/spools'
+        : route === '/spools'
           ? html`<spools-page></spools-page>`
-          : html`<home-page></home-page>`}
+          : route === '/projects'
+            ? html`<projects-page></projects-page>`
+            : route.startsWith('/projects/')
+              ? html`<project-detail-page></project-detail-page>`
+              : html`<home-page></home-page>`}
     `
   }
 }

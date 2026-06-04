@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "lit": "^3.3.3"
+    "lit": "^3.3.3",
+    "marked": "^18.0.4"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
