@@ -144,6 +144,7 @@ export class HistoryPreview extends LitElement {
                   class="row-thumb"
                   src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}"
                   alt=""
+                  loading="lazy"
                   @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
                 />
               </td>
