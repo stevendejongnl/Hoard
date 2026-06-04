@@ -72,7 +72,7 @@ class InfluxClient:
     def query_history(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
         flux = f"""
 from(bucket: "{self._bucket}")
-  |> range(start: -365d)
+  |> range(start: -3650d)
   |> filter(fn: (r) => r._measurement == "print_job")
   |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
   |> sort(columns: ["_time"], desc: true)
@@ -125,7 +125,7 @@ from(bucket: "{self._bucket}")
     def count_history(self) -> int:
         flux = f"""
 from(bucket: "{self._bucket}")
-  |> range(start: -365d)
+  |> range(start: -3650d)
   |> filter(fn: (r) => r._measurement == "print_job" and r._field == "cost_total")
   |> count()
 """
