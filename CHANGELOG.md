@@ -1,3 +1,9 @@
+## [1.13.2](https://github.com/stevendejongnl/printer/compare/v1.13.1...v1.13.2) (2026-06-04)
+
+### Bug Fixes
+
+* disk usage from Moonraker files/directory, all-in electricity price sensor ([de36ac5](https://github.com/stevendejongnl/printer/commit/de36ac5f498c64624b7f0fb7581f1fa0a65d6c28))
+
 ## [1.13.1](https://github.com/stevendejongnl/printer/compare/v1.13.0...v1.13.1) (2026-06-04)
 
 ### Bug Fixes
