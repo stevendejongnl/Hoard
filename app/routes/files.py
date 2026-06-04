@@ -196,7 +196,7 @@ async def inject_thumbnail(
     stl_file: UploadFile,
     gcode_filename: str = Form(...),
 ) -> dict[str, Any]:
-    from app.gcode_thumbnail import has_thumbnails, inject_thumbnails
+    from app.gcode_thumbnail import inject_thumbnails
     from app.thumbnail import render_stl_thumbnails
 
     stl_bytes = await stl_file.read()
@@ -205,9 +205,6 @@ async def inject_thumbnail(
         gcode_bytes = await moonraker.download_file(gcode_filename)
     except Exception as exc:
         raise HTTPException(502, f"Could not download gcode: {exc}") from exc
-
-    if has_thumbnails(gcode_bytes):
-        return {"status": "already_has_thumbnails", "filename": gcode_filename}
 
     try:
         thumbnails = render_stl_thumbnails(stl_bytes)

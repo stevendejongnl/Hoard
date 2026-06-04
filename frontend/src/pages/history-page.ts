@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { PrintRecord, Spool } from '../types'
-import { getHistory, getSpools, assignSpool } from '../api'
+import { getHistory, getSpools, assignSpool, injectThumbnail } from '../api'
 import { sseClient } from '../sse'
 import '../components/cost-breakdown-popup'
 import '../components/print-ready-modal'
@@ -14,6 +14,8 @@ export class HistoryPage extends LitElement {
   @state() total = 0
   @state() page = 0
   @state() loading = true
+  @state() thumbErrors = new Set<string>()
+  @state() thumbGenerating = new Set<string>()
   @state() spools: Spool[] = []
   @state() assigningJobId: string | null = null
   private _unsubscribe: (() => void) | null = null
@@ -41,6 +43,31 @@ export class HistoryPage extends LitElement {
     this.total = history.total
     this.page = p
     this.loading = false
+  }
+
+  private _triggerStlUpload(filename: string) {
+    const input = document.querySelector<HTMLInputElement>('input[data-hist-stl]')
+    if (!input) return
+    input.dataset.target = filename
+    input.click()
+  }
+
+  private async _onStlUpload(e: Event) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    const target = input.dataset.target
+    if (!file || !target) return
+    input.value = ''
+    this.thumbGenerating = new Set([...this.thumbGenerating, target])
+    try {
+      await injectThumbnail(target, file)
+      this.thumbErrors = new Set([...this.thumbErrors].filter(f => f !== target))
+    } catch (err) {
+      console.error('STL inject failed', err)
+    } finally {
+      this.thumbGenerating = new Set([...this.thumbGenerating].filter(f => f !== target))
+      await this._loadPage(this.page)
+    }
   }
 
   private _print(filename: string) {
@@ -112,6 +139,7 @@ export class HistoryPage extends LitElement {
 
     return html`
       <print-ready-modal></print-ready-modal>
+      <input type="file" accept=".stl" data-hist-stl style="display:none" @change=${this._onStlUpload} />
       <style>
         /* ── Base layout ── */
         .page-wrap {
@@ -353,13 +381,23 @@ export class HistoryPage extends LitElement {
                 ${this.records.map(r => html`
                   <tr>
                     <td style="width:44px;padding-right:8px">
-                      <img
-                        style="width:40px;height:40px;border-radius:4px;object-fit:cover;display:block;background:var(--bg-surface,#1a1a1a)"
-                        src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(r.filename)}"
-                        alt=""
-                        loading="lazy"
-                        @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                      />
+                      ${this.thumbGenerating.has(r.filename)
+                        ? html`<div style="width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--cyan,#22d3ee);font-size:18px;animation:spin 1s linear infinite">↻</div>`
+                        : this.thumbErrors.has(r.filename)
+                          ? html`<button
+                              title="Add preview from STL"
+                              style="width:40px;height:40px;border-radius:4px;border:1px dashed #333;background:none;color:#555;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center"
+                              @mouseover=${(e: Event) => { (e.target as HTMLElement).style.color='#22d3ee'; (e.target as HTMLElement).style.borderColor='#22d3ee' }}
+                              @mouseout=${(e: Event) => { (e.target as HTMLElement).style.color='#555'; (e.target as HTMLElement).style.borderColor='#333' }}
+                              @click=${(e: Event) => { e.stopPropagation(); this._triggerStlUpload(r.filename) }}>⊕</button>`
+                          : html`<img
+                              style="width:40px;height:40px;border-radius:4px;object-fit:cover;display:block;background:var(--bg-surface,#1a1a1a)"
+                              src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(r.filename)}"
+                              alt=""
+                              loading="lazy"
+                              @error=${() => { this.thumbErrors = new Set([...this.thumbErrors, r.filename]) }}
+                            />`
+                      }
                     </td>
                     <td class="filename-cell" title="${r.filename}">${r.filename}</td>
                     <td style="white-space:nowrap">${r.time ? this.fmtDate(r.time) : '—'}</td>
