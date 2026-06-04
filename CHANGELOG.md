@@ -1,3 +1,21 @@
+## [1.14.0](https://github.com/stevendejongnl/printer/compare/v1.13.4...v1.14.0) (2026-06-04)
+
+### Features
+
+* assign print to project from history page ([0a8b456](https://github.com/stevendejongnl/printer/commit/0a8b456afeeceb9627f98ace94d57e12c27bddde))
+* project detail page — markdown editor, files, links, print picker ([f06d269](https://github.com/stevendejongnl/printer/commit/f06d269f4a8685663514f7cdc38372e899e4a4b4))
+* projects API — CRUD, files, links, print association ([8aa2149](https://github.com/stevendejongnl/printer/commit/8aa2149b306e8d665090be25783ab09c6ec67a5a))
+* projects grid page, router extension, nav link ([1a60455](https://github.com/stevendejongnl/printer/commit/1a60455d9f16ae59a93657e47933a520efef5d0f))
+
+### Bug Fixes
+
+* markdown prose styles + history button alignment ([ea8d19d](https://github.com/stevendejongnl/printer/commit/ea8d19d2ba6b94d9470b75fd112bc12e35c5a609))
+
+### Documentation
+
+* add projects feature design spec ([d119871](https://github.com/stevendejongnl/printer/commit/d119871b5b0f8aae9099de1ae6a28a7d83345c1a))
+* add projects feature implementation plan ([94d4067](https://github.com/stevendejongnl/printer/commit/94d4067389879c5c4be2cb079fa9d01e0746fc3c))
+
 ## [1.13.4](https://github.com/stevendejongnl/printer/compare/v1.13.3...v1.13.4) (2026-06-04)
 
 ### Bug Fixes
