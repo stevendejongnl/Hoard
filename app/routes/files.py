@@ -118,42 +118,70 @@ async def file_thumbnail(filename: str) -> Response:
 
 @router.get("/thumbnail/from-gcode")
 async def thumbnail_from_gcode(filename: str) -> Response:
-    """Extract thumbnail directly from Cura-embedded gcode comments."""
-    from app.gcode_thumbnail import extract_thumbnail_png
+    """Return best thumbnail: Moonraker .thumbs/ (3D) → embedded → toolpath render."""
+    from app.gcode_thumbnail import extract_thumbnail_png, render_toolpath_thumbnail
+    import base64 as _b64
+    import logging
+    log = logging.getLogger(__name__)
 
     cached = _cache_get(filename)
     if cached is not False:
         if cached is None:
-            raise HTTPException(404, "No embedded thumbnail in gcode")
-        return Response(content=cached, media_type="image/png",
+            raise HTTPException(404, "No thumbnail available")
+        media_type = "image/jpeg" if cached[:2] == b"\xff\xd8" else "image/png"
+        return Response(content=cached, media_type=media_type,
                         headers={"Cache-Control": "public, max-age=3600"})
 
-    try:
-        # Fetch first 128 KB — large 300×300 Cura thumbnails can be 80+ KB base64
-        gcode_bytes = await moonraker.download_file_partial(filename)
-    except httpx.HTTPStatusError as exc:
-        if exc.response.status_code == 404:
-            _cache_set(filename, None)
-            raise HTTPException(404, "File not found on printer") from exc
-        raise HTTPException(502, f"Moonraker error {exc.response.status_code}") from exc
-    except Exception as exc:
-        raise HTTPException(502, f"Could not fetch gcode header: {exc}") from exc
+    img: bytes | None = None
 
-    from app.gcode_thumbnail import render_toolpath_thumbnail
-    img = extract_thumbnail_png(gcode_bytes)
+    # 1. Moonraker metadata thumbnails — proper 3D previews stored in .thumbs/
+    try:
+        meta = await moonraker.get_file_metadata(filename)
+        thumbs: list[dict] = meta.get("thumbnails", [])
+        if thumbs:
+            best = max(thumbs, key=lambda t: t.get("width", 0) * t.get("height", 0))
+            inline = best.get("data", "")
+            rel_path = best.get("relative_path", "")
+            if inline:
+                img = _b64.b64decode(inline)
+            elif rel_path:
+                async with httpx.AsyncClient() as client:
+                    for url in [
+                        f"{settings.moonraker_url}/server/files/gcodes/{rel_path}",
+                        f"{settings.moonraker_url}/server/files/{rel_path}",
+                    ]:
+                        try:
+                            r = await client.get(url, timeout=10)
+                            if r.status_code == 200:
+                                img = r.content
+                                break
+                        except Exception:
+                            continue
+    except Exception as exc:
+        log.debug("Metadata thumbnail failed for %s: %s", filename, exc)
+
+    # 2. Parse embedded thumbnail comments from gcode header
     if not img:
-        # No embedded thumbnail — render from toolpaths as fallback
-        img = render_toolpath_thumbnail(gcode_bytes)
+        try:
+            gcode_bytes = await moonraker.download_file_partial(filename)
+            img = extract_thumbnail_png(gcode_bytes)
+            # 3. Toolpath render as last resort
+            if not img:
+                img = render_toolpath_thumbnail(gcode_bytes)
+        except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 404:
+                _cache_set(filename, None)
+                raise HTTPException(404, "File not found on printer") from exc
+            raise HTTPException(502, f"Moonraker error {exc.response.status_code}") from exc
+        except Exception as exc:
+            log.warning("Gcode fallback failed for %s: %s", filename, exc)
+
     _cache_set(filename, img)
     if not img:
         raise HTTPException(404, "No thumbnail available")
-    # Detect JPEG vs PNG by magic bytes
     media_type = "image/jpeg" if img[:2] == b"\xff\xd8" else "image/png"
-    return Response(
-        content=img,
-        media_type=media_type,
-        headers={"Cache-Control": "public, max-age=3600"},
-    )
+    return Response(content=img, media_type=media_type,
+                    headers={"Cache-Control": "public, max-age=3600"})
 
 
 @router.post("/thumbnail/inject")
