@@ -1,3 +1,9 @@
+## [1.12.2](https://github.com/stevendejongnl/printer/compare/v1.12.1...v1.12.2) (2026-06-04)
+
+### Bug Fixes
+
+* print-ready modal — correct flow when Pi stays on, plug toggle → firmware step → klippy wait ([a185316](https://github.com/stevendejongnl/printer/commit/a18531627408d452818f86751bf952eb7cda57b9))
+
 ## [1.12.1](https://github.com/stevendejongnl/printer/compare/v1.12.0...v1.12.1) (2026-06-04)
 
 ### Bug Fixes
