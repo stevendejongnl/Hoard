@@ -1,3 +1,9 @@
+## [1.13.3](https://github.com/stevendejongnl/printer/compare/v1.13.2...v1.13.3) (2026-06-04)
+
+### Bug Fixes
+
+* correct moonraker.get call for disk usage query param ([4532c6b](https://github.com/stevendejongnl/printer/commit/4532c6b82ef6547d7b594005a5e39f1aca426164))
+
 ## [1.13.2](https://github.com/stevendejongnl/printer/compare/v1.13.1...v1.13.2) (2026-06-04)
 
 ### Bug Fixes
