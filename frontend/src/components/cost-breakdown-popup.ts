@@ -62,9 +62,31 @@ export class CostBreakdownPopup extends LitElement {
       padding: 2px;
     }
 
+    .backdrop {
+      display: none;
+    }
+
     @media (max-width: 600px) {
       .popup-close { display: block; }
-      .popup { right: 0; bottom: calc(100% + 6px); top: auto; min-width: 240px; }
+      .popup.open {
+        position: fixed;
+        inset: auto 0 0 0;
+        top: auto;
+        right: 0;
+        border-radius: 12px 12px 0 0;
+        min-width: unset;
+        max-height: 70vh;
+        overflow-y: auto;
+        box-shadow: 0 -4px 32px rgba(0,0,0,0.6);
+        z-index: 50;
+      }
+      .backdrop {
+        display: block;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 49;
+      }
     }
 
     .popup-title {
@@ -179,6 +201,7 @@ export class CostBreakdownPopup extends LitElement {
       <div class="trigger" @click=${() => { this._open = !this._open }}>
         <slot></slot>
       </div>
+      ${this._open ? html`<div class="backdrop" @click=${() => { this._open = false }}></div>` : ''}
       <div class="popup ${this._open ? 'open' : ''}">
         <button class="popup-close" @click=${(e: Event) => { e.stopPropagation(); this._open = false }}>×</button>
         <div class="popup-title">Cost breakdown</div>
