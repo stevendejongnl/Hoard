@@ -73,11 +73,23 @@ async def _poll_pi_stats(interval: int = 30) -> None:
             cpu_usage = data.get("system_cpu_usage", {})
             cpu_load = cpu_usage.get("cpu", 0) if isinstance(cpu_usage, dict) else 0
             uptime = data.get("system_uptime", 0)
+
+            disk_pct = 0.0
+            try:
+                dir_data = await moonraker.get("/server/files/directory", path="gcodes")
+                du = dir_data.get("disk_usage", {})
+                disk_total = du.get("total", 0)
+                disk_used = du.get("used", 0)
+                if disk_total:
+                    disk_pct = round(disk_used / disk_total * 100, 1)
+            except Exception:
+                pass
+
             await hub.broadcast("pi_stats", {
                 "cpu_temp": round(cpu_temp, 1),
                 "cpu_load": round(cpu_load, 1),
                 "memory_pct": round(mem_used / mem_total * 100, 1) if mem_total else 0,
-                "disk_pct": 0,
+                "disk_pct": disk_pct,
                 "uptime_s": int(uptime),
             })
         except Exception as exc:
