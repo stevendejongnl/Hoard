@@ -43,6 +43,7 @@ def _moonraker_to_record(job: dict[str, Any]) -> dict[str, Any]:
 async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
     # Always use Moonraker as the source of truth for print records
     try:
+        # Fetch the page of jobs
         result = await moonraker.get(
             "/server/history/list",
             limit=limit,
@@ -50,7 +51,14 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
             order="desc",
         )
         jobs = result.get("jobs", [])
-        total = result.get("count", len(jobs))
+
+        # Moonraker's "count" in the list response is the number of records returned,
+        # not the total. Use the totals endpoint to get the real count.
+        try:
+            totals = await moonraker.get("/server/history/totals")
+            total = int(totals.get("job_totals", {}).get("total_jobs", 0))
+        except Exception:
+            total = offset + len(jobs)
     except Exception:
         jobs = []
         total = 0
@@ -59,7 +67,8 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
 
     # Enrich with InfluxDB cost data — match by filename+timestamp so two prints of
     # the same file each get their own InfluxDB entry, not the most-recent one.
-    influx_all = influx.query_history(limit=500)
+    # Fetch enough to cover the full history window around this page.
+    influx_all = influx.query_history(limit=max(500, offset + limit + 100))
 
     def _influx_minute(iso: str) -> int:
         """Convert ISO timestamp to minute-level Unix int for proximity matching."""
