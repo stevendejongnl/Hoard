@@ -1,3 +1,9 @@
+## [1.11.1](https://github.com/stevendejongnl/printer/compare/v1.11.0...v1.11.1) (2026-06-04)
+
+### Reverts
+
+* remove toolpath fallback — show nothing if no thumbnail, use STL upload instead ([9702104](https://github.com/stevendejongnl/printer/commit/9702104220df4e86e0c4380f993d16369737cffd))
+
 ## [1.11.0](https://github.com/stevendejongnl/printer/compare/v1.10.0...v1.11.0) (2026-06-04)
 
 ### Features
