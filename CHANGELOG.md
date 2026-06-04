@@ -1,3 +1,9 @@
+## [1.17.0](https://github.com/stevendejongnl/printer/compare/v1.16.2...v1.17.0) (2026-06-04)
+
+### Features
+
+* page select dropdown in history pagination ([d657c8b](https://github.com/stevendejongnl/printer/commit/d657c8b836523abbc652140671592fa8ccf18d76))
+
 ## [1.16.2](https://github.com/stevendejongnl/printer/compare/v1.16.1...v1.16.2) (2026-06-04)
 
 ### Bug Fixes
