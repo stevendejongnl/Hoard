@@ -1,3 +1,9 @@
+## [1.14.1](https://github.com/stevendejongnl/printer/compare/v1.14.0...v1.14.1) (2026-06-04)
+
+### Bug Fixes
+
+* per-print cost lookup by timestamp — prevents same-file prints sharing one InfluxDB entry ([88b7430](https://github.com/stevendejongnl/printer/commit/88b74306931ed1ee08d108e563b6c64e6b954f7e))
+
 ## [1.14.0](https://github.com/stevendejongnl/printer/compare/v1.13.4...v1.14.0) (2026-06-04)
 
 ### Features
