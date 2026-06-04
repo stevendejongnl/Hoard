@@ -1,3 +1,9 @@
+## [1.14.5](https://github.com/stevendejongnl/printer/compare/v1.14.4...v1.14.5) (2026-06-04)
+
+### Bug Fixes
+
+* disable viewport zoom on input focus on mobile (maximum-scale=1.0) ([78043a0](https://github.com/stevendejongnl/printer/commit/78043a09c700e253f02f2c189f80ef204f8e2d56))
+
 ## [1.14.4](https://github.com/stevendejongnl/printer/compare/v1.14.3...v1.14.4) (2026-06-04)
 
 ### Bug Fixes
