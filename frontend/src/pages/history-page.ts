@@ -338,6 +338,7 @@ export class HistoryPage extends LitElement {
             <table class="history-table">
               <thead>
                 <tr>
+                  <th style="width:44px"></th>
                   <th>File</th>
                   <th>Date</th>
                   <th>Duration</th>
@@ -350,6 +351,14 @@ export class HistoryPage extends LitElement {
               <tbody>
                 ${this.records.map(r => html`
                   <tr>
+                    <td style="width:44px;padding-right:8px">
+                      <img
+                        style="width:40px;height:40px;border-radius:4px;object-fit:cover;display:block;background:var(--bg-surface,#1a1a1a)"
+                        src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(r.filename)}"
+                        alt=""
+                        @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                    </td>
                     <td class="filename-cell" title="${r.filename}">${r.filename}</td>
                     <td style="white-space:nowrap">${r.time ? this.fmtDate(r.time) : '—'}</td>
                     <td style="white-space:nowrap">${this.fmtDuration(r.duration_s)}</td>

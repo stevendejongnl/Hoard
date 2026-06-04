@@ -84,6 +84,19 @@ class MoonrakerClient:
             r.raise_for_status()
             return r.content
 
+    async def download_file_partial(self, filename: str, size: int = 65536) -> bytes:
+        """Fetch only the first `size` bytes via HTTP Range — fast for thumbnail extraction."""
+        async with httpx.AsyncClient() as client:
+            r = await client.get(
+                f"{settings.moonraker_url}/server/files/gcodes/{filename}",
+                headers={"Range": f"bytes=0-{size - 1}"},
+                timeout=15,
+            )
+            # 206 Partial Content or 200 OK both acceptable
+            if r.status_code not in (200, 206):
+                r.raise_for_status()
+            return r.content
+
     async def get_history_job(self, job_id: str) -> dict[str, Any]:
         result = await self.get(f"/server/history/job", uid=job_id)
         return result.get("job", result)
