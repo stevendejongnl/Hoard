@@ -1,3 +1,9 @@
+## [1.8.3](https://github.com/stevendejongnl/printer/compare/v1.8.2...v1.8.3) (2026-06-04)
+
+### Bug Fixes
+
+* use Moonraker .thumbs/ (3D preview) as primary thumbnail source, fall back to embedded then toolpath ([309dfbb](https://github.com/stevendejongnl/printer/commit/309dfbbe4f98adf188e2e58727fe84852db98319))
+
 ## [1.8.2](https://github.com/stevendejongnl/printer/compare/v1.8.1...v1.8.2) (2026-06-04)
 
 ### Bug Fixes
