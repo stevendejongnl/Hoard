@@ -1,3 +1,9 @@
+## [1.12.3](https://github.com/stevendejongnl/printer/compare/v1.12.2...v1.12.3) (2026-06-04)
+
+### Bug Fixes
+
+* proxy webcam URLs + suppress standby idle flash + fix 0s elapsed display ([59e044b](https://github.com/stevendejongnl/printer/commit/59e044bc66019fa2611faf5a7a6cb2b8d6cf3500))
+
 ## [1.12.2](https://github.com/stevendejongnl/printer/compare/v1.12.1...v1.12.2) (2026-06-04)
 
 ### Bug Fixes
