@@ -60,10 +60,14 @@ async def get_history(entity_id: str, start: datetime, end: datetime) -> list[di
         return data[0] if data else []
 
 
-def time_weighted_avg(states: list[dict[str, Any]]) -> float:
-    """Compute time-weighted average of numeric HA state history entries."""
+def time_weighted_avg(states: list[dict[str, Any]], window_end: datetime | None = None) -> float:
+    """Compute time-weighted average of numeric HA state history entries.
+
+    window_end caps the last entry so it doesn't extend to datetime.now() for historical windows.
+    """
     if not states:
         return 0.0
+    cap = window_end if window_end is not None else datetime.now(timezone.utc)
     total_weight = 0.0
     weighted_sum = 0.0
     for i, entry in enumerate(states):
@@ -75,7 +79,7 @@ def time_weighted_avg(states: list[dict[str, Any]]) -> float:
         if i + 1 < len(states):
             t_end = datetime.fromisoformat(states[i + 1]["last_changed"].replace("Z", "+00:00"))
         else:
-            t_end = datetime.now(timezone.utc)
+            t_end = cap
         duration = (t_end - t_start).total_seconds()
         if duration > 0:
             weighted_sum += val * duration
@@ -85,12 +89,12 @@ def time_weighted_avg(states: list[dict[str, Any]]) -> float:
 
 async def avg_power_over(start: datetime, end: datetime) -> float:
     states = await get_history(_POWER_SENSOR, start, end)
-    return time_weighted_avg(states)
+    return time_weighted_avg(states, window_end=end)
 
 
 async def avg_price_over(start: datetime, end: datetime) -> float:
     states = await get_history(_PRICE_SENSOR, start, end)
-    return time_weighted_avg(states)
+    return time_weighted_avg(states, window_end=end)
 
 
 async def avg_price_hours(hours: int = 27) -> float:

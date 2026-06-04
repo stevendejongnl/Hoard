@@ -32,12 +32,15 @@ class InfluxClient:
         cost_electricity: float,
         cost_filament: float,
         cost_total: float,
+        job_id: str | None = None,
     ) -> None:
         tags: dict[str, str] = {"filename": filename}
         if spool_id is not None:
             tags["spool_id"] = str(spool_id)
         if material:
             tags["material"] = material
+        if job_id:
+            tags["job_id"] = job_id
 
         def _esc(v: str) -> str:
             return v.replace(" ", r"\ ").replace(",", r"\,").replace("=", r"\=")
@@ -57,10 +60,13 @@ class InfluxClient:
         self._write.write(bucket=self._bucket, org=self._org, record=line, write_precision=WritePrecision.S)
 
     def delete_print_job(self, timestamp: datetime, filename: str) -> None:
+        """Delete the InfluxDB entry for one specific print (±10 min window around its end time)."""
+        from datetime import timedelta
         delete_api = self._client.delete_api()
-        start = datetime(2000, 1, 1, tzinfo=timezone.utc)
-        stop = datetime(2100, 1, 1, tzinfo=timezone.utc)
-        predicate = f'_measurement="print_job" AND filename="{filename}"'
+        start = timestamp - timedelta(minutes=10)
+        stop = timestamp + timedelta(minutes=10)
+        safe = filename.replace("\\", "\\\\").replace('"', '\\"')
+        predicate = f'_measurement="print_job" AND filename="{safe}"'
         delete_api.delete(start, stop, predicate, bucket=self._bucket, org=self._org)
 
     def query_history(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
