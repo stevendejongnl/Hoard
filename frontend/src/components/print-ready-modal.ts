@@ -65,7 +65,8 @@ export class PrintReadyModal extends LitElement {
     try {
       await powerOn()
       this._step = 'waiting'
-    } catch (e) {
+      this._startRetry()
+    } catch {
       this._step = 'error'
     } finally {
       this._busy = false
@@ -77,7 +78,8 @@ export class PrintReadyModal extends LitElement {
     try {
       await firmwareRestart()
       this._step = 'waiting'
-    } catch (e) {
+      this._startRetry()
+    } catch {
       this._step = 'error'
     } finally {
       this._busy = false
@@ -85,13 +87,17 @@ export class PrintReadyModal extends LitElement {
   }
 
   private async _doStartPrint() {
+    if (this._busy) return
     this._busy = true
     try {
       await startPrint(this._filename)
+      this._stopRetry()
       this._open = false
       this._emit()
     } catch {
-      this._step = 'error'
+      // Still not ready — keep retrying (don't set error, just keep waiting)
+      this._busy = false
+      return
     } finally {
       this._busy = false
     }
@@ -102,6 +108,7 @@ export class PrintReadyModal extends LitElement {
   }
 
   private _close() {
+    this._stopRetry()
     this._open = false
     this._step = 'needs-power'
     this._busy = false
