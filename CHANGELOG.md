@@ -1,3 +1,9 @@
+## [1.15.2](https://github.com/stevendejongnl/printer/compare/v1.15.1...v1.15.2) (2026-06-04)
+
+### Bug Fixes
+
+* disable hover-open on mobile — prevents double modal on tap ([4c2e5a6](https://github.com/stevendejongnl/printer/commit/4c2e5a6c901f2e8e0378dd6f95a85002e9690ddd))
+
 ## [1.15.1](https://github.com/stevendejongnl/printer/compare/v1.15.0...v1.15.1) (2026-06-04)
 
 ### Bug Fixes
