@@ -99,10 +99,12 @@ export class TopNav extends LitElement {
     }
 
     @media (max-width: 600px) {
-      .topbar { padding: 12px 16px; }
+      .topbar { padding: 10px 16px; }
       .app-name { font-size: 13px; }
-      .nav-link { font-size: 10px; }
-      .nav { gap: 12px; }
+      .muted { display: none; }
+      .version-badge { display: none; }
+      .nav { gap: 14px; }
+      .nav-link { font-size: 11px; }
     }
   `
 

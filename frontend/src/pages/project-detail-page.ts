@@ -6,6 +6,15 @@ import { router } from '../router'
 import '../components/markdown-editor'
 import '../components/project-files-section'
 
+const styles = html`<style>
+.pd-wrap { max-width: 760px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+.pd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+@media (max-width: 600px) {
+  .pd-wrap { padding: 16px; gap: 12px; }
+  .pd-stats { grid-template-columns: repeat(2, 1fr); }
+}
+</style>`
+
 function _fmtHours(s: number | null): string {
   if (!s) return '—'
   const h = Math.round(s / 3600)
@@ -91,7 +100,8 @@ export class ProjectDetailPage extends LitElement {
 
     const p = this.project
     return html`
-      <div style="max-width: 760px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 14px;">
+      ${styles}
+      <div class="pd-wrap">
 
         <!-- header -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
@@ -109,7 +119,7 @@ export class ProjectDetailPage extends LitElement {
         </div>
 
         <!-- stats bar -->
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+        <div class="pd-stats">
           ${this._stat('prints', String(p.print_count))}
           ${this._stat('total time', _fmtHours(p.total_duration_s))}
           ${this._stat('total cost', p.total_cost != null ? '€' + p.total_cost.toFixed(2) : '—')}

@@ -264,7 +264,7 @@ export class HistoryPreview extends LitElement {
           style="position: fixed; inset: 0; background: #00000088; display: flex; align-items: center; justify-content: center; z-index: 100;"
           @click=${(e: Event) => { if (e.target === e.currentTarget) this._projectModal = null }}
         >
-          <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; width: 360px; max-height: 60vh; display: flex; flex-direction: column; gap: 10px;">
+          <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; width: min(360px, calc(100vw - 32px)); max-height: 60vh; display: flex; flex-direction: column; gap: 10px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 13px; font-weight: 600; color: #e0e0e0;">Assign to project</span>
               <span style="cursor: pointer; color: #555; font-size: 16px;" @click=${() => { this._projectModal = null }}>✕</span>
