@@ -1,3 +1,9 @@
+## [1.7.0](https://github.com/stevendejongnl/printer/compare/v1.6.1...v1.7.0) (2026-06-04)
+
+### Features
+
+* thumbnails in history/recent-prints, partial gcode fetch, in-memory cache ([92e2506](https://github.com/stevendejongnl/printer/commit/92e2506e658bccf40282b22aede7b2072973d936))
+
 ## [1.6.1](https://github.com/stevendejongnl/printer/compare/v1.6.0...v1.6.1) (2026-06-04)
 
 ### Bug Fixes
