@@ -1,3 +1,9 @@
+## [1.6.1](https://github.com/stevendejongnl/printer/compare/v1.6.0...v1.6.1) (2026-06-04)
+
+### Bug Fixes
+
+* **thumbnails:** extract directly from embedded gcode comments, bypass Moonraker extraction ([0a299eb](https://github.com/stevendejongnl/printer/commit/0a299eb43a2b8096f7b2e4827548be257dd80c94))
+
 ## [1.6.0](https://github.com/stevendejongnl/printer/compare/v1.5.4...v1.6.0) (2026-06-04)
 
 ### Features
