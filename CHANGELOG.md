@@ -1,3 +1,13 @@
+## [1.12.1](https://github.com/stevendejongnl/printer/compare/v1.12.0...v1.12.1) (2026-06-04)
+
+### Bug Fixes
+
+* power-on modal retries print every 5s, handle klippy_ready event, no more infinite spinner ([4098abd](https://github.com/stevendejongnl/printer/commit/4098abda67924fe7380075e8fb9e9d982561359d))
+
+### Code Refactoring
+
+* move all inline imports to module top level ([b90236e](https://github.com/stevendejongnl/printer/commit/b90236e556cb2ec738750f4779bc6cd1e5ba6f07))
+
 ## [1.12.0](https://github.com/stevendejongnl/printer/compare/v1.11.2...v1.12.0) (2026-06-04)
 
 ### Features
