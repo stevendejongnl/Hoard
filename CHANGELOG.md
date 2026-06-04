@@ -1,3 +1,9 @@
+## [1.7.4](https://github.com/stevendejongnl/printer/compare/v1.7.3...v1.7.4) (2026-06-04)
+
+### Bug Fixes
+
+* handle CRLF line endings and thumbnail_JPG format (OrcaSlicer/BambuStudio) ([f4aa88c](https://github.com/stevendejongnl/printer/commit/f4aa88c6d96d409080e9891a352e6a8274bfda67))
+
 ## [1.7.3](https://github.com/stevendejongnl/printer/compare/v1.7.2...v1.7.3) (2026-06-04)
 
 ### Bug Fixes
