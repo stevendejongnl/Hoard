@@ -1,3 +1,9 @@
+## [1.6.0](https://github.com/stevendejongnl/printer/compare/v1.5.4...v1.6.0) (2026-06-04)
+
+### Features
+
+* version badge in topbar, fix thumbnail 404 (inline base64 + dual URL fallback) ([3dc0ed9](https://github.com/stevendejongnl/printer/commit/3dc0ed9abf1d840cdffa3f9fe8a67288aa292004))
+
 ## [1.5.4](https://github.com/stevendejongnl/printer/compare/v1.5.3...v1.5.4) (2026-06-03)
 
 ### Bug Fixes
