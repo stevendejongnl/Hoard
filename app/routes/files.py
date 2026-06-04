@@ -129,7 +129,7 @@ async def file_thumbnail(filename: str) -> Response:
 @router.get("/thumbnail/from-gcode")
 async def thumbnail_from_gcode(filename: str) -> Response:
     """Return best thumbnail: Moonraker .thumbs/ (3D) → embedded → toolpath render."""
-    from app.gcode_thumbnail import extract_thumbnail_png, render_toolpath_thumbnail
+    from app.gcode_thumbnail import extract_thumbnail_png
     import base64 as _b64
     import logging
     log = logging.getLogger(__name__)
@@ -175,9 +175,6 @@ async def thumbnail_from_gcode(filename: str) -> Response:
         try:
             gcode_bytes = await moonraker.download_file_partial(filename)
             img = extract_thumbnail_png(gcode_bytes)
-            # 3. Toolpath render as last resort
-            if not img:
-                img = render_toolpath_thumbnail(gcode_bytes)
         except httpx.HTTPStatusError as exc:
             if exc.response.status_code == 404:
                 _cache_set(filename, None)
