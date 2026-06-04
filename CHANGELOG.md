@@ -1,3 +1,9 @@
+## [1.7.3](https://github.com/stevendejongnl/printer/compare/v1.7.2...v1.7.3) (2026-06-04)
+
+### Bug Fixes
+
+* increase partial gcode read to 128KB for large Cura thumbnails ([a6d0af2](https://github.com/stevendejongnl/printer/commit/a6d0af28aea4c386d6ab54c454a09f883b27795c))
+
 ## [1.7.2](https://github.com/stevendejongnl/printer/compare/v1.7.1...v1.7.2) (2026-06-04)
 
 ### Bug Fixes
