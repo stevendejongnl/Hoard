@@ -131,11 +131,12 @@ async def thumbnail_from_gcode(filename: str) -> Response:
     try:
         # Fetch first 128 KB — large 300×300 Cura thumbnails can be 80+ KB base64
         gcode_bytes = await moonraker.download_file_partial(filename)
-    except Exception as exc:
-        err = str(exc)
-        if "404" in err or "Not Found" in err or "Client error '404'" in err:
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 404:
             _cache_set(filename, None)
             raise HTTPException(404, "File not found on printer") from exc
+        raise HTTPException(502, f"Moonraker error {exc.response.status_code}") from exc
+    except Exception as exc:
         raise HTTPException(502, f"Could not fetch gcode header: {exc}") from exc
 
     from app.gcode_thumbnail import render_toolpath_thumbnail
