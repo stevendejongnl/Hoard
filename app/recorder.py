@@ -26,7 +26,7 @@ async def handle_history_changed(params: list[Any]) -> None:
     asyncio.create_task(_record_print(job))
 
 
-async def _record_print(job: dict[str, Any]) -> None:
+async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     job_id: str = job.get("job_id", "")
     filename: str = job.get("filename", "")
     start_ts: float = job.get("start_time", 0)
@@ -36,8 +36,11 @@ async def _record_print(job: dict[str, Any]) -> None:
         log.warning("recorder: missing job_id or filename, skipping")
         return
 
-    log.info("recorder: print finished %s, waiting %ds for HA sensors to settle", filename, _HA_SETTLE_DELAY)
-    await asyncio.sleep(_HA_SETTLE_DELAY)
+    if skip_settle:
+        log.info("recorder: restoring historical costs for %s", filename)
+    else:
+        log.info("recorder: print finished %s, waiting %ds for HA sensors to settle", filename, _HA_SETTLE_DELAY)
+        await asyncio.sleep(_HA_SETTLE_DELAY)
 
     start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
     end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc) if end_ts else datetime.now(timezone.utc)
@@ -93,6 +96,71 @@ async def _record_print(job: dict[str, Any]) -> None:
 
     await db.link_print_spool(job_id, spool_id, filament_g)
     await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
+
+
+async def startup_reconcile(lookback: int = 100) -> None:
+    """Scan recent print history on startup and restore costs for any prints missing InfluxDB entries.
+
+    Runs at every pod start so a restart during a recorder settle-delay doesn't permanently lose data.
+    """
+    from datetime import timedelta
+
+    try:
+        result = await moonraker.get("/server/history/list", limit=lookback, order="desc")
+        jobs = [j for j in result.get("jobs", []) if j.get("status") == "completed"]
+    except Exception as exc:
+        log.warning("reconcile: failed to fetch Moonraker history: %s", exc)
+        return
+
+    if not jobs:
+        return
+
+    # Build a minute-bucket index of existing InfluxDB entries
+    influx_records = influx.query_history(limit=lookback * 2)
+
+    def _minute(iso: str) -> int:
+        try:
+            from datetime import datetime, timezone
+            dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+            return int(dt.timestamp()) // 60
+        except Exception:
+            return 0
+
+    influx_by_file_minute: dict[tuple[str, int], bool] = {}
+    for r in influx_records:
+        influx_by_file_minute[(r.get("filename", ""), _minute(r.get("time", "")))] = True
+
+    restored = 0
+    for job in jobs:
+        job_id = job.get("job_id", "")
+        filename = job.get("filename", "")
+        end_ts = float(job.get("end_time") or 0)
+        if not job_id or not filename or not end_ts:
+            continue
+
+        record_minute = int(end_ts) // 60
+        found = influx_by_file_minute.get((filename, record_minute))
+        if not found:
+            for delta in range(1, 6):
+                if influx_by_file_minute.get((filename, record_minute - delta)):
+                    found = True
+                    break
+                if influx_by_file_minute.get((filename, record_minute + delta)):
+                    found = True
+                    break
+
+        if found:
+            continue
+
+        log.info("reconcile: missing cost for %s (%s) — restoring", job_id, filename)
+        # Re-run the recorder logic without the settle delay (historical data is already stable)
+        await _record_print(job, skip_settle=True)
+        restored += 1
+
+    if restored:
+        log.info("reconcile: restored costs for %d print(s)", restored)
+    else:
+        log.info("reconcile: all %d recent prints have cost data", len(jobs))
 
 
 def register_ws_handlers() -> None:

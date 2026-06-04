@@ -32,6 +32,9 @@ async def lifespan(app: FastAPI):
     ha_task = asyncio.create_task(sse._poll_ha())
     pi_task = asyncio.create_task(sse._poll_pi_stats())
 
+    # Heal any prints that missed cost recording due to pod restarts / WS disconnects
+    asyncio.create_task(recorder.startup_reconcile())
+
     log.info("printer started, db=%s", settings.database_path)
     yield
 
