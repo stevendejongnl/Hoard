@@ -1,3 +1,4 @@
+import time
 from typing import Any
 
 import httpx
@@ -8,6 +9,23 @@ from app.config import settings
 from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/files", tags=["files"])
+
+# In-memory thumbnail cache: filename → (expire_ts, png_bytes | None)
+# None = confirmed no thumbnail (also cached to avoid repeated failed lookups)
+_THUMB_CACHE: dict[str, tuple[float, bytes | None]] = {}
+_THUMB_TTL = 3600  # 1 hour
+
+
+def _cache_get(filename: str) -> bytes | None | bool:
+    """Returns png bytes, None (no thumbnail), or False (not cached)."""
+    entry = _THUMB_CACHE.get(filename)
+    if entry and entry[0] > time.monotonic():
+        return entry[1]  # bytes or None
+    return False
+
+
+def _cache_set(filename: str, png: bytes | None) -> None:
+    _THUMB_CACHE[filename] = (time.monotonic() + _THUMB_TTL, png)
 
 
 @router.get("")
@@ -36,10 +54,19 @@ async def file_thumbnail(filename: str) -> Response:
     import base64
     import logging
     log = logging.getLogger(__name__)
+
+    cached = _cache_get(filename)
+    if cached is not False:
+        if cached is None:
+            raise HTTPException(404, "No thumbnails")
+        return Response(content=cached, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=3600"})
+
     try:
         meta = await moonraker.get_file_metadata(filename)
         thumbs: list[dict[str, Any]] = meta.get("thumbnails", [])
         if not thumbs:
+            _cache_set(filename, None)
             raise HTTPException(404, "No thumbnails")
         # Pick the largest thumbnail
         thumb = max(thumbs, key=lambda t: t.get("width", 0) * t.get("height", 0))
@@ -50,6 +77,7 @@ async def file_thumbnail(filename: str) -> Response:
         if inline_data:
             try:
                 png_bytes = base64.b64decode(inline_data)
+                _cache_set(filename, png_bytes)
                 return Response(
                     content=png_bytes,
                     media_type="image/png",
@@ -71,13 +99,16 @@ async def file_thumbnail(filename: str) -> Response:
                 try:
                     r = await client.get(url, timeout=10)
                     if r.status_code == 200:
-                        return Response(
-                            content=r.content,
+                        png_content = r.content
+                    _cache_set(filename, png_content)
+                    return Response(
+                            content=png_content,
                             media_type=r.headers.get("content-type", "image/png"),
                             headers={"Cache-Control": "public, max-age=3600"},
                         )
                 except Exception:
                     continue
+        _cache_set(filename, None)
         raise HTTPException(404, f"Thumbnail file not found: {rel_path}")
     except HTTPException:
         raise
@@ -89,11 +120,22 @@ async def file_thumbnail(filename: str) -> Response:
 async def thumbnail_from_gcode(filename: str) -> Response:
     """Extract thumbnail directly from Cura-embedded gcode comments."""
     from app.gcode_thumbnail import extract_thumbnail_png
+
+    cached = _cache_get(filename)
+    if cached is not False:
+        if cached is None:
+            raise HTTPException(404, "No embedded thumbnail in gcode")
+        return Response(content=cached, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=3600"})
+
     try:
-        gcode_bytes = await moonraker.download_file(filename)
+        # Only fetch first 64 KB — thumbnails are always in the header
+        gcode_bytes = await moonraker.download_file_partial(filename, 65536)
     except Exception as exc:
-        raise HTTPException(502, f"Could not download gcode: {exc}") from exc
+        raise HTTPException(502, f"Could not fetch gcode header: {exc}") from exc
+
     png = extract_thumbnail_png(gcode_bytes)
+    _cache_set(filename, png)
     if not png:
         raise HTTPException(404, "No embedded thumbnail in gcode")
     return Response(

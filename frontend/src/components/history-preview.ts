@@ -128,6 +128,7 @@ export class HistoryPreview extends LitElement {
       <table>
         <thead>
           <tr>
+            <th class="th-thumb"></th>
             <th>File</th>
             <th>Duration</th>
             <th>Spool</th>
@@ -138,6 +139,14 @@ export class HistoryPreview extends LitElement {
         <tbody>
           ${this.records.map((record) => html`
             <tr>
+              <td class="td-thumb">
+                <img
+                  class="row-thumb"
+                  src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}"
+                  alt=""
+                  @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                />
+              </td>
               <td>
                 <div class="file-name">${record.filename}</div>
                 <div class="file-sub">${record.time ? this._formatDate(record.time) : '—'} · ${record.filament_g.toFixed(1)} g</div>
@@ -230,6 +239,17 @@ export class HistoryPreview extends LitElement {
     table {
       width: 100%;
       border-collapse: collapse;
+    }
+
+    .th-thumb { width: 44px; }
+    .td-thumb { width: 44px; padding-right: 8px; }
+    .row-thumb {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
+      display: block;
+      background: var(--bg-surface);
     }
 
     thead th {
