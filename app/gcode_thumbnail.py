@@ -9,8 +9,8 @@ def has_thumbnails(gcode_bytes: bytes) -> bool:
 
 def extract_thumbnail_png(gcode_bytes: bytes, prefer_size: int = 300) -> bytes | None:
     """Parse Cura-format thumbnail comments and return the PNG closest to prefer_size."""
-    # Only scan first 64 KB — thumbnails are always at the top
-    header = gcode_bytes[:65536].decode("ascii", errors="ignore")
+    # Only scan first 128 KB — thumbnails are at the top; large 300x300 PNGs can be 50-80 KB base64
+    header = gcode_bytes[:131072].decode("ascii", errors="ignore")
 
     pattern = re.compile(
         r"; thumbnail begin (\d+)x(\d+) \d+\n(.*?); thumbnail end",
