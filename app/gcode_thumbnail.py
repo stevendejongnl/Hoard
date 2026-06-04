@@ -36,44 +36,96 @@ def extract_thumbnail_png(gcode_bytes: bytes, prefer_size: int = 300) -> bytes |
 
 
 def render_toolpath_thumbnail(gcode_bytes: bytes, size: int = 300) -> bytes | None:
-    """Render a top-down toolpath preview from gcode when no embedded thumbnail exists."""
+    """Render an isometric 3D toolpath preview coloured by layer height."""
+    import math
+
     text = gcode_bytes.decode("ascii", errors="ignore")
 
-    # Parse X Y from G0/G1 moves — captures first-layer footprint from first 128 KB
-    xy = re.compile(r"G[01]\b[^;\n]*X([-\d.]+)[^;\n]*Y([-\d.]+)", re.IGNORECASE)
-    points: list[tuple[float, float]] = []
-    for m in xy.finditer(text):
-        try:
-            points.append((float(m.group(1)), float(m.group(2))))
-        except ValueError:
+    # Parse extrusion moves (G1 with E field) — skip travel moves
+    _x = re.compile(r"X([-\d.]+)", re.I)
+    _y = re.compile(r"Y([-\d.]+)", re.I)
+    _z = re.compile(r"Z([-\d.]+)", re.I)
+    _e = re.compile(r"E[-\d.]+", re.I)
+
+    cx = cy = cz = 0.0
+    points: list[tuple[float, float, float]] = []
+
+    for line in text.splitlines()[:12000]:
+        bare = line.split(";")[0].strip()
+        if not bare.upper().startswith(("G0", "G1")):
             continue
+        zm = _z.search(bare)
+        xm = _x.search(bare)
+        ym = _y.search(bare)
+        if zm:
+            cz = float(zm.group(1))
+        if xm:
+            cx = float(xm.group(1))
+        if ym:
+            cy = float(ym.group(1))
+        # Only record actual extrusion moves (not travels)
+        if _e.search(bare) and (xm or ym):
+            points.append((cx, cy, cz))
 
     if len(points) < 20:
         return None
 
-    xs, ys = zip(*points)
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-    rx = max_x - min_x or 1.0
-    ry = max_y - min_y or 1.0
+    # Thin down to ~4 000 points so rendering stays fast
+    step = max(1, len(points) // 4000)
+    points = points[::step]
 
-    margin = max(8, size // 12)
+    # Isometric projection: yaw 45°, pitch 30°
+    yaw = math.radians(45)
+    pitch = math.radians(30)
+    cos_y, sin_y = math.cos(yaw), math.sin(yaw)
+    cos_p, sin_p = math.cos(pitch), math.sin(pitch)
+
+    def iso(x: float, y: float, z: float) -> tuple[float, float]:
+        # Rotate around vertical (Y) axis first
+        x2 = x * cos_y + z * sin_y
+        z2 = -x * sin_y + z * cos_y
+        # Then tilt (rotate around X)
+        sy = y * cos_p - z2 * sin_p
+        return x2, sy
+
+    projected = [iso(x, y, z) for x, y, z in points]
+    sxs = [p[0] for p in projected]
+    sys_ = [p[1] for p in projected]
+    min_sx, max_sx = min(sxs), max(sxs)
+    min_sy, max_sy = min(sys_), max(sys_)
+    rng = max(max_sx - min_sx, max_sy - min_sy) or 1.0
+
+    margin = max(6, size // 14)
     canvas = size - 2 * margin
+    scale = canvas / rng
 
-    def to_px(x: float, y: float) -> tuple[int, int]:
+    def to_px(sx: float, sy: float) -> tuple[int, int]:
         return (
-            int((x - min_x) / rx * canvas) + margin,
-            size - (int((y - min_y) / ry * canvas) + margin),
+            int((sx - min_sx) * scale) + margin,
+            size - (int((sy - min_sy) * scale) + margin),
         )
+
+    # Z range for height colour
+    zs = [p[2] for p in points]
+    z_min, z_max = min(zs), max(zs)
+    z_rng = z_max - z_min or 1.0
 
     img = Image.new("RGB", (size, size), (20, 20, 20))
     draw = ImageDraw.Draw(img)
-    prev: tuple[int, int] | None = None
-    for pt in points:
-        px = to_px(*pt)
-        if prev and prev != px:
-            draw.line([prev, px], fill=(34, 211, 238), width=1)
-        prev = px
+
+    prev_px: tuple[int, int] | None = None
+    prev_z: float = 0.0
+    for (sx, sy), (_, _, pz) in zip(projected, points):
+        px = to_px(sx, sy)
+        # Height-based colour: dark teal at base → bright cyan at top
+        t = (pz - z_min) / z_rng
+        color = (int(t * 34), int(130 + t * 81), int(160 + t * 78))
+        if prev_px and abs(pz - prev_z) < z_rng * 0.3:
+            dx, dy = abs(px[0] - prev_px[0]), abs(px[1] - prev_px[1])
+            if dx < size * 0.35 and dy < size * 0.35:
+                draw.line([prev_px, px], fill=color, width=1)
+        prev_px = px
+        prev_z = pz
 
     buf = io.BytesIO()
     img.save(buf, "PNG", optimize=True)
