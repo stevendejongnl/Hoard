@@ -1,10 +1,11 @@
 import { LitElement, css, html } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import type { PrintRecord, Spool } from '../types';
-import { assignSpool, getHistory, getSpools, startPrint } from '../api';
+import { assignSpool, getHistory, getSpools } from '../api';
 import { sseClient } from '../sse';
 import './spool-modal';
 import './cost-breakdown-popup';
+import './print-ready-modal';
 
 declare const window: Window & { router: { navigate: (path: string) => void } };
 
@@ -49,13 +50,9 @@ export class HistoryPreview extends LitElement {
     }
   }
 
-  private async _print(filename: string) {
-    if (!window.confirm(`Print ${filename}?`)) return
-    try {
-      await startPrint(filename)
-    } catch (e) {
-      window.alert(`Failed to start print: ${e}`)
-    }
+  private _print(filename: string) {
+    const modal = this.shadowRoot?.querySelector<any>('print-ready-modal')
+    modal?.tryPrint(filename)
   }
 
   private async _onSpoolSelect(jobId: string, e: Event) {
@@ -113,6 +110,7 @@ export class HistoryPreview extends LitElement {
     }
 
     return html`
+      <print-ready-modal></print-ready-modal>
       <spool-modal
         .open=${this._spoolModalOpen}
         .spool=${null}

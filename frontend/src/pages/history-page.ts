@@ -1,9 +1,10 @@
 import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { PrintRecord, Spool } from '../types'
-import { getHistory, getSpools, assignSpool, startPrint } from '../api'
+import { getHistory, getSpools, assignSpool } from '../api'
 import { sseClient } from '../sse'
 import '../components/cost-breakdown-popup'
+import '../components/print-ready-modal'
 
 @customElement('history-page')
 export class HistoryPage extends LitElement {
@@ -42,10 +43,9 @@ export class HistoryPage extends LitElement {
     this.loading = false
   }
 
-  private async _print(filename: string) {
-    if (!window.confirm(`Print ${filename}?`)) return
-    try { await startPrint(filename) }
-    catch (e) { window.alert(`Failed: ${e}`) }
+  private _print(filename: string) {
+    const modal = document.querySelector<any>('print-ready-modal')
+    modal?.tryPrint(filename)
   }
 
   private fmtDate(iso: string) {
@@ -111,6 +111,7 @@ export class HistoryPage extends LitElement {
     const totalPages = Math.ceil(this.total / 20)
 
     return html`
+      <print-ready-modal></print-ready-modal>
       <style>
         /* ── Base layout ── */
         .page-wrap {
