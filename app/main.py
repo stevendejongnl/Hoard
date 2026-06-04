@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -9,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.routes import chunks, control, files, history, predict, spools, webcams
+
+_APP_VERSION = os.getenv("APP_VERSION", "dev")
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -48,6 +51,11 @@ app.include_router(webcams.router)
 app.include_router(history.router)
 app.include_router(predict.router)
 app.include_router(spools.router)
+
+
+@app.get("/api/version")
+async def version():
+    return {"version": _APP_VERSION}
 
 
 @app.get("/stream")
