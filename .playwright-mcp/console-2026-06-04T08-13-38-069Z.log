@@ -1,0 +1,3 @@
+[     821ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://printer.madebysteven.nl/api/files/thumbnail/from-gcode?filename=Doorhandle_parts.gcode:0
+[     825ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://printer.madebysteven.nl/api/files/thumbnail/from-gcode?filename=calibration_ring.gcode:0
+[     829ms] [ERROR] Failed to load resource: the server responded with a status of 502 () @ https://printer.madebysteven.nl/api/files/thumbnail/from-gcode?filename=Doorhandle_body.gcode:0

@@ -1,0 +1,262 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5] [cursor=pointer]:
+      - text: printer.madebysteven.nl
+      - generic [ref=e6]: v1.10.0
+    - generic [ref=e7]:
+      - generic [ref=e8] [cursor=pointer]: history
+      - generic [ref=e9] [cursor=pointer]: spools
+  - generic [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]: Print history
+      - generic [ref=e14]: 20 prints
+    - table [ref=e15]:
+      - rowgroup [ref=e16]:
+        - row "File Date Duration Filament Spool Total" [ref=e17]:
+          - columnheader [ref=e18]
+          - columnheader "File" [ref=e19]
+          - columnheader "Date" [ref=e20]
+          - columnheader "Duration" [ref=e21]
+          - columnheader "Filament" [ref=e22]
+          - columnheader "Spool" [ref=e23]
+          - columnheader "Total" [ref=e24]
+          - columnheader [ref=e25]
+      - rowgroup [ref=e26]:
+        - row "Piedistallo+per+lego+F1+2Posti.gcode 3 jun 2026 3h 38m 36.5 g eSUN PLA €0.43 ▶" [ref=e27]:
+          - cell [ref=e28]
+          - cell "Piedistallo+per+lego+F1+2Posti.gcode" [ref=e29]
+          - cell "3 jun 2026" [ref=e30]
+          - cell "3h 38m" [ref=e31]
+          - cell "36.5 g" [ref=e32]
+          - cell "eSUN PLA" [ref=e33]:
+            - generic "Click to reassign" [ref=e34] [cursor=pointer]: eSUN PLA
+          - cell "€0.43" [ref=e36]:
+            - generic [ref=e38]:
+              - generic: €0.43
+          - cell "▶" [ref=e39]:
+            - button "▶" [ref=e40] [cursor=pointer]
+        - row "helicopter-blade.gcode 26 mei 2026 0h 11m 3.8 g Sunlu PLA Plus €0.04 ▶" [ref=e41]:
+          - cell [ref=e42]
+          - cell "helicopter-blade.gcode" [ref=e43]
+          - cell "26 mei 2026" [ref=e44]
+          - cell "0h 11m" [ref=e45]
+          - cell "3.8 g" [ref=e46]
+          - cell "Sunlu PLA Plus" [ref=e47]:
+            - generic "Click to reassign" [ref=e48] [cursor=pointer]: Sunlu PLA Plus
+          - cell "€0.04" [ref=e50]:
+            - generic [ref=e52]:
+              - generic: €0.04
+          - cell "▶" [ref=e53]:
+            - button "▶" [ref=e54] [cursor=pointer]
+        - row "helicopter-blade.gcode 26 mei 2026 0h 11m 3.8 g Sunlu PLA Plus €0.04 ▶" [ref=e55]:
+          - cell [ref=e56]
+          - cell "helicopter-blade.gcode" [ref=e57]
+          - cell "26 mei 2026" [ref=e58]
+          - cell "0h 11m" [ref=e59]
+          - cell "3.8 g" [ref=e60]
+          - cell "Sunlu PLA Plus" [ref=e61]:
+            - generic "Click to reassign" [ref=e62] [cursor=pointer]: Sunlu PLA Plus
+          - cell "€0.04" [ref=e64]:
+            - generic [ref=e66]:
+              - generic: €0.04
+          - cell "▶" [ref=e67]:
+            - button "▶" [ref=e68] [cursor=pointer]
+        - row "dactyl-manuform-dm-5x6-plate-right.gcode 22 mei 2026 2h 59m 43.3 g Sunlu PLA Plus €0.43 ▶" [ref=e69]:
+          - cell [ref=e70]
+          - cell "dactyl-manuform-dm-5x6-plate-right.gcode" [ref=e71]
+          - cell "22 mei 2026" [ref=e72]
+          - cell "2h 59m" [ref=e73]
+          - cell "43.3 g" [ref=e74]
+          - cell "Sunlu PLA Plus" [ref=e75]:
+            - generic "Click to reassign" [ref=e76] [cursor=pointer]: Sunlu PLA Plus
+          - cell "€0.43" [ref=e78]:
+            - generic [ref=e80]:
+              - generic: €0.43
+          - cell "▶" [ref=e81]:
+            - button "▶" [ref=e82] [cursor=pointer]
+        - row "dactyl-manuform-dm-5x6-plate.gcode 21 mei 2026 2h 59m 43.3 g Sunlu PLA Plus €0.43 ▶" [ref=e83]:
+          - cell [ref=e84]
+          - cell "dactyl-manuform-dm-5x6-plate.gcode" [ref=e85]
+          - cell "21 mei 2026" [ref=e86]
+          - cell "2h 59m" [ref=e87]
+          - cell "43.3 g" [ref=e88]
+          - cell "Sunlu PLA Plus" [ref=e89]:
+            - generic "Click to reassign" [ref=e90] [cursor=pointer]: Sunlu PLA Plus
+          - cell "€0.43" [ref=e92]:
+            - generic [ref=e94]:
+              - generic: €0.43
+          - cell "▶" [ref=e95]:
+            - button "▶" [ref=e96] [cursor=pointer]
+        - row "tap_cover_plate.gcode 19 mei 2026 0h 47m 10.8 g Generic PLA €0.17 ▶" [ref=e97]:
+          - cell [ref=e98]
+          - cell "tap_cover_plate.gcode" [ref=e99]
+          - cell "19 mei 2026" [ref=e100]
+          - cell "0h 47m" [ref=e101]
+          - cell "10.8 g" [ref=e102]
+          - cell "Generic PLA" [ref=e103]:
+            - generic "Click to reassign" [ref=e104] [cursor=pointer]: Generic PLA
+          - cell "€0.17" [ref=e106]:
+            - generic [ref=e108]:
+              - generic: €0.17
+          - cell "▶" [ref=e109]:
+            - button "▶" [ref=e110] [cursor=pointer]
+        - row "tap_cover_plate.gcode 19 mei 2026 0h 47m 10.8 g Generic PLA €0.17 ▶" [ref=e111]:
+          - cell [ref=e112]
+          - cell "tap_cover_plate.gcode" [ref=e113]
+          - cell "19 mei 2026" [ref=e114]
+          - cell "0h 47m" [ref=e115]
+          - cell "10.8 g" [ref=e116]
+          - cell "Generic PLA" [ref=e117]:
+            - generic "Click to reassign" [ref=e118] [cursor=pointer]: Generic PLA
+          - cell "€0.17" [ref=e120]:
+            - generic [ref=e122]:
+              - generic: €0.17
+          - cell "▶" [ref=e123]:
+            - button "▶" [ref=e124] [cursor=pointer]
+        - row "bit driver.gcode 17 mei 2026 1h 56m 30.6 g Generic PLA €0.47 ▶" [ref=e125]:
+          - cell [ref=e126]
+          - cell "bit driver.gcode" [ref=e127]
+          - cell "17 mei 2026" [ref=e128]
+          - cell "1h 56m" [ref=e129]
+          - cell "30.6 g" [ref=e130]
+          - cell "Generic PLA" [ref=e131]:
+            - generic "Click to reassign" [ref=e132] [cursor=pointer]: Generic PLA
+          - cell "€0.47" [ref=e134]:
+            - generic [ref=e136]:
+              - generic: €0.47
+          - cell "▶" [ref=e137]:
+            - button "▶" [ref=e138] [cursor=pointer]
+        - row "ASX1_Stokke steps - Footrest repair.gcode 2 mei 2026 5h 32m 103.5 g Generic PLA €1.55 ▶" [ref=e139]:
+          - cell [ref=e140]
+          - cell "ASX1_Stokke steps - Footrest repair.gcode" [ref=e141]
+          - cell "2 mei 2026" [ref=e142]
+          - cell "5h 32m" [ref=e143]
+          - cell "103.5 g" [ref=e144]
+          - cell "Generic PLA" [ref=e145]:
+            - generic "Click to reassign" [ref=e146] [cursor=pointer]: Generic PLA
+          - cell "€1.55" [ref=e148]:
+            - generic [ref=e150]:
+              - generic: €1.55
+          - cell "▶" [ref=e151]:
+            - button "▶" [ref=e152] [cursor=pointer]
+        - row "Doorhandle/Doorhandle_body.gcode 30 apr 2026 3h 44m 69.2 g Generic PLA €1.04 ▶" [ref=e153]:
+          - cell [ref=e154]
+          - cell "Doorhandle/Doorhandle_body.gcode" [ref=e155]
+          - cell "30 apr 2026" [ref=e156]
+          - cell "3h 44m" [ref=e157]
+          - cell "69.2 g" [ref=e158]
+          - cell "Generic PLA" [ref=e159]:
+            - generic "Click to reassign" [ref=e160] [cursor=pointer]: Generic PLA
+          - cell "€1.04" [ref=e162]:
+            - generic [ref=e164]:
+              - generic: €1.04
+          - cell "▶" [ref=e165]:
+            - button "▶" [ref=e166] [cursor=pointer]
+        - row "Doorhandle_parts.gcode 28 apr 2026 3h 0m 57.3 g Generic PLA €0.86 ▶" [ref=e167]:
+          - cell [ref=e168]
+          - cell "Doorhandle_parts.gcode" [ref=e169]
+          - cell "28 apr 2026" [ref=e170]
+          - cell "3h 0m" [ref=e171]
+          - cell "57.3 g" [ref=e172]
+          - cell "Generic PLA" [ref=e173]:
+            - generic "Click to reassign" [ref=e174] [cursor=pointer]: Generic PLA
+          - cell "€0.86" [ref=e176]:
+            - generic [ref=e178]:
+              - generic: €0.86
+          - cell "▶" [ref=e179]:
+            - button "▶" [ref=e180] [cursor=pointer]
+        - row "Doorhandle_body.gcode 28 apr 2026 1h 56m 35.2 g Generic PLA €0.32 ▶" [ref=e181]:
+          - cell [ref=e182]
+          - cell "Doorhandle_body.gcode" [ref=e183]
+          - cell "28 apr 2026" [ref=e184]
+          - cell "1h 56m" [ref=e185]
+          - cell "35.2 g" [ref=e186]
+          - cell "Generic PLA" [ref=e187]:
+            - generic "Click to reassign" [ref=e188] [cursor=pointer]: Generic PLA
+          - cell "€0.32" [ref=e190]:
+            - generic [ref=e192]:
+              - generic: €0.32
+          - cell "▶" [ref=e193]:
+            - button "▶" [ref=e194] [cursor=pointer]
+        - row "Doorhandle_body.gcode 28 apr 2026 1h 56m 35.2 g Generic PLA €0.32 ▶" [ref=e195]:
+          - cell [ref=e196]
+          - cell "Doorhandle_body.gcode" [ref=e197]
+          - cell "28 apr 2026" [ref=e198]
+          - cell "1h 56m" [ref=e199]
+          - cell "35.2 g" [ref=e200]
+          - cell "Generic PLA" [ref=e201]:
+            - generic "Click to reassign" [ref=e202] [cursor=pointer]: Generic PLA
+          - cell "€0.32" [ref=e204]:
+            - generic [ref=e206]:
+              - generic: €0.32
+          - cell "▶" [ref=e207]:
+            - button "▶" [ref=e208] [cursor=pointer]
+        - row "calibration_ring.gcode 28 apr 2026 0h 11m 3.1 g Generic PLA €0.05 ▶" [ref=e209]:
+          - cell [ref=e210]
+          - cell "calibration_ring.gcode" [ref=e211]
+          - cell "28 apr 2026" [ref=e212]
+          - cell "0h 11m" [ref=e213]
+          - cell "3.1 g" [ref=e214]
+          - cell "Generic PLA" [ref=e215]:
+            - generic "Click to reassign" [ref=e216] [cursor=pointer]: Generic PLA
+          - cell "€0.05" [ref=e218]:
+            - generic [ref=e220]:
+              - generic: €0.05
+          - cell "▶" [ref=e221]:
+            - button "▶" [ref=e222] [cursor=pointer]
+        - row "calibration_ring.gcode 27 apr 2026 0h 11m 3.3 g Generic PLA €0.05 ▶" [ref=e223]:
+          - cell [ref=e224]
+          - cell "calibration_ring.gcode" [ref=e225]
+          - cell "27 apr 2026" [ref=e226]
+          - cell "0h 11m" [ref=e227]
+          - cell "3.3 g" [ref=e228]
+          - cell "Generic PLA" [ref=e229]:
+            - generic "Click to reassign" [ref=e230] [cursor=pointer]: Generic PLA
+          - cell "€0.05" [ref=e232]:
+            - generic [ref=e234]:
+              - generic: €0.05
+          - cell "▶" [ref=e235]:
+            - button "▶" [ref=e236] [cursor=pointer]
+        - row "duct_clamp.gcode 25 apr 2026 5h 35m 91.2 g Generic PLA €1.37 ▶" [ref=e237]:
+          - cell [ref=e238]
+          - cell "duct_clamp.gcode" [ref=e239]
+          - cell "25 apr 2026" [ref=e240]
+          - cell "5h 35m" [ref=e241]
+          - cell "91.2 g" [ref=e242]
+          - cell "Generic PLA" [ref=e243]:
+            - generic "Click to reassign" [ref=e244] [cursor=pointer]: Generic PLA
+          - cell "€1.37" [ref=e246]:
+            - generic [ref=e248]:
+              - generic: €1.37
+          - cell "▶" [ref=e249]:
+            - button "▶" [ref=e250] [cursor=pointer]
+        - row "e1-mount_clamp20mm.gcode 19 apr 2026 0h 42m 10.4 g Generic PLA €0.16 ▶" [ref=e251]:
+          - cell [ref=e252]
+          - cell "e1-mount_clamp20mm.gcode" [ref=e253]
+          - cell "19 apr 2026" [ref=e254]
+          - cell "0h 42m" [ref=e255]
+          - cell "10.4 g" [ref=e256]
+          - cell "Generic PLA" [ref=e257]:
+            - generic "Click to reassign" [ref=e258] [cursor=pointer]: Generic PLA
+          - cell "€0.16" [ref=e260]:
+            - generic [ref=e262]:
+              - generic: €0.16
+          - cell "▶" [ref=e263]:
+            - button "▶" [ref=e264] [cursor=pointer]
+        - row "e1-mount_clamp20mm.gcode 19 apr 2026 0h 42m 10.4 g Generic PLA €0.16 ▶" [ref=e265]:
+          - cell [ref=e266]
+          - cell "e1-mount_clamp20mm.gcode" [ref=e267]
+          - cell "19 apr 2026" [ref=e268]
+          - cell "0h 42m" [ref=e269]
+          - cell "10.4 g" [ref=e270]
+          - cell "Generic PLA" [ref=e271]:
+            - generic "Click to reassign" [ref=e272] [cursor=pointer]: Generic PLA
+          - cell "€0.16" [ref=e274]:
+            - generic [ref=e276]:
+              - generic: €0.16
+          - cell "▶" [ref=e277]:
+            - button "▶" [ref=e278] [cursor=pointer]
+    - generic [ref=e279]:
+      - button "← Previous" [disabled] [ref=e280]
+      - generic [ref=e281]: Page 1 of 1
+      - button "Next →" [disabled] [ref=e282]
