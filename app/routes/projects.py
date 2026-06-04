@@ -1,0 +1,177 @@
+import math
+import os
+import uuid
+from pathlib import Path
+from typing import Any
+
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from pydantic import BaseModel
+
+from app import db
+from app.config import settings
+from app.influx import influx
+from app.moonraker import moonraker
+
+router = APIRouter(prefix="/api/projects", tags=["projects"])
+
+_MM_TO_GRAMS = math.pi * (0.875 ** 2) * 1.24 * 0.001
+
+
+class ProjectCreate(BaseModel):
+    name: str
+
+
+class ProjectUpdate(BaseModel):
+    name: str | None = None
+    notes: str | None = None
+
+
+class FileAdd(BaseModel):
+    type: str
+    filename: str
+    label: str | None = None
+
+
+class LinkAdd(BaseModel):
+    url: str
+    label: str | None = None
+
+
+class PrintLink(BaseModel):
+    job_id: str
+    project_file_id: int | None = None
+
+
+@router.get("")
+async def list_projects() -> list[dict[str, Any]]:
+    return await db.list_projects()
+
+
+@router.post("", status_code=201)
+async def create_project(body: ProjectCreate) -> dict[str, Any]:
+    return await db.create_project(body.name)
+
+
+@router.get("/{project_id}")
+async def get_project(project_id: int) -> dict[str, Any]:
+    project = await db.get_project(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    return project
+
+
+@router.patch("/{project_id}")
+async def update_project(project_id: int, body: ProjectUpdate) -> dict[str, Any]:
+    data = {k: v for k, v in body.model_dump().items() if v is not None}
+    result = await db.update_project(project_id, data)
+    if not result:
+        raise HTTPException(404, "Project not found")
+    return result
+
+
+@router.delete("/{project_id}", status_code=204)
+async def delete_project(project_id: int) -> None:
+    project = await db.get_project(project_id)
+    if not project:
+        raise HTTPException(404, "Project not found")
+    for f in project.get("files", []):
+        if f["type"] == "stl":
+            try:
+                os.remove(f["filename"])
+            except OSError:
+                pass
+    await db.delete_project(project_id)
+
+
+@router.post("/{project_id}/files", status_code=201)
+async def add_file(project_id: int, body: FileAdd) -> dict[str, Any]:
+    if not await db.get_project(project_id):
+        raise HTTPException(404, "Project not found")
+    if body.type not in ("gcode", "stl"):
+        raise HTTPException(422, "type must be 'gcode' or 'stl'")
+    return await db.add_project_file(project_id, body.type, body.filename, body.label)
+
+
+@router.post("/{project_id}/files/upload", status_code=201)
+async def upload_stl(
+    project_id: int,
+    label: str | None = None,
+    file: UploadFile = File(...),
+) -> dict[str, Any]:
+    if not await db.get_project(project_id):
+        raise HTTPException(404, "Project not found")
+    uploads_dir = Path(settings.uploads_dir)
+    uploads_dir.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{uuid.uuid4().hex[:8]}_{file.filename}"
+    stored_path = str(uploads_dir / stored_name)
+    contents = await file.read()
+    with open(stored_path, "wb") as fh:
+        fh.write(contents)
+    return await db.add_project_file(project_id, "stl", stored_path, label or file.filename)
+
+
+@router.delete("/{project_id}/files/{file_id}", status_code=204)
+async def delete_file(project_id: int, file_id: int) -> None:
+    f = await db.get_project_file(file_id)
+    if not f or f["project_id"] != project_id:
+        raise HTTPException(404, "File not found")
+    if f["type"] == "stl":
+        try:
+            os.remove(f["filename"])
+        except OSError:
+            pass
+    await db.delete_project_file(file_id)
+
+
+@router.post("/{project_id}/links", status_code=201)
+async def add_link(project_id: int, body: LinkAdd) -> dict[str, Any]:
+    if not await db.get_project(project_id):
+        raise HTTPException(404, "Project not found")
+    return await db.add_project_link(project_id, body.url, body.label)
+
+
+@router.delete("/{project_id}/links/{link_id}", status_code=204)
+async def delete_link(project_id: int, link_id: int) -> None:
+    await db.delete_project_link(link_id)
+
+
+@router.post("/{project_id}/prints", status_code=201)
+async def link_print(project_id: int, body: PrintLink) -> dict[str, Any]:
+    if not await db.get_project(project_id):
+        raise HTTPException(404, "Project not found")
+    duration_s: float | None = None
+    filament_g: float | None = None
+    cost_total: float | None = None
+    try:
+        job_data = await moonraker.get("/server/history/job", uid=body.job_id)
+        job = job_data.get("job", {})
+        duration_s = job.get("print_duration")
+        filament_mm = job.get("filament_used") or 0.0
+        filament_g = round(filament_mm * _MM_TO_GRAMS, 2)
+        filename = job.get("filename", "")
+        for h in influx.query_history(limit=500):
+            if h.get("filename") == filename:
+                cost_total = h.get("cost_total")
+                break
+    except Exception:
+        pass
+    return await db.add_project_print(
+        project_id, body.project_file_id, body.job_id,
+        duration_s, filament_g, cost_total,
+    )
+
+
+@router.delete("/{project_id}/prints/{job_id}", status_code=204)
+async def unlink_print(project_id: int, job_id: str) -> None:
+    await db.delete_project_print(project_id, job_id)
+
+
+@router.get("/{project_id}/files/{file_id}/download")
+async def download_stl(project_id: int, file_id: int) -> Any:
+    from fastapi.responses import FileResponse
+    f = await db.get_project_file(file_id)
+    if not f or f["project_id"] != project_id or f["type"] != "stl":
+        raise HTTPException(404, "File not found")
+    if not os.path.exists(f["filename"]):
+        raise HTTPException(404, "File missing from disk")
+    return FileResponse(f["filename"], filename=Path(f["filename"]).name)

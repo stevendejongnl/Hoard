@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     influxdb_bucket: str = "home"
     database_path: str = "/data/printer.db"
     static_dir: str = "static"
+    uploads_dir: str = "./uploads"
 
     model_config = {"env_file": ".env"}
 
