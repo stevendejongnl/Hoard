@@ -400,7 +400,16 @@ export class HistoryPage extends LitElement {
                             />`
                       }
                     </td>
-                    <td class="filename-cell" title="${r.filename}">${r.filename}</td>
+                    <td class="filename-cell" title="${r.filename}">
+                      <div>${r.filename}</div>
+                      ${r.project ? html`
+                        <div
+                          style="margin-top:3px;font-size:10px;color:var(--cyan,#22d3ee);cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                          title="${r.project.name}"
+                          @click=${(e: Event) => { e.stopPropagation(); router.navigate(`/projects/${r.project!.id}` as any) }}
+                        >📁 ${r.project.name}</div>
+                      ` : ''}
+                    </td>
                     <td style="white-space:nowrap">${r.time ? this.fmtDate(r.time) : '—'}</td>
                     <td style="white-space:nowrap">${this.fmtDuration(r.duration_s)}</td>
                     <td style="white-space:nowrap">${r.filament_g.toFixed(1)} g</td>
@@ -411,20 +420,10 @@ export class HistoryPage extends LitElement {
                         : html`<span style="color:#555">—</span>`}
                     </td>
                     <td>
-                      <div style="display:flex;align-items:center;gap:6px">
-                        <button
-                          class="print-btn"
-                          @click=${() => this._print(r.filename)}
-                        >▶</button>
-                        ${r.project
-                          ? html`<span
-                              class="spool-tag spool-tag--assigned"
-                              style="font-size:10px;cursor:pointer;min-height:unset;padding:3px 8px"
-                              title="Open project"
-                              @click=${() => window.router.navigate(`/projects/${r.project!.id}` as any)}
-                            >📁 ${r.project.name}</span>`
-                          : ''}
-                      </div>
+                      <button
+                        class="print-btn"
+                        @click=${() => this._print(r.filename)}
+                      >▶</button>
                     </td>
                   </tr>
                 `)}
@@ -436,20 +435,20 @@ export class HistoryPage extends LitElement {
               ${this.records.map(r => html`
                 <div class="print-card">
                   <div class="print-card__top">
-                    <span class="print-card__filename" title="${r.filename}">${r.filename}</span>
-                    <div style="display:flex;align-items:center;gap:6px">
-                      <button
-                        class="print-btn"
-                        @click=${() => this._print(r.filename)}
-                      >▶</button>
-                      ${r.project
-                        ? html`<span
-                            class="spool-tag spool-tag--assigned"
-                            style="font-size:10px;cursor:pointer;min-height:unset;padding:3px 8px"
-                            @click=${() => window.router.navigate(`/projects/${r.project!.id}` as any)}
-                          >📁 ${r.project.name}</span>`
-                        : ''}
+                    <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+                      <span class="print-card__filename" title="${r.filename}">${r.filename}</span>
+                      ${r.project ? html`
+                        <span
+                          style="font-size:10px;color:var(--cyan,#22d3ee);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                          title="${r.project.name}"
+                          @click=${(e: Event) => { e.stopPropagation(); router.navigate(`/projects/${r.project!.id}` as any) }}
+                        >📁 ${r.project.name}</span>
+                      ` : ''}
                     </div>
+                    <button
+                      class="print-btn"
+                      @click=${() => this._print(r.filename)}
+                    >▶</button>
                   </div>
                   <div class="print-card__meta">
                     ${r.time ? this.fmtDate(r.time) : '—'} · ${r.filament_g.toFixed(1)} g · ${this.fmtDuration(r.duration_s)}
