@@ -1,3 +1,9 @@
+## [1.14.3](https://github.com/stevendejongnl/printer/compare/v1.14.2...v1.14.3) (2026-06-04)
+
+### Bug Fixes
+
+* cost breakdown modal on mobile — bottom sheet with backdrop to close ([28d68ca](https://github.com/stevendejongnl/printer/commit/28d68cae556d6d29315da1effae0dd97a3515c87))
+
 ## [1.14.2](https://github.com/stevendejongnl/printer/compare/v1.14.1...v1.14.2) (2026-06-04)
 
 ### Bug Fixes
