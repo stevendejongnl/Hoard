@@ -1,3 +1,9 @@
+## [1.8.1](https://github.com/stevendejongnl/printer/compare/v1.8.0...v1.8.1) (2026-06-04)
+
+### Bug Fixes
+
+* return 404 (not 502) when gcode file not found on printer, use 128KB read ([96a0ca8](https://github.com/stevendejongnl/printer/commit/96a0ca87c4e47835624bec368af10e4454f9a42f))
+
 ## [1.8.0](https://github.com/stevendejongnl/printer/compare/v1.7.4...v1.8.0) (2026-06-04)
 
 ### Features
