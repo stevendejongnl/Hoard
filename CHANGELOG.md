@@ -1,3 +1,9 @@
+## [1.7.1](https://github.com/stevendejongnl/printer/compare/v1.7.0...v1.7.1) (2026-06-04)
+
+### Performance Improvements
+
+* lazy-load thumbnails to avoid flooding server with 180 simultaneous requests ([b859f35](https://github.com/stevendejongnl/printer/commit/b859f35b3d124568bf0a91dcb4566038cf74d49f))
+
 ## [1.7.0](https://github.com/stevendejongnl/printer/compare/v1.6.1...v1.7.0) (2026-06-04)
 
 ### Features
