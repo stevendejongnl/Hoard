@@ -4,6 +4,24 @@ import type { Project } from '../types'
 import { getProjects, createProject } from '../api'
 import '../components/project-card'
 
+const styles = html`<style>
+.projects-wrap { max-width: 900px; margin: 0 auto; padding: 24px; }
+.projects-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.projects-title { font-size: 16px; font-weight: 600; color: #e0e0e0; }
+.projects-add-btn { background: transparent; border: 1px solid #22d3ee44; color: #22d3ee; border-radius: 6px; padding: 7px 14px; font-size: 12px; cursor: pointer; min-height: 44px; }
+.projects-add-btn:hover, .projects-add-btn:active { background: #22d3ee14; }
+.projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.projects-empty { color: #555; padding: 40px; text-align: center; }
+
+@media (max-width: 860px) {
+  .projects-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .projects-wrap { padding: 16px; }
+  .projects-grid { grid-template-columns: 1fr; }
+}
+</style>`
+
 @customElement('projects-page')
 export class ProjectsPage extends LitElement {
   createRenderRoot() { return this }
@@ -31,21 +49,19 @@ export class ProjectsPage extends LitElement {
 
   render() {
     return html`
-      <div style="max-width: 900px; margin: 0 auto; padding: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-          <span style="font-size: 16px; font-weight: 600; color: #e0e0e0;">Projects</span>
-          <button
-            style="background: transparent; border: 1px solid #22d3ee44; color: #22d3ee; border-radius: 6px; padding: 7px 14px; font-size: 12px; cursor: pointer; min-height: 44px;"
-            @click=${this._create}
-          >+ new project</button>
+      ${styles}
+      <div class="projects-wrap">
+        <div class="projects-header">
+          <span class="projects-title">Projects</span>
+          <button class="projects-add-btn" @click=${this._create}>+ new project</button>
         </div>
 
         ${this.loading
-          ? html`<div style="color: #555; padding: 40px; text-align: center;">Loading...</div>`
+          ? html`<div class="projects-empty">Loading...</div>`
           : this.projects.length === 0
-            ? html`<div style="color: #555; padding: 40px; text-align: center;">No projects yet. Create one to get started.</div>`
+            ? html`<div class="projects-empty">No projects yet. Create one to get started.</div>`
             : html`
-              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+              <div class="projects-grid">
                 ${this.projects.map(p => html`<project-card .project=${p}></project-card>`)}
               </div>
             `}
