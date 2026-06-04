@@ -6,7 +6,7 @@ import httpx
 from app.config import settings
 
 _POWER_SENSOR = "sensor.3d_printer_power"
-_PRICE_SENSOR = "sensor.energyzero_today_energy_current_hour_price"
+_PRICE_SENSOR = "sensor.electricity_price_all_in"
 
 
 def _headers() -> dict[str, str]:
