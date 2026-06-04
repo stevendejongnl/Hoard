@@ -134,13 +134,15 @@ async def thumbnail_from_gcode(filename: str) -> Response:
     except Exception as exc:
         raise HTTPException(502, f"Could not fetch gcode header: {exc}") from exc
 
-    png = extract_thumbnail_png(gcode_bytes)
-    _cache_set(filename, png)
-    if not png:
+    img = extract_thumbnail_png(gcode_bytes)
+    _cache_set(filename, img)
+    if not img:
         raise HTTPException(404, "No embedded thumbnail in gcode")
+    # Detect JPEG vs PNG by magic bytes
+    media_type = "image/jpeg" if img[:2] == b"\xff\xd8" else "image/png"
     return Response(
-        content=png,
-        media_type="image/png",
+        content=img,
+        media_type=media_type,
         headers={"Cache-Control": "public, max-age=3600"},
     )
 
