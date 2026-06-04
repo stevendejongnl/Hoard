@@ -84,7 +84,7 @@ class MoonrakerClient:
             r.raise_for_status()
             return r.content
 
-    async def download_file_partial(self, filename: str, size: int = 65536) -> bytes:
+    async def download_file_partial(self, filename: str, size: int = 131072) -> bytes:
         """Fetch only the first `size` bytes via HTTP Range — fast for thumbnail extraction."""
         async with httpx.AsyncClient() as client:
             r = await client.get(
