@@ -240,9 +240,11 @@ export class HistoryPreview extends LitElement {
                     <div class="cost-sub">${record.filament_g.toFixed(1)} g</div>`
                 }
               </td>
-              <td style="display: flex; align-items: center; gap: 6px; padding: 11px 0;">
-                <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
-                <button class="print-btn" @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}>+ proj</button>
+              <td>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
+                  <button class="print-btn" @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}>+ proj</button>
+                </div>
               </td>
             </tr>
           `)}
