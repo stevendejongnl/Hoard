@@ -134,10 +134,14 @@ async def thumbnail_from_gcode(filename: str) -> Response:
     except Exception as exc:
         raise HTTPException(502, f"Could not fetch gcode header: {exc}") from exc
 
+    from app.gcode_thumbnail import render_toolpath_thumbnail
     img = extract_thumbnail_png(gcode_bytes)
+    if not img:
+        # No embedded thumbnail — render from toolpaths as fallback
+        img = render_toolpath_thumbnail(gcode_bytes)
     _cache_set(filename, img)
     if not img:
-        raise HTTPException(404, "No embedded thumbnail in gcode")
+        raise HTTPException(404, "No thumbnail available")
     # Detect JPEG vs PNG by magic bytes
     media_type = "image/jpeg" if img[:2] == b"\xff\xd8" else "image/png"
     return Response(
