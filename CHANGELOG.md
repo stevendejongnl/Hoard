@@ -1,3 +1,9 @@
+## [1.16.2](https://github.com/stevendejongnl/printer/compare/v1.16.1...v1.16.2) (2026-06-04)
+
+### Bug Fixes
+
+* mobile popup hidden — use :not(.open) so explicit open state isn't overridden ([bf95747](https://github.com/stevendejongnl/printer/commit/bf95747f566d81f4ce5740fd7686fca23098ac44))
+
 ## [1.16.1](https://github.com/stevendejongnl/printer/compare/v1.16.0...v1.16.1) (2026-06-04)
 
 ### Bug Fixes
