@@ -1,3 +1,9 @@
+## [1.11.2](https://github.com/stevendejongnl/printer/compare/v1.11.1...v1.11.2) (2026-06-04)
+
+### Bug Fixes
+
+* remove loading=lazy from file browser thumbnails so [@error](https://github.com/error) fires and ⊕ button shows ([7a7c590](https://github.com/stevendejongnl/printer/commit/7a7c5907f60b55a876c5bdcdaa6a66c48c8678cc))
+
 ## [1.11.1](https://github.com/stevendejongnl/printer/compare/v1.11.0...v1.11.1) (2026-06-04)
 
 ### Reverts
