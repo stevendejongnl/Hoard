@@ -76,7 +76,7 @@ async def _poll_pi_stats(interval: int = 30) -> None:
 
             disk_pct = 0.0
             try:
-                dir_data = await moonraker.get("/server/files/directory", path="gcodes")
+                dir_data = await moonraker.get("/server/files/directory?path=gcodes")
                 du = dir_data.get("disk_usage", {})
                 disk_total = du.get("total", 0)
                 disk_used = du.get("used", 0)
