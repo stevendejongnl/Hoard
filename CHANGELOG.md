@@ -1,3 +1,9 @@
+## [1.13.4](https://github.com/stevendejongnl/printer/compare/v1.13.3...v1.13.4) (2026-06-04)
+
+### Bug Fixes
+
+* webcam stream resilience — pause on hidden, 5-error threshold before unavailable ([89a4e0d](https://github.com/stevendejongnl/printer/commit/89a4e0d30b0f90899ae8234a9dbdfec1e7a3a055))
+
 ## [1.13.3](https://github.com/stevendejongnl/printer/compare/v1.13.2...v1.13.3) (2026-06-04)
 
 ### Bug Fixes
