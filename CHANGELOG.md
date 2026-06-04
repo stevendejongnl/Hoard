@@ -1,3 +1,9 @@
+## [1.15.0](https://github.com/stevendejongnl/printer/compare/v1.14.5...v1.15.0) (2026-06-04)
+
+### Features
+
+* show project link in history instead of + proj when already linked ([4d0d44d](https://github.com/stevendejongnl/printer/commit/4d0d44d2214bb850d8926647f61cbd8610dcc818))
+
 ## [1.14.5](https://github.com/stevendejongnl/printer/compare/v1.14.4...v1.14.5) (2026-06-04)
 
 ### Bug Fixes
