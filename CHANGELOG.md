@@ -1,3 +1,9 @@
+## [1.7.2](https://github.com/stevendejongnl/printer/compare/v1.7.1...v1.7.2) (2026-06-04)
+
+### Bug Fixes
+
+* don't render file list when modal closed — prevents 180 thumbnail requests on page load ([8d77e14](https://github.com/stevendejongnl/printer/commit/8d77e14a8390dc77c0ff4c7f4ae9bb3f07b8268f))
+
 ## [1.7.1](https://github.com/stevendejongnl/printer/compare/v1.7.0...v1.7.1) (2026-06-04)
 
 ### Performance Improvements
