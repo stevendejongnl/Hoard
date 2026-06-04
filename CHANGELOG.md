@@ -1,3 +1,9 @@
+## [1.8.2](https://github.com/stevendejongnl/printer/compare/v1.8.1...v1.8.2) (2026-06-04)
+
+### Bug Fixes
+
+* catch httpx.HTTPStatusError directly to properly convert Moonraker 404 to HTTP 404 ([89597e5](https://github.com/stevendejongnl/printer/commit/89597e50115fe296994b33d72869189b22110e7f))
+
 ## [1.8.1](https://github.com/stevendejongnl/printer/compare/v1.8.0...v1.8.1) (2026-06-04)
 
 ### Bug Fixes
