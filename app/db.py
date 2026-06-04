@@ -361,3 +361,19 @@ async def delete_project_print(project_id: int, job_id: str) -> None:
             (project_id, job_id),
         )
         await db.commit()
+
+
+async def get_project_for_job(job_id: str) -> dict[str, Any] | None:
+    """Return the first project linked to a job_id, or None."""
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            """SELECT pp.project_id AS id, p.name
+               FROM project_prints pp
+               JOIN projects p ON p.id = pp.project_id
+               WHERE pp.job_id = ?
+               LIMIT 1""",
+            (job_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            return dict(row) if row else None

@@ -243,7 +243,16 @@ export class HistoryPreview extends LitElement {
               <td>
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
-                  <button class="print-btn" @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}>+ proj</button>
+                  ${record.project
+                    ? html`<span
+                        class="spool-tag spool-assign"
+                        title="Open project"
+                        @click=${() => window.router.navigate(`/projects/${record.project!.id}` as any)}
+                      >📁 ${record.project.name}</span>`
+                    : html`<span
+                        class="spool-tag spool-assign"
+                        @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}
+                      >+ proj</span>`}
                 </div>
               </td>
             </tr>

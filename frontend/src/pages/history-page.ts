@@ -3,6 +3,7 @@ import { customElement, state } from 'lit/decorators.js'
 import type { PrintRecord, Spool } from '../types'
 import { getHistory, getSpools, assignSpool, injectThumbnail } from '../api'
 import { sseClient } from '../sse'
+import { router } from '../router'
 import '../components/cost-breakdown-popup'
 import '../components/print-ready-modal'
 
@@ -410,10 +411,20 @@ export class HistoryPage extends LitElement {
                         : html`<span style="color:#555">—</span>`}
                     </td>
                     <td>
-                      <button
-                        class="print-btn"
-                        @click=${() => this._print(r.filename)}
-                      >▶</button>
+                      <div style="display:flex;align-items:center;gap:6px">
+                        <button
+                          class="print-btn"
+                          @click=${() => this._print(r.filename)}
+                        >▶</button>
+                        ${r.project
+                          ? html`<span
+                              class="spool-tag spool-tag--assigned"
+                              style="font-size:10px;cursor:pointer;min-height:unset;padding:3px 8px"
+                              title="Open project"
+                              @click=${() => window.router.navigate(`/projects/${r.project!.id}` as any)}
+                            >📁 ${r.project.name}</span>`
+                          : ''}
+                      </div>
                     </td>
                   </tr>
                 `)}
@@ -426,10 +437,19 @@ export class HistoryPage extends LitElement {
                 <div class="print-card">
                   <div class="print-card__top">
                     <span class="print-card__filename" title="${r.filename}">${r.filename}</span>
-                    <button
-                      class="print-btn"
-                      @click=${() => this._print(r.filename)}
-                    >▶</button>
+                    <div style="display:flex;align-items:center;gap:6px">
+                      <button
+                        class="print-btn"
+                        @click=${() => this._print(r.filename)}
+                      >▶</button>
+                      ${r.project
+                        ? html`<span
+                            class="spool-tag spool-tag--assigned"
+                            style="font-size:10px;cursor:pointer;min-height:unset;padding:3px 8px"
+                            @click=${() => window.router.navigate(`/projects/${r.project!.id}` as any)}
+                          >📁 ${r.project.name}</span>`
+                        : ''}
+                    </div>
                   </div>
                   <div class="print-card__meta">
                     ${r.time ? this.fmtDate(r.time) : '—'} · ${r.filament_g.toFixed(1)} g · ${this.fmtDuration(r.duration_s)}
