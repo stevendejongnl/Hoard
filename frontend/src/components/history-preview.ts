@@ -207,6 +207,13 @@ export class HistoryPreview extends LitElement {
               <td>
                 <div class="file-name">${record.filename}</div>
                 <div class="file-sub">${record.time ? this._formatDate(record.time) : '—'} · ${record.filament_g.toFixed(1)} g</div>
+                ${record.project ? html`
+                  <div
+                    style="margin-top:3px;font-size:9px;color:var(--cyan);cursor:pointer;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                    title="${record.project.name}"
+                    @click=${() => window.router.navigate(`/projects/${record.project!.id}` as any)}
+                  >📁 ${record.project.name}</div>
+                ` : ''}
               </td>
               <td class="duration">${this._formatDuration(record.duration_s)}</td>
               <td>
@@ -244,11 +251,7 @@ export class HistoryPreview extends LitElement {
                 <div style="display: flex; align-items: center; gap: 6px;">
                   <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
                   ${record.project
-                    ? html`<span
-                        class="spool-tag spool-assign"
-                        title="Open project"
-                        @click=${() => window.router.navigate(`/projects/${record.project!.id}` as any)}
-                      >📁 ${record.project.name}</span>`
+                    ? ''
                     : html`<span
                         class="spool-tag spool-assign"
                         @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}
