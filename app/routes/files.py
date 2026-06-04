@@ -10,6 +10,16 @@ from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
+
+@router.delete("/thumbnail/cache")
+async def clear_thumbnail_cache(filename: str | None = None) -> dict:
+    """Clear thumbnail cache. Pass ?filename= to clear one entry, omit to clear all."""
+    if filename:
+        _THUMB_CACHE.pop(filename, None)
+        return {"cleared": filename}
+    _THUMB_CACHE.clear()
+    return {"cleared": "all"}
+
 # In-memory thumbnail cache: filename → (expire_ts, png_bytes | None)
 # None = confirmed no thumbnail (also cached to avoid repeated failed lookups)
 _THUMB_CACHE: dict[str, tuple[float, bytes | None]] = {}
