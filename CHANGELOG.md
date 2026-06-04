@@ -1,3 +1,9 @@
+## [1.16.0](https://github.com/stevendejongnl/printer/compare/v1.15.2...v1.16.0) (2026-06-04)
+
+### Features
+
+* startup reconciliation — restore costs for prints missed due to pod restarts ([647ad06](https://github.com/stevendejongnl/printer/commit/647ad069fd4e0a0cb02636d771cd8b54fa778650))
+
 ## [1.15.2](https://github.com/stevendejongnl/printer/compare/v1.15.1...v1.15.2) (2026-06-04)
 
 ### Bug Fixes
