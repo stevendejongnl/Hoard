@@ -1,3 +1,9 @@
+## [1.18.2](https://github.com/stevendejongnl/printer/compare/v1.18.1...v1.18.2) (2026-06-05)
+
+### Bug Fixes
+
+* periodic reconcile every 5min — costs auto-update without manual intervention after missed WS events ([f6b364a](https://github.com/stevendejongnl/printer/commit/f6b364aa31b27de76961f79a8e6323143aa649c1))
+
 ## [1.18.1](https://github.com/stevendejongnl/printer/compare/v1.18.0...v1.18.1) (2026-06-05)
 
 ### Bug Fixes
