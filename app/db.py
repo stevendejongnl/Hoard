@@ -182,7 +182,10 @@ async def list_projects() -> list[dict[str, Any]]:
             """SELECT p.*,
                       COALESCE(COUNT(pp.id), 0)  AS print_count,
                       SUM(pp.duration_s)          AS total_duration_s,
+                      AVG(pp.duration_s)          AS avg_duration_s,
+                      MAX(pp.duration_s)          AS max_duration_s,
                       SUM(pp.cost_total)           AS total_cost,
+                      AVG(pp.cost_total)           AS avg_cost,
                       SUM(pp.filament_g)           AS total_filament_g
                FROM projects p
                LEFT JOIN project_prints pp ON pp.project_id = p.id
@@ -199,7 +202,10 @@ async def get_project(project_id: int) -> dict[str, Any] | None:
             """SELECT p.*,
                       COALESCE(COUNT(pp.id), 0)  AS print_count,
                       SUM(pp.duration_s)          AS total_duration_s,
+                      AVG(pp.duration_s)          AS avg_duration_s,
+                      MAX(pp.duration_s)          AS max_duration_s,
                       SUM(pp.cost_total)           AS total_cost,
+                      AVG(pp.cost_total)           AS avg_cost,
                       SUM(pp.filament_g)           AS total_filament_g
                FROM projects p
                LEFT JOIN project_prints pp ON pp.project_id = p.id
@@ -359,6 +365,23 @@ async def delete_project_print(project_id: int, job_id: str) -> None:
         await db.execute(
             "DELETE FROM project_prints WHERE project_id = ? AND job_id = ?",
             (project_id, job_id),
+        )
+        await db.commit()
+
+
+async def refresh_project_prints_stats(
+    job_id: str, duration_s: float | None, filament_g: float | None, cost_total: float | None
+) -> None:
+    """Update cached duration/filament/cost for all project_prints rows with this job_id.
+
+    Called by the recorder after every InfluxDB write so project stats stay in sync automatically.
+    """
+    async with _conn() as db:
+        await db.execute(
+            """UPDATE project_prints
+               SET duration_s = ?, filament_g = ?, cost_total = ?
+               WHERE job_id = ?""",
+            (duration_s, filament_g, cost_total, job_id),
         )
         await db.commit()
 

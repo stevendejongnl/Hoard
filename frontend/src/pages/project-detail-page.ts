@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { Project } from '../types'
-import { getProject, deleteProject, addProjectLink, deleteProjectLink, refreshProjectPrint } from '../api'
+import { getProject, deleteProject, addProjectLink, deleteProjectLink } from '../api'
 import { router } from '../router'
 import '../components/markdown-editor'
 import '../components/project-files-section'
@@ -9,16 +9,21 @@ import '../components/project-files-section'
 const styles = html`<style>
 .pd-wrap { max-width: 760px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
 .pd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pd-stats-secondary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 @media (max-width: 600px) {
   .pd-wrap { padding: 16px; gap: 12px; }
   .pd-stats { grid-template-columns: repeat(2, 1fr); }
+  .pd-stats-secondary { grid-template-columns: repeat(2, 1fr); }
 }
 </style>`
 
 function _fmtHours(s: number | null): string {
   if (!s) return '—'
-  const h = Math.round(s / 3600)
-  return h < 1 ? '<1h' : `${h}h`
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  if (h === 0) return `${m}m`
+  if (m === 0) return `${h}h`
+  return `${h}h ${m}m`
 }
 
 function _linkHost(url: string): string {
@@ -51,18 +56,6 @@ export class ProjectDetailPage extends LitElement {
     }
   }
 
-  @state() private _refreshing = false
-
-  private async _refreshCosts() {
-    if (!this.project || this._refreshing) return
-    this._refreshing = true
-    this.requestUpdate()
-    const prints = this.project.prints ?? []
-    await Promise.all(prints.map(p => refreshProjectPrint(this.project!.id, p.job_id).catch(() => null)))
-    this.project = await getProject(this.project.id)
-    this._refreshing = false
-  }
-
   private async _delete() {
     if (!this.project) return
     if (!confirm(`Delete project "${this.project.name}"? This cannot be undone.`)) return
@@ -85,11 +78,11 @@ export class ProjectDetailPage extends LitElement {
     this.project = { ...this.project, links: (this.project.links ?? []).filter(l => l.id !== linkId) }
   }
 
-  private _stat(label: string, value: string) {
+  private _stat(label: string, value: string, secondary = false) {
     return html`
-      <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 3px;">
+      <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 6px; padding: ${secondary ? '10px 12px' : '12px'}; display: flex; flex-direction: column; gap: 3px;">
         <span style="font-size: 10px; color: #555;">${label}</span>
-        <span style="font-size: 18px; font-weight: 600; color: #e0e0e0;">${value}</span>
+        <span style="font-size: ${secondary ? '14px' : '18px'}; font-weight: 600; color: ${secondary ? '#aaa' : '#e0e0e0'};">${value}</span>
       </div>
     `
   }
@@ -118,20 +111,25 @@ export class ProjectDetailPage extends LitElement {
           >delete</button>
         </div>
 
-        <!-- stats bar -->
+        <!-- stats -->
         <div class="pd-stats">
           ${this._stat('prints', String(p.print_count))}
           ${this._stat('total time', _fmtHours(p.total_duration_s))}
           ${this._stat('total cost', p.total_cost != null ? '€' + p.total_cost.toFixed(2) : '—')}
-          ${this._stat('filament', p.total_filament_g != null ? p.total_filament_g.toFixed(0) + 'g' : '—')}
+          ${this._stat('filament', p.total_filament_g != null
+            ? p.total_filament_g >= 1000
+              ? (p.total_filament_g / 1000).toFixed(2) + ' kg'
+              : p.total_filament_g.toFixed(0) + ' g'
+            : '—')}
         </div>
-        ${p.print_count > 0 ? html`
-          <div style="display: flex; justify-content: flex-end;">
-            <button
-              style="background: transparent; border: 1px solid #333; color: #555; border-radius: 4px; padding: 4px 10px; font-size: 10px; cursor: pointer;"
-              ?disabled=${this._refreshing}
-              @click=${this._refreshCosts}
-            >${this._refreshing ? 'refreshing…' : '↻ refresh costs'}</button>
+        ${p.print_count > 1 ? html`
+          <div class="pd-stats-secondary">
+            ${this._stat('avg cost', p.avg_cost != null ? '€' + p.avg_cost.toFixed(2) : '—', true)}
+            ${this._stat('avg time', _fmtHours(p.avg_duration_s), true)}
+            ${this._stat('longest', _fmtHours(p.max_duration_s), true)}
+            ${this._stat('avg filament', p.total_filament_g != null && p.print_count > 0
+              ? (p.total_filament_g / p.print_count).toFixed(0) + ' g'
+              : '—', true)}
           </div>
         ` : ''}
 
