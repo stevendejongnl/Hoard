@@ -47,6 +47,35 @@ hub = SSEHub()
 
 # ── Background tasks ──────────────────────────────────────────────────────────
 
+async def _poll_printer_state(interval: int = 10) -> None:
+    """Poll Moonraker REST every 10s as a fallback so live status is always accurate.
+
+    The WS subscription handles real-time diffs; this catches missed transitions
+    (e.g. when subscription is set up while printer is already printing).
+    """
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            result = await moonraker.get(
+                "/printer/objects/query",
+                print_stats="",
+                display_status="",
+                extruder="",
+                heater_bed="",
+            )
+            status = result.get("status", {})
+            if status:
+                for handler in _handlers_for_status_update():
+                    await handler([status])
+        except Exception:
+            pass
+
+
+def _handlers_for_status_update():
+    from app.moonraker import moonraker as _m
+    return _m._handlers.get("notify_status_update", [])
+
+
 async def _poll_ha(interval: int = 30) -> None:
     while True:
         try:
