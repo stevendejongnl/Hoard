@@ -21,6 +21,7 @@ class MoonrakerClient:
         self._handlers: dict[str, list[NotifyHandler]] = {}
         self._running = False
         self._req_id = 0
+        self._last_msg_at: float = 0.0
 
     def _client_base(self) -> str:
         return settings.moonraker_url
@@ -131,12 +132,19 @@ class MoonrakerClient:
         self._running = True
         while self._running:
             try:
-                async with websockets.connect(settings.moonraker_ws, ping_interval=20) as ws:
+                async with websockets.connect(
+                    settings.moonraker_ws,
+                    ping_interval=20,
+                    ping_timeout=30,
+                ) as ws:
                     self._ws = ws
+                    self._last_msg_at = asyncio.get_event_loop().time()
                     log.info("Moonraker WS connected")
                     await self._subscribe(ws)
                     asyncio.create_task(self._seed_initial_state())
+                    asyncio.create_task(self._watchdog(ws))
                     async for raw in ws:
+                        self._last_msg_at = asyncio.get_event_loop().time()
                         await self._dispatch(raw)
             except ConnectionClosed:
                 log.warning("Moonraker WS closed, reconnecting in 5s")
@@ -146,6 +154,16 @@ class MoonrakerClient:
                 self._ws = None
             if self._running:
                 await asyncio.sleep(5)
+
+    async def _watchdog(self, ws: websockets.WebSocketClientProtocol) -> None:
+        """Force-close the WS if no message arrives for 90s — catches silent subscription loss after Klipper restarts."""
+        while not ws.closed:
+            await asyncio.sleep(30)
+            idle = asyncio.get_event_loop().time() - self._last_msg_at
+            if idle > 90:
+                log.warning("Moonraker WS silent for %.0fs — forcing reconnect", idle)
+                await ws.close()
+                return
 
     def stop(self) -> None:
         self._running = False
