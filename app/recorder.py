@@ -105,6 +105,8 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
         return
 
     await db.link_print_spool(job_id, spool_id, filament_g)
+    # Keep project_prints stats in sync so projects auto-update without manual refresh
+    await db.refresh_project_prints_stats(job_id, duration_s, filament_g, cost_total)
     await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
 
 

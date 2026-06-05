@@ -104,7 +104,10 @@ export interface Project {
   created_at: number
   print_count: number
   total_duration_s: number | null
+  avg_duration_s: number | null
+  max_duration_s: number | null
   total_cost: number | null
+  avg_cost: number | null
   total_filament_g: number | null
   files?: ProjectFile[]
   links?: ProjectLink[]
