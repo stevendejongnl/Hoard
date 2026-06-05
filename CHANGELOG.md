@@ -1,3 +1,9 @@
+## [1.18.1](https://github.com/stevendejongnl/printer/compare/v1.18.0...v1.18.1) (2026-06-05)
+
+### Bug Fixes
+
+* WS watchdog — force reconnect after 90s silence, catches silent subscription loss after Klipper restart ([93dca4f](https://github.com/stevendejongnl/printer/commit/93dca4f2fde7b6f5f2e584735fbcfe5915105699))
+
 ## [1.18.0](https://github.com/stevendejongnl/printer/compare/v1.17.0...v1.18.0) (2026-06-04)
 
 ### Features
