@@ -32,8 +32,9 @@ async def lifespan(app: FastAPI):
     ha_task = asyncio.create_task(sse._poll_ha())
     pi_task = asyncio.create_task(sse._poll_pi_stats())
 
-    # Heal any prints that missed cost recording due to pod restarts / WS disconnects
+    # Full backfill on startup, then quick reconcile every 5 minutes
     asyncio.create_task(recorder.startup_reconcile())
+    asyncio.create_task(recorder.periodic_reconcile())
 
     log.info("printer started, db=%s", settings.database_path)
     yield

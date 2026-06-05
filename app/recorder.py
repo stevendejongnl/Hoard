@@ -179,5 +179,20 @@ async def startup_reconcile(lookback: int = 1000) -> None:
     log.info("reconcile: complete — %d restored, %d errors (out of %d missing)", restored, errors, len(missing))
 
 
+async def periodic_reconcile(interval_s: int = 300) -> None:
+    """Run a quick reconcile every N seconds covering the last 20 prints.
+
+    Catches prints whose costs were missed due to WS disconnect at print-end time.
+    Runs forever in the background; errors are logged and retried next interval.
+    """
+    await asyncio.sleep(60)  # give startup_reconcile time to finish first
+    while True:
+        try:
+            await startup_reconcile(lookback=20)
+        except Exception as exc:
+            log.warning("periodic_reconcile error: %s", exc)
+        await asyncio.sleep(interval_s)
+
+
 def register_ws_handlers() -> None:
     moonraker.on("notify_history_changed", handle_history_changed)
