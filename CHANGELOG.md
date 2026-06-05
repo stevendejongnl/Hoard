@@ -1,3 +1,9 @@
+## [1.19.0](https://github.com/stevendejongnl/printer/compare/v1.18.2...v1.19.0) (2026-06-05)
+
+### Features
+
+* auto-refresh project stats + full stat breakdown (avg cost, avg time, longest, avg filament) ([7425428](https://github.com/stevendejongnl/printer/commit/7425428fc5a604ab57457c57f2005941464e6797))
+
 ## [1.18.2](https://github.com/stevendejongnl/printer/compare/v1.18.1...v1.18.2) (2026-06-05)
 
 ### Bug Fixes
