@@ -31,6 +31,7 @@ async def lifespan(app: FastAPI):
     ws_task = asyncio.create_task(moonraker.connect_ws())
     ha_task = asyncio.create_task(sse._poll_ha())
     pi_task = asyncio.create_task(sse._poll_pi_stats())
+    ps_task = asyncio.create_task(sse._poll_printer_state())
 
     # Full backfill on startup, then quick reconcile every 5 minutes
     asyncio.create_task(recorder.startup_reconcile())
@@ -43,6 +44,7 @@ async def lifespan(app: FastAPI):
     ws_task.cancel()
     ha_task.cancel()
     pi_task.cancel()
+    ps_task.cancel()
     influx.close()
 
 
