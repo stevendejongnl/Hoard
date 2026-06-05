@@ -1,3 +1,9 @@
+## [1.19.1](https://github.com/stevendejongnl/printer/compare/v1.19.0...v1.19.1) (2026-06-05)
+
+### Bug Fixes
+
+* poll printer state every 10s — live status always accurate regardless of WS subscription gaps ([0d9bc78](https://github.com/stevendejongnl/printer/commit/0d9bc7855b33d364d1bad6648fbdf0a88a46c10b))
+
 ## [1.19.0](https://github.com/stevendejongnl/printer/compare/v1.18.2...v1.19.0) (2026-06-05)
 
 ### Features
