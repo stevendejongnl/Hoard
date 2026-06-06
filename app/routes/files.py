@@ -24,6 +24,7 @@ async def clear_thumbnail_cache(filename: str | None = None) -> dict:
     _THUMB_CACHE.clear()
     return {"cleared": "all"}
 
+
 # In-memory thumbnail cache: filename → (expire_ts, png_bytes | None)
 # None = confirmed no thumbnail (also cached to avoid repeated failed lookups)
 _THUMB_CACHE: dict[str, tuple[float, bytes | None]] = {}
@@ -72,8 +73,7 @@ async def file_thumbnail(filename: str) -> Response:
     if cached is not False:
         if cached is None:
             raise HTTPException(404, "No thumbnails")
-        return Response(content=cached, media_type="image/png",
-                        headers={"Cache-Control": "public, max-age=3600"})
+        return Response(content=cached, media_type="image/png", headers={"Cache-Control": "public, max-age=3600"})
 
     try:
         meta = await moonraker.get_file_metadata(filename)
@@ -115,10 +115,10 @@ async def file_thumbnail(filename: str) -> Response:
                         png_content = r.content
                     _cache_set(filename, png_content)
                     return Response(
-                            content=png_content,
-                            media_type=r.headers.get("content-type", "image/png"),
-                            headers={"Cache-Control": "public, max-age=3600"},
-                        )
+                        content=png_content,
+                        media_type=r.headers.get("content-type", "image/png"),
+                        headers={"Cache-Control": "public, max-age=3600"},
+                    )
                 except Exception:
                     continue
         _cache_set(filename, None)
@@ -136,9 +136,9 @@ async def thumbnail_from_gcode(filename: str) -> Response:
     if cached is not False:
         if cached is None:
             raise HTTPException(404, "No thumbnail available")
+        assert isinstance(cached, bytes)
         media_type = "image/jpeg" if cached[:2] == b"\xff\xd8" else "image/png"
-        return Response(content=cached, media_type=media_type,
-                        headers={"Cache-Control": "public, max-age=3600"})
+        return Response(content=cached, media_type=media_type, headers={"Cache-Control": "public, max-age=3600"})
 
     img: bytes | None = None
 
@@ -185,8 +185,7 @@ async def thumbnail_from_gcode(filename: str) -> Response:
     if not img:
         raise HTTPException(404, "No thumbnail available")
     media_type = "image/jpeg" if img[:2] == b"\xff\xd8" else "image/png"
-    return Response(content=img, media_type=media_type,
-                    headers={"Cache-Control": "public, max-age=3600"})
+    return Response(content=img, media_type=media_type, headers={"Cache-Control": "public, max-age=3600"})
 
 
 @router.post("/thumbnail/inject")
