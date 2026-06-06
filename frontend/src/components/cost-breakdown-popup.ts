@@ -184,6 +184,19 @@ export class CostBreakdownPopup extends LitElement {
       opacity: 0.4;
       cursor: not-allowed;
     }
+
+    .warning-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 8px;
+      padding: 6px 8px;
+      background: #78350f22;
+      border: 1px solid #92400e44;
+      border-radius: 4px;
+      font-size: 10px;
+      color: #fbbf24;
+    }
   `
 
   private async _recalculate(e: Event) {
@@ -222,6 +235,7 @@ export class CostBreakdownPopup extends LitElement {
     const avgW = r.avg_watts
     const avgP = r.avg_eur_per_kwh
     const energyKwh = avgW != null ? (avgW * durationH) / 1000 : null
+    const missingElectricity = avgW == null || avgW === 0
 
     return html`
       <div
@@ -261,9 +275,13 @@ export class CostBreakdownPopup extends LitElement {
         <div class="popup-row">
           <span class="row-label">Electricity</span>
           <span class="row-formula">
-            ${energyKwh != null ? html`${energyKwh.toFixed(4)} kWh × €${(avgP ?? 0).toFixed(4)}` : '—'}
+            ${missingElectricity
+              ? html`<span style="color:#fbbf24">⚠ no sensor data</span>`
+              : html`${energyKwh!.toFixed(4)} kWh × €${(avgP ?? 0).toFixed(4)}`}
           </span>
-          <span class="row-value">${fmt(r.cost_electricity)}</span>
+          <span class="row-value"
+            >${missingElectricity ? html`<span style="color:#555">—</span>` : fmt(r.cost_electricity)}</span
+          >
         </div>
 
         <div class="popup-row">
@@ -294,10 +312,19 @@ export class CostBreakdownPopup extends LitElement {
         <div class="divider"></div>
 
         <div class="total-row">
-          <span class="total-label">Total</span>
+          <span class="total-label"
+            >Total${missingElectricity
+              ? html` <span style="color:#fbbf24;font-size:9px">⚠ incomplete</span>`
+              : ''}</span
+          >
           <span class="total-value">${fmt(r.cost_total, 4)}</span>
         </div>
 
+        ${missingElectricity
+          ? html`<div class="warning-row">
+              ⚠ Electricity cost missing — sensor was unavailable or not yet set up at print time
+            </div>`
+          : ''}
         ${r.spool && (r.cost_total == null || r.cost_total === 0)
           ? html`
               <button class="recalc-btn" ?disabled=${this._recalculating} @click=${this._recalculate}>
