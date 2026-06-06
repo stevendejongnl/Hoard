@@ -1,3 +1,9 @@
+## [1.25.1](https://github.com/stevendejongnl/printer/compare/v1.25.0...v1.25.1) (2026-06-06)
+
+### Bug Fixes
+
+* link card mobile/desktop + sort projects by last print time ([a6ed0ea](https://github.com/stevendejongnl/printer/commit/a6ed0eacdd59d8614492115c932d872526866853))
+
 ## [1.25.0](https://github.com/stevendejongnl/printer/compare/v1.24.0...v1.25.0) (2026-06-06)
 
 ### Features
