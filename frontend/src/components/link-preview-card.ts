@@ -193,7 +193,7 @@ export class LinkPreviewCard extends LitElement {
           ` : ''}
           <div class="body">
             ${m?.title    ? html`<div class="title">${m.title}</div>` : ''}
-            ${m?.description ? html`<div class="desc">${m.description}</div>` : ''}
+            ${m?.description ? html`<div class="desc">${_stripHtml(m.description)}</div>` : ''}
             ${psEntries.length > 0 ? html`
               <div class="chips">
                 ${psEntries.map(([k, v]) => html`
@@ -209,6 +209,10 @@ export class LinkPreviewCard extends LitElement {
       ` : ''}
     `
   }
+}
+
+function _stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
 }
 
 const _LABELS: Record<string, string> = {
