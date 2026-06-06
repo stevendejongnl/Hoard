@@ -204,7 +204,45 @@ export class LiveStatus extends LitElement {
   }
 
   private _renderIdle() {
-    return html`<div class="idle-body"><span class="idle-label">Printer idle</span></div>`;
+    const sw = this.power?.switch
+    const state = this.printerState?.state
+
+    // Printer physically off
+    if (sw === 'off') {
+      return html`
+        <div class="idle-row">
+          <span class="idle-dot off"></span>
+          <span class="idle-text off">Printer off</span>
+        </div>`
+    }
+
+    // Printer on but firmware not connected / in error
+    if (sw === 'on' && (state === 'error' || state === null || this.printerState === null)) {
+      return html`
+        <div class="idle-row">
+          <span class="idle-dot warn"></span>
+          <span class="idle-text warn">Firmware not connected</span>
+          <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
+        </div>`
+    }
+
+    // Print just finished
+    if (state === 'complete') {
+      return html`
+        <div class="idle-row">
+          <span class="idle-dot done"></span>
+          <span class="idle-text done">Print complete</span>
+          <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
+        </div>`
+    }
+
+    // Default: printer on, idle (standby)
+    return html`
+      <div class="idle-row">
+        <span class="idle-dot idle"></span>
+        <span class="idle-text idle">Printer idle</span>
+        <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
+      </div>`
   }
 
   static styles = css`
@@ -377,19 +415,40 @@ export class LiveStatus extends LitElement {
 
     .temp-value.watts { color: var(--cyan, #22d3ee); }
 
-    /* idle */
-    .idle-body {
+    /* idle / status row */
+    .idle-row {
       display: flex;
       align-items: center;
-      justify-content: center;
-      padding: 32px;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border, #222);
     }
 
-    .idle-label {
-      font-size: 18px;
-      font-weight: 300;
-      color: var(--text-muted, #555);
+    .idle-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
     }
+    .idle-dot.idle  { background: #444; }
+    .idle-dot.off   { background: #333; }
+    .idle-dot.warn  { background: #f59e0b; box-shadow: 0 0 6px #f59e0b66; animation: pulse-warn 2s infinite; }
+    .idle-dot.done  { background: #22d3ee; box-shadow: 0 0 6px #22d3ee66; }
+
+    @keyframes pulse-warn {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    .idle-text {
+      font-size: 12px;
+      font-weight: 400;
+      flex: 1;
+    }
+    .idle-text.idle { color: var(--text-muted, #555); }
+    .idle-text.off  { color: var(--text-dim, #333); }
+    .idle-text.warn { color: #f59e0b; }
+    .idle-text.done { color: var(--cyan, #22d3ee); }
 
     /* mobile */
     @media (max-width: 600px) {
