@@ -14,16 +14,27 @@ export class LinkPreviewCard extends LitElement {
     return window.matchMedia('(hover: none)').matches
   }
 
-  private _handleClick(e: Event) {
-    if (!this._isTouch()) return          // desktop: let hover handle it, don't intercept
-    if (!this.link?.meta?.title && !this.link?.meta?.image_url) return  // nothing to show
+  // Attached to the host element (light DOM) so it intercepts slotted <a> clicks
+  private _hostClick = (e: Event) => {
+    if (!this._isTouch()) return
+    if (!this.link?.meta?.title && !this.link?.meta?.image_url) return
     e.preventDefault()
     e.stopPropagation()
     this._visible = !this._visible
   }
 
+  connectedCallback() {
+    super.connectedCallback()
+    this.addEventListener('click', this._hostClick)
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback()
+    this.removeEventListener('click', this._hostClick)
+  }
+
   private _show() {
-    if (this._isTouch()) return           // touch: use click instead
+    if (this._isTouch()) return
     clearTimeout(this._hideTimer)
     this._showTimer = window.setTimeout(() => { this._visible = true }, 120)
   }
@@ -156,7 +167,6 @@ export class LinkPreviewCard extends LitElement {
       <div
         @mouseenter=${this._show}
         @mouseleave=${this._hide}
-        @click=${this._handleClick}
       >
         <slot></slot>
       </div>
