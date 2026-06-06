@@ -116,7 +116,7 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     # Extract and store gcode metadata while file is still on printer
     try:
         gcode_meta = await extract_gcode_meta(filename)
-        if gcode_meta:
+        if gcode_meta is not None:
             await db.update_print_job(job_id, {"gcode_meta": json.dumps(gcode_meta)})
             log.info("recorder: stored gcode_meta for %s (%d fields)", filename, len(gcode_meta))
     except Exception as exc:

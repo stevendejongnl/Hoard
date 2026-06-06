@@ -2,6 +2,8 @@ import logging
 import re
 from typing import Any
 
+from app.moonraker import moonraker
+
 log = logging.getLogger(__name__)
 
 
@@ -63,8 +65,6 @@ async def extract_gcode_meta(filename: str) -> dict[str, Any]:
     Merges Moonraker's parsed metadata with any '; meta:key=value' custom comments.
     Returns empty dict if both sources fail.
     """
-    from app.moonraker import moonraker
-
     meta: dict[str, Any] = {}
 
     try:

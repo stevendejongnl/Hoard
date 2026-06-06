@@ -109,7 +109,7 @@ async def get_print_detail(job_id: str) -> dict[str, Any]:
         if filename:
             try:
                 gcode_meta = await extract_gcode_meta(filename)
-                if gcode_meta:
+                if gcode_meta is not None:
                     await db.update_print_job(job_id, {"gcode_meta": _json.dumps(gcode_meta)})
                     job_row["gcode_meta"] = gcode_meta
             except Exception as exc:
