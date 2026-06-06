@@ -229,8 +229,7 @@ export class PrintDetailPage extends LitElement {
     }
 
     const formatValue = (key: string, val: string | number): string => {
-      if (key === 'layer_height' || key === 'first_layer_height' || key === 'nozzle_diameter')
-        return `${val} mm`
+      if (key === 'layer_height' || key === 'first_layer_height' || key === 'nozzle_diameter') return `${val} mm`
       if (key === 'filament_weight_g') return `${val} g`
       if (key === 'estimated_time_s') {
         const s = Number(val)
@@ -253,9 +252,14 @@ export class PrintDetailPage extends LitElement {
             const label = labelMap[key] ?? key.replace(/_/g, ' ')
             const display = formatValue(key, val as string | number)
             if (key === 'source_url' && String(val).startsWith('http')) {
-              return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><a href="${val}" target="_blank" rel="noopener" class="ppd-meta-value ppd-meta-link">${val}</a></div>`
+              return html`<div class="ppd-meta-item">
+                <span class="ppd-meta-label">${label}</span
+                ><a href="${val}" target="_blank" rel="noopener" class="ppd-meta-value ppd-meta-link">${val}</a>
+              </div>`
             }
-            return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><span class="ppd-meta-value">${display}</span></div>`
+            return html`<div class="ppd-meta-item">
+              <span class="ppd-meta-label">${label}</span><span class="ppd-meta-value">${display}</span>
+            </div>`
           })}
         </div>
       </div>
@@ -342,7 +346,10 @@ export class PrintDetailPage extends LitElement {
               <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
                 ${[
                   { label: 'filament cost', value: j.cost_filament != null ? '€' + j.cost_filament.toFixed(2) : '—' },
-                  { label: 'electricity', value: j.cost_electricity != null ? '€' + j.cost_electricity.toFixed(2) : '—' },
+                  {
+                    label: 'electricity',
+                    value: j.cost_electricity != null ? '€' + j.cost_electricity.toFixed(2) : '—',
+                  },
                   { label: 'avg watts', value: j.avg_watts != null ? j.avg_watts + 'w' : '—' },
                   { label: '€/kWh', value: j.avg_eur_per_kwh != null ? '€' + j.avg_eur_per_kwh.toFixed(3) : '—' },
                 ].map(
