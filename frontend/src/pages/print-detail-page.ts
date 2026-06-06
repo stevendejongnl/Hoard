@@ -233,6 +233,29 @@ export class PrintDetailPage extends LitElement {
           ${this._stat('filament', _fmtFilament(j.filament_g ?? null))} ${this._stat('spool', spoolLabel)}
         </div>
 
+        <!-- cost breakdown -->
+        ${j.cost_filament != null || j.cost_electricity != null || j.avg_watts != null || j.avg_eur_per_kwh != null
+          ? html`
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                ${[
+                  { label: 'filament cost', value: j.cost_filament != null ? '€' + j.cost_filament.toFixed(2) : '—' },
+                  { label: 'electricity', value: j.cost_electricity != null ? '€' + j.cost_electricity.toFixed(2) : '—' },
+                  { label: 'avg watts', value: j.avg_watts != null ? j.avg_watts + 'w' : '—' },
+                  { label: '€/kWh', value: j.avg_eur_per_kwh != null ? '€' + j.avg_eur_per_kwh.toFixed(3) : '—' },
+                ].map(
+                  ({ label, value }) => html`
+                    <div
+                      style="background: #141414; border: 1px solid #1e1e1e; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;"
+                    >
+                      <span style="font-size: 10px; color: #555;">${label}</span>
+                      <span style="font-size: 14px; color: #aaa;">${value}</span>
+                    </div>
+                  `,
+                )}
+              </div>
+            `
+          : ''}
+
         <!-- print settings -->
         <print-settings-editor
           .settings=${j.settings}

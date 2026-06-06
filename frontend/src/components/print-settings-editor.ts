@@ -13,7 +13,6 @@ const FIELDS: { key: SettingsKey; label: string; placeholder: string }[] = [
   { key: 'nozzle_temp', label: 'Nozzle temp', placeholder: '215°C' },
   { key: 'bed_temp', label: 'Bed temp', placeholder: '60°C' },
   { key: 'material', label: 'Material', placeholder: 'PLA' },
-  { key: 'printer', label: 'Printer', placeholder: 'Bambu X1C' },
 ]
 
 @customElement('print-settings-editor')

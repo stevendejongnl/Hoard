@@ -169,7 +169,6 @@ export interface PrintSettings {
   nozzle_temp?: string
   bed_temp?: string
   material?: string
-  printer?: string
   nozzle?: string
 }
 
@@ -196,6 +195,8 @@ export interface PrintJob {
   cost_total?: number | null
   cost_electricity?: number | null
   cost_filament?: number | null
+  avg_watts?: number | null
+  avg_eur_per_kwh?: number | null
   spool_id?: string | null
   spool?: SpoolRef | null
   project?: { id: number; name: string } | null
