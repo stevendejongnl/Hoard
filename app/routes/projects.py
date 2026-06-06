@@ -78,7 +78,7 @@ async def delete_project(project_id: int) -> None:
     if not project:
         raise HTTPException(404, "Project not found")
     for f in project.get("files", []):
-        if f["type"] == "stl":
+        if f["type"] != "gcode":
             try:
                 os.remove(f["filename"])
             except OSError:
@@ -90,13 +90,11 @@ async def delete_project(project_id: int) -> None:
 async def add_file(project_id: int, body: FileAdd) -> dict[str, Any]:
     if not await db.get_project(project_id):
         raise HTTPException(404, "Project not found")
-    if body.type not in ("gcode", "stl"):
-        raise HTTPException(422, "type must be 'gcode' or 'stl'")
     return await db.add_project_file(project_id, body.type, body.filename, body.label)
 
 
 @router.post("/{project_id}/files/upload", status_code=201)
-async def upload_stl(
+async def upload_file(
     project_id: int,
     label: str | None = None,
     file: UploadFile = File(...),
@@ -110,7 +108,9 @@ async def upload_stl(
     contents = await file.read()
     with open(stored_path, "wb") as fh:
         fh.write(contents)
-    return await db.add_project_file(project_id, "stl", stored_path, label or file.filename)
+    # Use the file extension as the type (e.g. stl, 3mf, scad, step)
+    ext = Path(file.filename or "").suffix.lstrip(".").lower() or "file"
+    return await db.add_project_file(project_id, ext, stored_path, label or file.filename)
 
 
 @router.delete("/{project_id}/files/{file_id}", status_code=204)
@@ -118,7 +118,7 @@ async def delete_file(project_id: int, file_id: int) -> None:
     f = await db.get_project_file(file_id)
     if not f or f["project_id"] != project_id:
         raise HTTPException(404, "File not found")
-    if f["type"] == "stl":
+    if f["type"] != "gcode":
         try:
             os.remove(f["filename"])
         except OSError:
@@ -244,10 +244,10 @@ async def unlink_print(project_id: int, job_id: str) -> None:
 
 
 @router.get("/{project_id}/files/{file_id}/download")
-async def download_stl(project_id: int, file_id: int) -> Any:
+async def download_file(project_id: int, file_id: int) -> Any:
     from fastapi.responses import FileResponse
     f = await db.get_project_file(file_id)
-    if not f or f["project_id"] != project_id or f["type"] != "stl":
+    if not f or f["project_id"] != project_id or f["type"] == "gcode":
         raise HTTPException(404, "File not found")
     if not os.path.exists(f["filename"]):
         raise HTTPException(404, "File missing from disk")
