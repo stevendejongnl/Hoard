@@ -1,3 +1,9 @@
+## [1.21.1](https://github.com/stevendejongnl/printer/compare/v1.21.0...v1.21.1) (2026-06-06)
+
+### Bug Fixes
+
+* MakerWorld enrichment via public API (bypasses bot protection) ([4391028](https://github.com/stevendejongnl/printer/commit/4391028b339787182498b32c8b99dd6b556b2d1f))
+
 ## [1.21.0](https://github.com/stevendejongnl/printer/compare/v1.20.0...v1.21.0) (2026-06-06)
 
 ### Features
