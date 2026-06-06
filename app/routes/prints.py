@@ -1,3 +1,4 @@
+import json as _json
 import logging
 import math
 import time
@@ -11,6 +12,7 @@ from pydantic import BaseModel
 
 from app import db
 from app.config import settings
+from app.gcode_meta import extract_gcode_meta
 from app.influx import influx
 from app.moonraker import moonraker
 
@@ -95,6 +97,24 @@ async def _get_job_stats(job_id: str) -> dict[str, Any]:
 @router.get("/api/prints/{job_id}")
 async def get_print_detail(job_id: str) -> dict[str, Any]:
     job_row = await db.get_or_create_print_job(job_id)
+
+    # Lazy extraction for prints that completed before this feature shipped
+    if job_row.get("gcode_meta") is None:
+        filename = ""
+        try:
+            job_data = await moonraker.get("/server/history/job", uid=job_id)
+            filename = job_data.get("job", {}).get("filename", "")
+        except Exception:
+            pass
+        if filename:
+            try:
+                gcode_meta = await extract_gcode_meta(filename)
+                if gcode_meta:
+                    await db.update_print_job(job_id, {"gcode_meta": _json.dumps(gcode_meta)})
+                    job_row["gcode_meta"] = gcode_meta
+            except Exception as exc:
+                log.debug("prints: lazy gcode_meta failed for %s: %s", job_id, exc)
+
     stats = await _get_job_stats(job_id)
     photos = await db.list_print_photos(job_id)
     return {**stats, **job_row, "photos": photos}
@@ -108,8 +128,6 @@ class PrintUpdate(BaseModel):
 
 @router.patch("/api/prints/{job_id}")
 async def update_print(job_id: str, body: PrintUpdate) -> dict[str, Any]:
-    import json as _json
-
     raw = body.model_dump()
     data: dict[str, Any] = {}
     for k, v in raw.items():
