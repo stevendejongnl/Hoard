@@ -1,3 +1,9 @@
+## [1.21.2](https://github.com/stevendejongnl/printer/compare/v1.21.1...v1.21.2) (2026-06-06)
+
+### Bug Fixes
+
+* readiness probe → /api/version, remove keel annotations (using GitHub Actions) ([244ea57](https://github.com/stevendejongnl/printer/commit/244ea573e050203034be89eb6f306a559b8a771f))
+
 ## [1.21.1](https://github.com/stevendejongnl/printer/compare/v1.21.0...v1.21.1) (2026-06-06)
 
 ### Bug Fixes
