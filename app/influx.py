@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from influxdb_client import InfluxDBClient, WritePrecision
@@ -61,7 +61,6 @@ class InfluxClient:
 
     def delete_print_job(self, timestamp: datetime, filename: str) -> None:
         """Delete the InfluxDB entry for one specific print (±10 min window around its end time)."""
-        from datetime import timedelta
         delete_api = self._client.delete_api()
         start = timestamp - timedelta(minutes=10)
         stop = timestamp + timedelta(minutes=10)
@@ -96,8 +95,7 @@ from(bucket: "{self._bucket}")
 
     def query_by_end_time(self, filename: str, end_time_s: float) -> dict[str, Any] | None:
         """Find the InfluxDB record for a specific print using filename + end timestamp (±5 min)."""
-        from datetime import timedelta
-        dt = datetime.fromtimestamp(end_time_s, tz=timezone.utc)
+        dt = datetime.fromtimestamp(end_time_s, tz=UTC)
         start = (dt - timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
         stop = (dt + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
         safe = filename.replace("\\", "\\\\").replace('"', '\\"')

@@ -1,3 +1,4 @@
+import json as _json
 import time
 from typing import Any
 
@@ -272,7 +273,6 @@ async def get_project(project_id: int) -> dict[str, Any] | None:
             ) as cur:
                 f.update(dict(await cur.fetchone()))
 
-        import json as _json
         async with db.execute(
             "SELECT * FROM project_links WHERE project_id = ? ORDER BY id",
             (project_id,),

@@ -1,6 +1,7 @@
-import re
 import logging
+import re
 from typing import Any
+
 import httpx
 
 log = logging.getLogger(__name__)
@@ -51,10 +52,10 @@ async def _fetch_printables(url: str) -> dict[str, Any]:
     if not m:
         return {}
     model_id = m.group(1)
-    query = """{ print(id: %s) {
-        name summary image { filePath }
-        materials { name } layerHeights nozzleDiameters printDuration weight numPieces
-    } }""" % model_id
+    query = f"""{{ print(id: {model_id}) {{
+        name summary image {{ filePath }}
+        materials {{ name }} layerHeights nozzleDiameters printDuration weight numPieces
+    }} }}"""
     async with httpx.AsyncClient(timeout=10) as client:
         r = await client.post("https://api.printables.com/graphql/", json={"query": query})
         r.raise_for_status()

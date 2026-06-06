@@ -1,7 +1,6 @@
-import asyncio
 import logging
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -21,11 +20,11 @@ def _moonraker_to_record(job: dict[str, Any]) -> dict[str, Any]:
     filament_mm = job.get("filament_used", 0) or 0
     filament_g = round(filament_mm * _MM_TO_GRAMS, 2)
     end_ts = job.get("end_time", 0) or 0
-    start_ts = job.get("start_time", 0) or 0
+    job.get("start_time", 0) or 0
     return {
         "job_id": job.get("job_id", ""),
         "filename": job.get("filename", ""),
-        "time": datetime.fromtimestamp(end_ts, tz=timezone.utc).isoformat().replace("+00:00", "Z") if end_ts else None,
+        "time": datetime.fromtimestamp(end_ts, tz=UTC).isoformat().replace("+00:00", "Z") if end_ts else None,
         "duration_s": job.get("print_duration", 0),
         "filament_g": filament_g,
         "status": job.get("status", ""),
@@ -160,10 +159,10 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
             await db.link_print_spool(job_id, body.spool_id, filament_g)
 
         if start_ts and end_ts:
-            start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
-            end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc)
+            start_dt = datetime.fromtimestamp(start_ts, tz=UTC)
+            end_dt = datetime.fromtimestamp(end_ts, tz=UTC)
         else:
-            end_dt = datetime.now(timezone.utc)
+            end_dt = datetime.now(UTC)
             start_dt = end_dt - timedelta(seconds=duration_s or 3600)
 
         # Try exact energy delta first, fall back to power-sensor average
@@ -240,8 +239,8 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
     filament_g = round(filament_mm * _MM_TO_GRAMS, 2)
 
     if start_ts and end_ts:
-        start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
-        end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc)
+        start_dt = datetime.fromtimestamp(start_ts, tz=UTC)
+        end_dt = datetime.fromtimestamp(end_ts, tz=UTC)
     else:
         raise HTTPException(422, "Job missing start_time / end_time")
 

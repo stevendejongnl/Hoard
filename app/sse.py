@@ -72,8 +72,7 @@ async def _poll_printer_state(interval: int = 10) -> None:
 
 
 def _handlers_for_status_update():
-    from app.moonraker import moonraker as _m
-    return _m._handlers.get("notify_status_update", [])
+    return moonraker._handlers.get("notify_status_update", [])
 
 
 async def _poll_ha(interval: int = 30) -> None:

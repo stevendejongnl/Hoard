@@ -2,6 +2,7 @@ import io
 
 import numpy as np
 from PIL import Image, ImageDraw
+from stl.mesh import Mesh
 
 
 def _build_rotation() -> np.ndarray:
@@ -22,8 +23,6 @@ _BG = (20, 20, 20)
 
 
 def render_stl_thumbnail(stl_bytes: bytes, size: int = 300) -> bytes:
-    from stl.mesh import Mesh
-
     mesh = Mesh.from_file("", fh=io.BytesIO(stl_bytes))
     verts = mesh.vectors  # (N, 3, 3)
 

@@ -1,4 +1,5 @@
 import math
+from datetime import UTC, datetime, timedelta
 
 from fastapi import APIRouter, HTTPException
 
@@ -59,8 +60,7 @@ async def predict(filename: str, spool_id: int | None = None, quantity: int = 1)
 
     # Try to get recent print avg watts for a better estimate
     try:
-        from datetime import datetime, timedelta, timezone
-        end = datetime.now(timezone.utc)
+        end = datetime.now(UTC)
         start = end - timedelta(hours=27)
         recent_watts = await ha.avg_power_over(start, end)
         if recent_watts > 5:

@@ -22,7 +22,8 @@ export class LinkPreviewCard extends LitElement {
     super.connectedCallback()
     this.addEventListener('mouseenter', this._onEnter)
     this.addEventListener('mouseleave', this._onLeave)
-    this.addEventListener('click', this._onClick, true) // capture phase beats <a> navigation
+    this.addEventListener('click', this._onClick, true)
+    document.addEventListener('click', this._onOutsideClick, true)
   }
 
   disconnectedCallback() {
@@ -30,6 +31,15 @@ export class LinkPreviewCard extends LitElement {
     this.removeEventListener('mouseenter', this._onEnter)
     this.removeEventListener('mouseleave', this._onLeave)
     this.removeEventListener('click', this._onClick, true)
+    document.removeEventListener('click', this._onOutsideClick, true)
+  }
+
+  private _onOutsideClick = (e: Event) => {
+    if (!this._visible) return
+    if (!this._isTouch()) return          // desktop uses mouseleave to hide
+    if (!this.contains(e.target as Node)) {
+      this._visible = false
+    }
   }
 
   private _onEnter = () => {

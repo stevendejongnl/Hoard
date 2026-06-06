@@ -11,6 +11,7 @@ const styles = html`<style>
 .projects-add-btn { background: transparent; border: 1px solid #22d3ee44; color: #22d3ee; border-radius: 6px; padding: 7px 14px; font-size: 12px; cursor: pointer; min-height: 44px; }
 .projects-add-btn:hover, .projects-add-btn:active { background: #22d3ee14; }
 .projects-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+project-card { display: block; height: 100%; }
 .projects-empty { color: #555; padding: 40px; text-align: center; }
 
 @media (max-width: 860px) {
