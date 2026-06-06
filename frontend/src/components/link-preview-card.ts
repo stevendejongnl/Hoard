@@ -10,20 +10,36 @@ export class LinkPreviewCard extends LitElement {
   private _showTimer = 0
   private _hideTimer = 0
 
+  private _isTouch() {
+    return window.matchMedia('(hover: none)').matches
+  }
+
+  private _handleClick(e: Event) {
+    if (!this._isTouch()) return          // desktop: let hover handle it, don't intercept
+    if (!this.link?.meta?.title && !this.link?.meta?.image_url) return  // nothing to show
+    e.preventDefault()
+    e.stopPropagation()
+    this._visible = !this._visible
+  }
+
   private _show() {
+    if (this._isTouch()) return           // touch: use click instead
     clearTimeout(this._hideTimer)
     this._showTimer = window.setTimeout(() => { this._visible = true }, 120)
   }
 
   private _hide() {
+    if (this._isTouch()) return
     clearTimeout(this._showTimer)
     this._hideTimer = window.setTimeout(() => { this._visible = false }, 150)
   }
 
+  private _closeCard() {
+    this._visible = false
+  }
+
   static styles = css`
     :host { display: block; position: relative; }
-
-    .trigger { display: contents; }
 
     .card {
       display: none;
@@ -34,16 +50,10 @@ export class LinkPreviewCard extends LitElement {
       background: #1e1e1e;
       border: 1px solid #333;
       border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
       z-index: 100;
       overflow: hidden;
       animation: fade-in 0.12s ease;
-      pointer-events: auto;
-    }
-
-    :host([data-right]) .card {
-      left: auto;
-      right: 0;
     }
 
     .card.visible { display: block; }
@@ -88,7 +98,6 @@ export class LinkPreviewCard extends LitElement {
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
-      margin-top: 2px;
     }
 
     .chip {
@@ -101,9 +110,39 @@ export class LinkPreviewCard extends LitElement {
       white-space: nowrap;
     }
 
-    /* Only show hover card on pointer devices */
-    @media (hover: none) {
-      .card { display: none !important; }
+    .footer {
+      padding: 8px 12px;
+      border-top: 1px solid #2a2a2a;
+    }
+
+    .open-btn {
+      display: block;
+      width: 100%;
+      background: transparent;
+      border: 1px solid #22d3ee33;
+      color: #22d3ee;
+      border-radius: 5px;
+      padding: 6px 10px;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      box-sizing: border-box;
+    }
+
+    .open-btn:hover, .open-btn:active {
+      background: #22d3ee14;
+    }
+
+    /* Mobile: card is wider and positioned fixed to avoid viewport overflow */
+    @media (max-width: 600px) {
+      .card {
+        position: fixed;
+        bottom: 16px;
+        left: 16px;
+        right: 16px;
+        width: auto;
+      }
     }
   `
 
@@ -115,9 +154,9 @@ export class LinkPreviewCard extends LitElement {
 
     return html`
       <div
-        class="trigger"
         @mouseenter=${this._show}
         @mouseleave=${this._hide}
+        @click=${this._handleClick}
       >
         <slot></slot>
       </div>
@@ -146,6 +185,15 @@ export class LinkPreviewCard extends LitElement {
                 `)}
               </div>
             ` : ''}
+          </div>
+          <div class="footer">
+            <a
+              class="open-btn"
+              href="${this.link.url}"
+              target="_blank"
+              rel="noopener"
+              @click=${this._closeCard}
+            >Open link ↗</a>
           </div>
         </div>
       ` : ''}
