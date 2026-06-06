@@ -1,3 +1,5 @@
+import asyncio
+import json as _json
 import math
 import os
 import uuid
@@ -8,6 +10,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app import db
+from app.enrichment import fetch_og
 from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
@@ -127,11 +130,28 @@ async def delete_file(project_id: int, file_id: int) -> None:
 async def add_link(project_id: int, body: LinkAdd) -> dict[str, Any]:
     if not await db.get_project(project_id):
         raise HTTPException(404, "Project not found")
-    return await db.add_project_link(project_id, body.url, body.label)
+    link = await db.add_project_link(project_id, body.url, body.label)
+    asyncio.create_task(_enrich_link(project_id, link["id"], body.url))
+    return link
+
+
+async def _enrich_link(project_id: int, link_id: int, url: str) -> None:
+    og = await fetch_og(url)
+    if not any(og.values()):
+        return
+    await db.set_link_meta(link_id, _json.dumps(og))
+    # Set project cover from og:image if the project doesn't have one yet
+    project = await db.get_project(project_id)
+    if project and not project.get("cover_url") and og.get("image_url"):
+        await db.set_project_cover(project_id, og["image_url"], link_id)
 
 
 @router.delete("/{project_id}/links/{link_id}", status_code=204)
-async def delete_link(project_id: int, link_id: int) -> None:
+async def delete_link(project_id: int, link_id: int, clear_cover: bool = False) -> None:
+    if clear_cover:
+        project = await db.get_project(project_id)
+        if project and project.get("cover_link_id") == link_id:
+            await db.set_project_cover(project_id, None, None)
     await db.delete_project_link(link_id)
 
 

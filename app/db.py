@@ -57,6 +57,24 @@ async def init_db(path: str) -> None:
                 label      TEXT
             )
         """)
+        # Enrichment columns — safe to run repeatedly via IF NOT EXISTS alternative
+        for col, typedef in [
+            ("meta", "TEXT"),
+        ]:
+            try:
+                await db.execute(f"ALTER TABLE project_links ADD COLUMN {col} {typedef}")
+            except Exception:
+                pass  # column already exists
+
+        for col, typedef in [
+            ("cover_url", "TEXT"),
+            ("cover_link_id", "INTEGER"),
+        ]:
+            try:
+                await db.execute(f"ALTER TABLE projects ADD COLUMN {col} {typedef}")
+            except Exception:
+                pass
+        await db.commit()
         await db.execute("""
             CREATE TABLE IF NOT EXISTS project_prints (
                 id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -267,6 +285,7 @@ async def create_project(name: str) -> dict[str, Any]:
         "print_count": 0, "total_duration_s": None,
         "total_cost": None, "total_filament_g": None,
         "files": [], "links": [], "prints": [],
+        "cover_url": None, "cover_link_id": None,
     })
     return row
 
@@ -333,6 +352,21 @@ async def add_project_link(
 async def delete_project_link(link_id: int) -> None:
     async with _conn() as db:
         await db.execute("DELETE FROM project_links WHERE id = ?", (link_id,))
+        await db.commit()
+
+
+async def set_link_meta(link_id: int, meta_json: str) -> None:
+    async with _conn() as db:
+        await db.execute("UPDATE project_links SET meta = ? WHERE id = ?", (meta_json, link_id))
+        await db.commit()
+
+
+async def set_project_cover(project_id: int, cover_url: str | None, cover_link_id: int | None) -> None:
+    async with _conn() as db:
+        await db.execute(
+            "UPDATE projects SET cover_url = ?, cover_link_id = ? WHERE id = ?",
+            (cover_url, cover_link_id, project_id),
+        )
         await db.commit()
 
 

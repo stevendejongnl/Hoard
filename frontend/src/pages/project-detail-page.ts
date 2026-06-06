@@ -74,8 +74,21 @@ export class ProjectDetailPage extends LitElement {
 
   private async _removeLink(linkId: number) {
     if (!this.project) return
-    await deleteProjectLink(this.project.id, linkId)
-    this.project = { ...this.project, links: (this.project.links ?? []).filter(l => l.id !== linkId) }
+    const isCoverSource = this.project.cover_link_id === linkId
+
+    let clearCover = false
+    if (isCoverSource && this.project.cover_url) {
+      clearCover = confirm('This link provided the cover image. Also remove the cover image?')
+    }
+
+    await deleteProjectLink(this.project.id, linkId, clearCover)
+    const updatedLinks = (this.project.links ?? []).filter(l => l.id !== linkId)
+    this.project = {
+      ...this.project,
+      links: updatedLinks,
+      cover_url: clearCover ? null : this.project.cover_url,
+      cover_link_id: clearCover ? null : this.project.cover_link_id,
+    }
   }
 
   private _stat(label: string, value: string, secondary = false) {
@@ -110,6 +123,17 @@ export class ProjectDetailPage extends LitElement {
             @click=${this._delete}
           >delete</button>
         </div>
+
+        ${p.cover_url ? html`
+          <div style="width: 100%; max-height: 200px; overflow: hidden; border-radius: 8px; background: #1a1a1a;">
+            <img
+              src="${p.cover_url}"
+              alt="Project cover"
+              style="width: 100%; max-height: 200px; object-fit: cover; display: block; border-radius: 8px;"
+              @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          </div>
+        ` : ''}
 
         <!-- stats -->
         <div class="pd-stats">

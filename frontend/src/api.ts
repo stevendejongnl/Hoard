@@ -183,8 +183,8 @@ export const addProjectLink = (
     body: JSON.stringify(data),
   })
 
-export const deleteProjectLink = (projectId: number, linkId: number) =>
-  fetch(`/api/projects/${projectId}/links/${linkId}`, { method: 'DELETE' })
+export const deleteProjectLink = (projectId: number, linkId: number, clearCover = false) =>
+  fetch(`/api/projects/${projectId}/links/${linkId}?clear_cover=${clearCover}`, { method: 'DELETE' })
 
 export const linkProjectPrint = (
   projectId: number,
