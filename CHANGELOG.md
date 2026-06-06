@@ -1,3 +1,9 @@
+## [1.25.2](https://github.com/stevendejongnl/printer/compare/v1.25.1...v1.25.2) (2026-06-06)
+
+### Bug Fixes
+
+* link card via host-level capture click; sort projects by most recent job_id ([8c8ca03](https://github.com/stevendejongnl/printer/commit/8c8ca03f71c0da1697d55dd0f04fae781f3737ac))
+
 ## [1.25.1](https://github.com/stevendejongnl/printer/compare/v1.25.0...v1.25.1) (2026-06-06)
 
 ### Bug Fixes
