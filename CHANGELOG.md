@@ -1,3 +1,9 @@
+## [1.25.3](https://github.com/stevendejongnl/printer/compare/v1.25.2...v1.25.3) (2026-06-06)
+
+### Bug Fixes
+
+* parse meta JSON string to object when returning project links ([960a5e3](https://github.com/stevendejongnl/printer/commit/960a5e3f5af6d2793cf04f2012a84ac55e9b3497))
+
 ## [1.25.2](https://github.com/stevendejongnl/printer/compare/v1.25.1...v1.25.2) (2026-06-06)
 
 ### Bug Fixes
