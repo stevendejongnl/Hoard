@@ -138,6 +138,58 @@ from(bucket: "{self._bucket}")
             pass
         return 0
 
+    def write_electricity_price(self, timestamp: datetime, price_eur_per_kwh: float) -> None:
+        """Write a single electricity price data point to InfluxDB."""
+        ts = int(timestamp.timestamp())
+        line = f"electricity_price price={price_eur_per_kwh} {ts}"
+        self._write.write(
+            bucket=self._bucket,
+            org=self._org,
+            record=line,
+            write_precision=cast(WritePrecision, WritePrecision.S),
+        )
+
+    def query_avg_price_between(self, start: datetime, end: datetime) -> float | None:
+        """Return time-weighted average electricity price (€/kWh) for a window.
+
+        Returns None if no data exists in InfluxDB for this period.
+        """
+        start_s = start.strftime("%Y-%m-%dT%H:%M:%SZ")
+        end_s = end.strftime("%Y-%m-%dT%H:%M:%SZ")
+        flux = f"""
+from(bucket: "{self._bucket}")
+  |> range(start: {start_s}, stop: {end_s})
+  |> filter(fn: (r) => r._measurement == "electricity_price" and r._field == "price")
+  |> mean()
+"""
+        try:
+            tables = self._client.query_api().query(flux, org=self._org)
+            for table in tables:
+                for record in table.records:
+                    val = record.get_value()
+                    if val is not None:
+                        return float(val)
+        except Exception:
+            pass
+        return None
+
+    def oldest_electricity_price(self) -> datetime | None:
+        """Return the timestamp of the oldest electricity price in InfluxDB."""
+        flux = f"""
+from(bucket: "{self._bucket}")
+  |> range(start: -3650d)
+  |> filter(fn: (r) => r._measurement == "electricity_price" and r._field == "price")
+  |> first()
+"""
+        try:
+            tables = self._client.query_api().query(flux, org=self._org)
+            for table in tables:
+                for record in table.records:
+                    return record.get_time()
+        except Exception:
+            pass
+        return None
+
     def close(self) -> None:
         self._client.close()
 

@@ -1,6 +1,6 @@
 import logging
 import math
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -9,11 +9,12 @@ from pydantic import BaseModel
 from app import db, ha
 from app.influx import influx
 from app.moonraker import moonraker
+from app.nordpool import backfill_prices
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
 # 1.75mm PLA filament: π × (0.875mm)² × 1.24 g/cm³ × 0.001 cm³/mm³
-_MM_TO_GRAMS = math.pi * (0.875 ** 2) * 1.24 * 0.001
+_MM_TO_GRAMS = math.pi * (0.875**2) * 1.24 * 0.001
 
 
 def _moonraker_to_record(job: dict[str, Any]) -> dict[str, Any]:
@@ -89,9 +90,7 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
         job_id = record["job_id"]
 
         # Merge InfluxDB cost data — try exact minute, then ±5 min
-        end_ts = next(
-            (j.get("end_time", 0) for j in jobs if j.get("job_id") == job_id), 0
-        ) or 0
+        end_ts = next((j.get("end_time", 0) for j in jobs if j.get("job_id") == job_id), 0) or 0
         record_minute = int(end_ts) // 60
         cost = influx_by_file_minute.get((filename, record_minute))
         if not cost:
@@ -306,3 +305,20 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
         "cost_filament": cost_filament,
         "cost_total": cost_total,
     }
+
+
+class PriceBackfillRequest(BaseModel):
+    start_date: str = "2021-12-01"
+    end_date: str | None = None
+
+
+@router.post("/prices/backfill")
+async def backfill_electricity_prices(body: PriceBackfillRequest) -> dict[str, Any]:
+    """Fetch Nord Pool NL historical prices and write to InfluxDB.
+
+    Defaults to Dec 2021 → today. Runs synchronously so the client can see progress.
+    """
+    start = date.fromisoformat(body.start_date)
+    end = date.fromisoformat(body.end_date) if body.end_date else date.today()
+    written = await backfill_prices(start, end)
+    return {"written": written, "start": str(start), "end": str(end)}
