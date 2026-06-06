@@ -89,7 +89,7 @@ export class ProjectsPage extends LitElement {
     const name = prompt('Project name:')
     if (!name?.trim()) return
     const p = await createProject(name.trim())
-    window.router.navigate(`/projects/${p.id}` as any)
+    window.router.navigate(`/projects/${String(p.id)}`)
   }
 
   render() {

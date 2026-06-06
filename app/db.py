@@ -140,7 +140,9 @@ async def create_spool(data: dict[str, Any]) -> dict[str, Any]:
         )
         await db.commit()
         async with db.execute("SELECT * FROM spools WHERE id = ?", (cur.lastrowid,)) as c:
-            return dict(await c.fetchone())
+            row = await c.fetchone()
+            assert row is not None
+            return dict(row)
 
 
 async def update_spool(spool_id: int, data: dict[str, Any]) -> dict[str, Any] | None:
@@ -270,7 +272,9 @@ async def get_project(project_id: int) -> dict[str, Any] | None:
                    FROM project_prints WHERE project_file_id = ?""",
                 (f["id"],),
             ) as cur:
-                f.update(dict(await cur.fetchone()))
+                stats = await cur.fetchone()
+                if stats is not None:
+                    f.update(dict(stats))
 
         async with db.execute(
             "SELECT * FROM project_links WHERE project_id = ? ORDER BY id",
@@ -307,7 +311,9 @@ async def create_project(name: str) -> dict[str, Any]:
         )
         await db.commit()
         async with db.execute("SELECT * FROM projects WHERE id = ?", (cur.lastrowid,)) as c:
-            row = dict(await c.fetchone())
+            fetched = await c.fetchone()
+            assert fetched is not None
+            row = dict(fetched)
     row.update(
         {
             "print_count": 0,
@@ -350,7 +356,9 @@ async def add_project_file(project_id: int, file_type: str, filename: str, label
         )
         await db.commit()
         async with db.execute("SELECT * FROM project_files WHERE id = ?", (cur.lastrowid,)) as c:
-            return dict(await c.fetchone())
+            row = await c.fetchone()
+            assert row is not None
+            return dict(row)
 
 
 async def get_project_file(file_id: int) -> dict[str, Any] | None:
@@ -376,7 +384,9 @@ async def add_project_link(project_id: int, url: str, label: str | None) -> dict
         )
         await db.commit()
         async with db.execute("SELECT * FROM project_links WHERE id = ?", (cur.lastrowid,)) as c:
-            return dict(await c.fetchone())
+            row = await c.fetchone()
+            assert row is not None
+            return dict(row)
 
 
 async def delete_project_link(link_id: int) -> None:
@@ -429,7 +439,9 @@ async def add_project_print(
             "SELECT * FROM project_prints WHERE project_id = ? AND job_id = ?",
             (project_id, job_id),
         ) as c:
-            return dict(await c.fetchone())
+            row = await c.fetchone()
+            assert row is not None
+            return dict(row)
 
 
 async def delete_project_print(project_id: int, job_id: str) -> None:

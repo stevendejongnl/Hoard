@@ -459,7 +459,7 @@ export class HistoryPage extends LitElement {
                                   title="${r.project.name}"
                                   @click=${(e: Event) => {
                                     e.stopPropagation()
-                                    router.navigate(`/projects/${r.project!.id}` as any)
+                                    router.navigate(`/projects/${String(r.project!.id)}`)
                                   }}
                                 >
                                   📁 ${r.project.name}
@@ -504,7 +504,7 @@ export class HistoryPage extends LitElement {
                                   title="${r.project.name}"
                                   @click=${(e: Event) => {
                                     e.stopPropagation()
-                                    router.navigate(`/projects/${r.project!.id}` as any)
+                                    router.navigate(`/projects/${String(r.project!.id)}`)
                                   }}
                                   >📁 ${r.project.name}</span
                                 >
