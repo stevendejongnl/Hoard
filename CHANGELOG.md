@@ -1,3 +1,18 @@
+## [1.26.0](https://github.com/stevendejongnl/printer/compare/v1.25.4...v1.26.0) (2026-06-06)
+
+### Features
+
+* global search with !h/!s/!p prefix filters — nav icon + / shortcut ([dd5d6d4](https://github.com/stevendejongnl/printer/commit/dd5d6d4fc2ce75769c88347564b9a057bba33d6b))
+* Prettier formatting for TypeScript — pre-commit hook + CI check ([226791a](https://github.com/stevendejongnl/printer/commit/226791a0092a56bdbae258107a19bd900b77d294))
+* ruff + mypy in CI and pre-commit; fix inline imports; equal card heights per row; outside-click closes hover card ([3ba2ed8](https://github.com/stevendejongnl/printer/commit/3ba2ed8e6ffd12163c08695a8604553c418d94b4))
+
+### Bug Fixes
+
+* load spools in history-page so spool picker dropdown isn't empty ([6977a80](https://github.com/stevendejongnl/printer/commit/6977a80c626c944361de0a610ee4caae46501b8e))
+* pre-commit — remove warn_return_any, fix files.py type assert, drop broken type stubs ([f5de6ed](https://github.com/stevendejongnl/printer/commit/f5de6ed58ea583b06796daa5eea61eb8b92bd7c2))
+* reconcile also fixes zero-filament-cost prints; spool cost update triggers recalculate ([58590a0](https://github.com/stevendejongnl/printer/commit/58590a0040f21b2cc3818dca24052f20fc4716b7))
+* replace type ignores and as-any casts with proper types ([3dce307](https://github.com/stevendejongnl/printer/commit/3dce3077ac3ae04f48cf799e9d598ce5b8870b3f))
+
 ## [1.25.4](https://github.com/stevendejongnl/printer/compare/v1.25.3...v1.25.4) (2026-06-06)
 
 ### Bug Fixes
