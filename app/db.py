@@ -272,11 +272,20 @@ async def get_project(project_id: int) -> dict[str, Any] | None:
             ) as cur:
                 f.update(dict(await cur.fetchone()))
 
+        import json as _json
         async with db.execute(
             "SELECT * FROM project_links WHERE project_id = ? ORDER BY id",
             (project_id,),
         ) as cur:
-            links = [dict(r) for r in await cur.fetchall()]
+            links = []
+            for row in await cur.fetchall():
+                link = dict(row)
+                if link.get("meta"):
+                    try:
+                        link["meta"] = _json.loads(link["meta"])
+                    except Exception:
+                        link["meta"] = None
+                links.append(link)
 
         async with db.execute(
             "SELECT * FROM project_prints WHERE project_id = ? ORDER BY id",
