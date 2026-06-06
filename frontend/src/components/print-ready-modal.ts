@@ -6,10 +6,10 @@ import { startPrint, powerOn, firmwareRestart } from '../api'
 
 // Power plug → Pi boots → Moonraker starts → Klipper connects
 type Step =
-  | 'needs-power'      // plug is off
-  | 'waiting-power'    // plug turned on, waiting for Pi/Moonraker to come up
-  | 'needs-firmware'   // power on, Klipper not yet connected
-  | 'waiting-klippy'   // firmware restart sent, waiting for standby
+  | 'needs-power' // plug is off
+  | 'waiting-power' // plug turned on, waiting for Pi/Moonraker to come up
+  | 'needs-firmware' // power on, Klipper not yet connected
+  | 'waiting-klippy' // firmware restart sent, waiting for standby
   | 'error'
 
 @customElement('print-ready-modal')
@@ -54,7 +54,10 @@ export class PrintReadyModal extends LitElement {
   }
 
   private _stopRetry() {
-    if (this._retryTimer) { clearInterval(this._retryTimer); this._retryTimer = null }
+    if (this._retryTimer) {
+      clearInterval(this._retryTimer)
+      this._retryTimer = null
+    }
   }
 
   async tryPrint(filename: string) {
@@ -176,7 +179,7 @@ export class PrintReadyModal extends LitElement {
     .overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,.75);
+      background: rgba(0, 0, 0, 0.75);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -197,10 +200,27 @@ export class PrintReadyModal extends LitElement {
       padding: 14px 18px 12px;
       border-bottom: 1px solid var(--border, #222);
     }
-    .title { font-size: 12px; font-weight: 300; color: #fff; }
-    .close { background: none; border: none; color: var(--text-muted,#555); font-size: 16px; cursor: pointer; }
-    .close:hover { color: var(--text, #e0e0e0); }
-    .body { padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+    .title {
+      font-size: 12px;
+      font-weight: 300;
+      color: #fff;
+    }
+    .close {
+      background: none;
+      border: none;
+      color: var(--text-muted, #555);
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .close:hover {
+      color: var(--text, #e0e0e0);
+    }
+    .body {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
     .filename {
       font-size: 11px;
       color: var(--text-muted, #555);
@@ -208,16 +228,28 @@ export class PrintReadyModal extends LitElement {
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .msg { font-size: 12px; color: var(--text, #e0e0e0); margin: 0; }
-    .msg.waiting { color: var(--cyan, #22d3ee); }
-    .msg.error { color: #f87171; }
+    .msg {
+      font-size: 12px;
+      color: var(--text, #e0e0e0);
+      margin: 0;
+    }
+    .msg.waiting {
+      color: var(--cyan, #22d3ee);
+    }
+    .msg.error {
+      color: #f87171;
+    }
     .spinner {
       font-size: 24px;
       color: var(--cyan, #22d3ee);
       text-align: center;
       animation: spin 1s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
     .btn-primary {
       background: var(--cyan, #22d3ee);
       border: none;
@@ -229,8 +261,13 @@ export class PrintReadyModal extends LitElement {
       cursor: pointer;
       width: 100%;
     }
-    .btn-primary:hover { opacity: .9; }
-    .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
     .btn-ghost {
       background: none;
       border: 1px solid var(--border, #222);
@@ -241,10 +278,14 @@ export class PrintReadyModal extends LitElement {
       cursor: pointer;
       width: 100%;
     }
-    .btn-ghost:hover { color: var(--text, #e0e0e0); }
+    .btn-ghost:hover {
+      color: var(--text, #e0e0e0);
+    }
   `
 }
 
 declare global {
-  interface HTMLElementTagNameMap { 'print-ready-modal': PrintReadyModal }
+  interface HTMLElementTagNameMap {
+    'print-ready-modal': PrintReadyModal
+  }
 }

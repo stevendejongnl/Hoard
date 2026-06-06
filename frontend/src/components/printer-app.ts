@@ -33,8 +33,7 @@ export class PrinterApp extends LitElement {
       if (!ps.time_remaining || ps.progress <= 0) return ''
       const total = ps.time_remaining / (ps.progress / 100)
       const remaining = total - ps.time_remaining
-      return new Date(Date.now() + remaining * 1000)
-        .toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+      return new Date(Date.now() + remaining * 1000).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
     })()
     const label = ps.state === 'paused' ? '⏸' : '🖨'
     document.title = [label, pct, finish ? `→ ${finish}` : ''].filter(Boolean).join(' ')
@@ -51,7 +50,9 @@ export class PrinterApp extends LitElement {
       }
     })
 
-    this._unlisten = router.listen(r => { this.route = r })
+    this._unlisten = router.listen((r) => {
+      this.route = r
+    })
     this.route = router.current
   }
 

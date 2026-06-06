@@ -12,7 +12,9 @@ import '../components/file-browser-modal'
 
 @customElement('home-page')
 export class HomePage extends LitElement {
-  createRenderRoot() { return this }
+  createRenderRoot() {
+    return this
+  }
 
   @state() fileBrowserOpen = false
   @state() predictFilename = ''
@@ -20,10 +22,23 @@ export class HomePage extends LitElement {
   render() {
     return html`
       <style>
-        .main { max-width: 940px; margin: 0 auto; padding: 28px 28px 60px; display: flex; flex-direction: column; gap: 0; }
-        .divider { height: 1px; background: #222; margin: 28px 0; }
+        .main {
+          max-width: 940px;
+          margin: 0 auto;
+          padding: 28px 28px 60px;
+          display: flex;
+          flex-direction: column;
+          gap: 0;
+        }
+        .divider {
+          height: 1px;
+          background: #222;
+          margin: 28px 0;
+        }
         @media (max-width: 600px) {
-          .main { padding: 16px 16px 40px; }
+          .main {
+            padding: 16px 16px 40px;
+          }
         }
       </style>
 
@@ -41,7 +56,9 @@ export class HomePage extends LitElement {
 
         <cost-predictor
           .filename=${this.predictFilename}
-          @open-file-browser=${() => { this.fileBrowserOpen = true }}
+          @open-file-browser=${() => {
+            this.fileBrowserOpen = true
+          }}
           @file-selected-for-predict=${(e: CustomEvent) => {
             this.predictFilename = e.detail.filename
             this.fileBrowserOpen = false
@@ -55,7 +72,9 @@ export class HomePage extends LitElement {
 
       <file-browser-modal
         .open=${this.fileBrowserOpen}
-        @close=${() => { this.fileBrowserOpen = false }}
+        @close=${() => {
+          this.fileBrowserOpen = false
+        }}
         @file-selected=${(e: CustomEvent) => {
           this.predictFilename = e.detail.filename
           this.fileBrowserOpen = false

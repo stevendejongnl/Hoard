@@ -276,10 +276,7 @@ export class SpoolModal extends LitElement {
     const isEdit = this.spool !== null
 
     return html`
-      <div
-        class="overlay ${this.open ? '' : 'hidden'}"
-        @click=${this._onOverlayClick}
-      >
+      <div class="overlay ${this.open ? '' : 'hidden'}" @click=${this._onOverlayClick}>
         <div class="modal">
           <div class="modal-header">
             <span class="modal-title">${isEdit ? 'Edit spool' : 'Add spool'}</span>
@@ -366,7 +363,11 @@ export class SpoolModal extends LitElement {
                   }}
                   placeholder="20.00"
                 />
-                ${this._derivedCostPerGram() > 0 ? html`<span style="font-size:9px;color:var(--text-muted)">= €${this._derivedCostPerGram().toFixed(4)}/g</span>` : ''}
+                ${this._derivedCostPerGram() > 0
+                  ? html`<span style="font-size:9px;color:var(--text-muted)"
+                      >= €${this._derivedCostPerGram().toFixed(4)}/g</span
+                    >`
+                  : ''}
               </div>
               <div class="form-field">
                 <label class="form-label">Initial weight (g)</label>

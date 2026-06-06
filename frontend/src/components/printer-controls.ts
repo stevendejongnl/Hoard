@@ -2,15 +2,7 @@ import { LitElement, css, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import type { Power, PrinterState } from '../types'
 import { sseClient } from '../sse'
-import {
-  cancelPrint,
-  emergencyStop,
-  firmwareRestart,
-  pausePrint,
-  powerOff,
-  powerOn,
-  resumePrint,
-} from '../api'
+import { cancelPrint, emergencyStop, firmwareRestart, pausePrint, powerOff, powerOn, resumePrint } from '../api'
 
 @customElement('printer-controls')
 export class PrinterControls extends LitElement {
@@ -21,7 +13,9 @@ export class PrinterControls extends LitElement {
   private _unsub: (() => void) | null = null
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
 
     .strip {
       background: var(--bg-surface);
@@ -72,7 +66,9 @@ export class PrinterControls extends LitElement {
       background: var(--bg-raised);
       border: 1px solid var(--border);
       position: relative;
-      transition: background 0.2s, border-color 0.2s;
+      transition:
+        background 0.2s,
+        border-color 0.2s;
     }
 
     .toggle-track.on {
@@ -88,7 +84,9 @@ export class PrinterControls extends LitElement {
       height: 14px;
       border-radius: 50%;
       background: var(--text-muted);
-      transition: transform 0.2s, background 0.2s;
+      transition:
+        transform 0.2s,
+        background 0.2s;
     }
 
     .toggle-track.on .toggle-thumb {
@@ -114,7 +112,9 @@ export class PrinterControls extends LitElement {
       border: 1px solid var(--border);
       background: transparent;
       color: var(--text-muted);
-      transition: color 0.15s, border-color 0.15s;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
       white-space: nowrap;
     }
 
@@ -159,28 +159,52 @@ export class PrinterControls extends LitElement {
       letter-spacing: 0.08em;
     }
 
-    .state-pill.error { color: #ef4444; border-color: #ef444430; background: #ef444408; }
-    .state-pill.printing { color: var(--cyan); border-color: var(--cyan-border); background: var(--cyan-dim); }
-    .state-pill.paused { color: #f59e0b; border-color: #f59e0b30; background: #f59e0b08; }
+    .state-pill.error {
+      color: #ef4444;
+      border-color: #ef444430;
+      background: #ef444408;
+    }
+    .state-pill.printing {
+      color: var(--cyan);
+      border-color: var(--cyan-border);
+      background: var(--cyan-dim);
+    }
+    .state-pill.paused {
+      color: #f59e0b;
+      border-color: #f59e0b30;
+      background: #f59e0b08;
+    }
 
     @media (max-width: 600px) {
-      .strip { padding: 10px 12px; gap: 8px; }
-      .group-label { display: none; }
-      .sep { display: none; }
-      .btn { padding: 4px 10px; font-size: 9px; }
-      .state-pill { font-size: 8px; }
+      .strip {
+        padding: 10px 12px;
+        gap: 8px;
+      }
+      .group-label {
+        display: none;
+      }
+      .sep {
+        display: none;
+      }
+      .btn {
+        padding: 4px 10px;
+        font-size: 9px;
+      }
+      .state-pill {
+        font-size: 8px;
+      }
     }
   `
 
   connectedCallback() {
     super.connectedCallback()
-    this._unsub = sseClient.subscribe(payload => {
+    this._unsub = sseClient.subscribe((payload) => {
       if (payload.type === 'power') this.power = payload.data
       if (payload.type === 'printer_state') this.printerState = payload.data
     })
     // get initial power state without waiting for SSE poll
     fetch('/api/control/power')
-      .then(r => r.json())
+      .then((r) => r.json())
       .then((d: { state: string }) => {
         if (this.power) {
           this.power = { ...this.power, switch: d.state as Power['switch'] }
@@ -199,7 +223,13 @@ export class PrinterControls extends LitElement {
   private async _act(fn: () => Promise<unknown>, confirm?: string) {
     if (confirm && !window.confirm(confirm)) return
     this.busy = true
-    try { await fn() } catch (e) { console.error(e) } finally { this.busy = false }
+    try {
+      await fn()
+    } catch (e) {
+      console.error(e)
+    } finally {
+      this.busy = false
+    }
   }
 
   private async _powerToggle() {
@@ -226,7 +256,6 @@ export class PrinterControls extends LitElement {
 
     return html`
       <div class="strip">
-
         <!-- Power -->
         <div class="group">
           <span class="group-label">Power</span>
@@ -253,37 +282,50 @@ export class PrinterControls extends LitElement {
           ?disabled=${d}
           @click=${() => this._act(() => firmwareRestart())}
           title="Send FIRMWARE_RESTART to Klipper"
-        >firmware restart</button>
+        >
+          firmware restart
+        </button>
 
-        ${isPrinting || isPaused ? html`
-          <div class="sep"></div>
+        ${isPrinting || isPaused
+          ? html`
+              <div class="sep"></div>
 
-          <div class="group">
-            <span class="group-label">Print</span>
-            ${isPrinting ? html`
-              <button class="btn" ?disabled=${d} @click=${() => this._act(() => pausePrint())}>pause</button>
-            ` : ''}
-            ${isPaused ? html`
-              <button class="btn" ?disabled=${d} @click=${() => this._act(() => resumePrint())}>resume</button>
-            ` : ''}
-            <button
-              class="btn danger"
-              ?disabled=${d}
-              @click=${() => this._act(() => cancelPrint(), 'Cancel the current print?')}
-            >cancel</button>
-          </div>
-        ` : ''}
-
-        ${isPrinting ? html`
-          <div class="sep"></div>
-          <button
-            class="btn danger"
-            ?disabled=${d}
-            @click=${() => this._act(() => emergencyStop(), 'Emergency stop? This will halt all motion immediately.')}
-            title="EMERGENCY_STOP — halts all motion immediately"
-          >⚠ e-stop</button>
-        ` : ''}
-
+              <div class="group">
+                <span class="group-label">Print</span>
+                ${isPrinting
+                  ? html`
+                      <button class="btn" ?disabled=${d} @click=${() => this._act(() => pausePrint())}>pause</button>
+                    `
+                  : ''}
+                ${isPaused
+                  ? html`
+                      <button class="btn" ?disabled=${d} @click=${() => this._act(() => resumePrint())}>resume</button>
+                    `
+                  : ''}
+                <button
+                  class="btn danger"
+                  ?disabled=${d}
+                  @click=${() => this._act(() => cancelPrint(), 'Cancel the current print?')}
+                >
+                  cancel
+                </button>
+              </div>
+            `
+          : ''}
+        ${isPrinting
+          ? html`
+              <div class="sep"></div>
+              <button
+                class="btn danger"
+                ?disabled=${d}
+                @click=${() =>
+                  this._act(() => emergencyStop(), 'Emergency stop? This will halt all motion immediately.')}
+                title="EMERGENCY_STOP — halts all motion immediately"
+              >
+                ⚠ e-stop
+              </button>
+            `
+          : ''}
       </div>
     `
   }

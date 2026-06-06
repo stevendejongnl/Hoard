@@ -24,7 +24,7 @@ class SSEClient {
         const me = e as MessageEvent
         try {
           const data = JSON.parse(me.data as string)
-          this.handlers.forEach(h => h({ type, data } as SSEPayload))
+          this.handlers.forEach((h) => h({ type, data } as SSEPayload))
         } catch {
           // ignore malformed
         }
@@ -46,7 +46,9 @@ class SSEClient {
 
   subscribe(handler: Handler): () => void {
     this.handlers.push(handler)
-    return () => { this.handlers = this.handlers.filter(h => h !== handler) }
+    return () => {
+      this.handlers = this.handlers.filter((h) => h !== handler)
+    }
   }
 }
 

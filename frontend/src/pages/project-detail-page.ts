@@ -8,14 +8,36 @@ import '../components/project-files-section'
 import '../components/link-preview-card'
 
 const styles = html`<style>
-.pd-wrap { max-width: 760px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
-.pd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-.pd-stats-secondary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
-@media (max-width: 600px) {
-  .pd-wrap { padding: 16px; gap: 12px; }
-  .pd-stats { grid-template-columns: repeat(2, 1fr); }
-  .pd-stats-secondary { grid-template-columns: repeat(2, 1fr); }
-}
+  .pd-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .pd-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .pd-stats-secondary {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  @media (max-width: 600px) {
+    .pd-wrap {
+      padding: 16px;
+      gap: 12px;
+    }
+    .pd-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .pd-stats-secondary {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
 </style>`
 
 function _fmtHours(s: number | null): string {
@@ -28,7 +50,11 @@ function _fmtHours(s: number | null): string {
 }
 
 function _linkHost(url: string): string {
-  try { return new URL(url).hostname.replace('www.', '') } catch { return url }
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return url
+  }
 }
 
 const _SETTING_LABELS: Record<string, string> = {
@@ -47,7 +73,9 @@ function _settingLabel(key: string): string {
 
 @customElement('project-detail-page')
 export class ProjectDetailPage extends LitElement {
-  createRenderRoot() { return this }
+  createRenderRoot() {
+    return this
+  }
 
   @state() project: Project | null = null
   @state() loading = true
@@ -97,7 +125,7 @@ export class ProjectDetailPage extends LitElement {
     }
 
     await deleteProjectLink(this.project.id, linkId, clearCover)
-    const updatedLinks = (this.project.links ?? []).filter(l => l.id !== linkId)
+    const updatedLinks = (this.project.links ?? []).filter((l) => l.id !== linkId)
     this.project = {
       ...this.project,
       links: updatedLinks,
@@ -108,69 +136,89 @@ export class ProjectDetailPage extends LitElement {
 
   private _stat(label: string, value: string, secondary = false) {
     return html`
-      <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 6px; padding: ${secondary ? '10px 12px' : '12px'}; display: flex; flex-direction: column; gap: 3px;">
+      <div
+        style="background: #1a1a1a; border: 1px solid #222; border-radius: 6px; padding: ${secondary
+          ? '10px 12px'
+          : '12px'}; display: flex; flex-direction: column; gap: 3px;"
+      >
         <span style="font-size: 10px; color: #555;">${label}</span>
-        <span style="font-size: ${secondary ? '14px' : '18px'}; font-weight: 600; color: ${secondary ? '#aaa' : '#e0e0e0'};">${value}</span>
+        <span
+          style="font-size: ${secondary ? '14px' : '18px'}; font-weight: 600; color: ${secondary ? '#aaa' : '#e0e0e0'};"
+          >${value}</span
+        >
       </div>
     `
   }
 
   render() {
     if (this.loading) return html`<div style="padding: 40px; text-align: center; color: #555;">Loading...</div>`
-    if (this.error || !this.project) return html`<div style="padding: 40px; text-align: center; color: #555;">Project not found.</div>`
+    if (this.error || !this.project)
+      return html`<div style="padding: 40px; text-align: center; color: #555;">Project not found.</div>`
 
     const p = this.project
     return html`
       ${styles}
       <div class="pd-wrap">
-
         <!-- header -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span
-              style="font-size: 10px; color: #555; cursor: pointer;"
-              @click=${() => router.navigate('/projects')}
-            >← projects</span>
+            <span style="font-size: 10px; color: #555; cursor: pointer;" @click=${() => router.navigate('/projects')}
+              >← projects</span
+            >
             <span style="font-size: 18px; font-weight: 600; color: #e0e0e0;">${p.name}</span>
           </div>
           <button
             style="background: transparent; border: 1px solid #33181888; color: #ef4444; border-radius: 6px; padding: 6px 12px; font-size: 11px; cursor: pointer;"
             @click=${this._delete}
-          >delete</button>
+          >
+            delete
+          </button>
         </div>
 
-        ${p.cover_url ? html`
-          <div style="width: 100%; max-height: 200px; overflow: hidden; border-radius: 8px; background: #1a1a1a;">
-            <img
-              src="${p.cover_url}"
-              alt="Project cover"
-              style="width: 100%; max-height: 200px; object-fit: cover; display: block; border-radius: 8px;"
-              @error=${(e: Event) => { (e.target as HTMLImageElement).style.display = 'none' }}
-            />
-          </div>
-        ` : ''}
+        ${p.cover_url
+          ? html`
+              <div style="width: 100%; max-height: 200px; overflow: hidden; border-radius: 8px; background: #1a1a1a;">
+                <img
+                  src="${p.cover_url}"
+                  alt="Project cover"
+                  style="width: 100%; max-height: 200px; object-fit: cover; display: block; border-radius: 8px;"
+                  @error=${(e: Event) => {
+                    ;(e.target as HTMLImageElement).style.display = 'none'
+                  }}
+                />
+              </div>
+            `
+          : ''}
 
         <!-- stats -->
         <div class="pd-stats">
-          ${this._stat('prints', String(p.print_count))}
-          ${this._stat('total time', _fmtHours(p.total_duration_s))}
+          ${this._stat('prints', String(p.print_count))} ${this._stat('total time', _fmtHours(p.total_duration_s))}
           ${this._stat('total cost', p.total_cost != null ? '€' + p.total_cost.toFixed(2) : '—')}
-          ${this._stat('filament', p.total_filament_g != null
-            ? p.total_filament_g >= 1000
-              ? (p.total_filament_g / 1000).toFixed(2) + ' kg'
-              : p.total_filament_g.toFixed(0) + ' g'
-            : '—')}
+          ${this._stat(
+            'filament',
+            p.total_filament_g != null
+              ? p.total_filament_g >= 1000
+                ? (p.total_filament_g / 1000).toFixed(2) + ' kg'
+                : p.total_filament_g.toFixed(0) + ' g'
+              : '—',
+          )}
         </div>
-        ${p.print_count > 1 ? html`
-          <div class="pd-stats-secondary">
-            ${this._stat('avg cost', p.avg_cost != null ? '€' + p.avg_cost.toFixed(2) : '—', true)}
-            ${this._stat('avg time', _fmtHours(p.avg_duration_s), true)}
-            ${this._stat('longest', _fmtHours(p.max_duration_s), true)}
-            ${this._stat('avg filament', p.total_filament_g != null && p.print_count > 0
-              ? (p.total_filament_g / p.print_count).toFixed(0) + ' g'
-              : '—', true)}
-          </div>
-        ` : ''}
+        ${p.print_count > 1
+          ? html`
+              <div class="pd-stats-secondary">
+                ${this._stat('avg cost', p.avg_cost != null ? '€' + p.avg_cost.toFixed(2) : '—', true)}
+                ${this._stat('avg time', _fmtHours(p.avg_duration_s), true)}
+                ${this._stat('longest', _fmtHours(p.max_duration_s), true)}
+                ${this._stat(
+                  'avg filament',
+                  p.total_filament_g != null && p.print_count > 0
+                    ? (p.total_filament_g / p.print_count).toFixed(0) + ' g'
+                    : '—',
+                  true,
+                )}
+              </div>
+            `
+          : ''}
 
         <!-- notes (markdown editor) -->
         <markdown-editor
@@ -188,30 +236,55 @@ export class ProjectDetailPage extends LitElement {
             <button
               style="background: transparent; border: 1px solid #22d3ee33; color: #22d3ee; border-radius: 4px; padding: 3px 10px; font-size: 10px; cursor: pointer;"
               @click=${this._addLink}
-            >+ add</button>
+            >
+              + add
+            </button>
           </div>
           ${(p.links ?? []).length === 0
             ? html`<div style="font-size: 11px; color: #333;">No links yet.</div>`
-            : (p.links ?? []).map(l => html`
-              <link-preview-card .link=${l} style="display:block;margin-bottom:5px;">
-                <div style="background: #141414; border-radius: 5px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
-                  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                    <span style="font-size: 9px; background: #141414; color: #555; border: 1px solid #222; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;">${l.label || _linkHost(l.url)}</span>
-                    <a href="${l.url}" target="_blank" rel="noopener" style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none;">${l.meta?.title || l.url}</a>
-                  </div>
-                  <span style="font-size: 10px; color: #333; cursor: pointer; padding: 2px 6px; flex-shrink: 0;" @click=${(e: Event) => { e.stopPropagation(); this._removeLink(l.id) }}>✕</span>
-                </div>
-              </link-preview-card>
-            `)}
+            : (p.links ?? []).map(
+                (l) => html`
+                  <link-preview-card .link=${l} style="display:block;margin-bottom:5px;">
+                    <div
+                      style="background: #141414; border-radius: 5px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
+                    >
+                      <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                        <span
+                          style="font-size: 9px; background: #141414; color: #555; border: 1px solid #222; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;"
+                          >${l.label || _linkHost(l.url)}</span
+                        >
+                        <a
+                          href="${l.url}"
+                          target="_blank"
+                          rel="noopener"
+                          style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none;"
+                          >${l.meta?.title || l.url}</a
+                        >
+                      </div>
+                      <span
+                        style="font-size: 10px; color: #333; cursor: pointer; padding: 2px 6px; flex-shrink: 0;"
+                        @click=${(e: Event) => {
+                          e.stopPropagation()
+                          this._removeLink(l.id)
+                        }}
+                        >✕</span
+                      >
+                    </div>
+                  </link-preview-card>
+                `,
+              )}
         </div>
 
         <!-- files -->
         <project-files-section
           .project=${p}
-          @project-updated=${(e: CustomEvent) => { this.project = e.detail }}
-          @reload-project=${() => { if (p.id) this._load(p.id) }}
+          @project-updated=${(e: CustomEvent) => {
+            this.project = e.detail
+          }}
+          @reload-project=${() => {
+            if (p.id) this._load(p.id)
+          }}
         ></project-files-section>
-
       </div>
     `
   }

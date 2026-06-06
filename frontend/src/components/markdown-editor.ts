@@ -46,7 +46,9 @@ export class MarkdownEditor extends LitElement {
   @state() private _saved = ''
   @state() private _error = false
 
-  createRenderRoot() { return this }
+  createRenderRoot() {
+    return this
+  }
 
   connectedCallback() {
     super.connectedCallback()
@@ -80,15 +82,20 @@ export class MarkdownEditor extends LitElement {
     this.requestUpdate()
     try {
       await updateProject(this.projectId, { notes: this._draft })
-      this.dispatchEvent(new CustomEvent('notes-changed', {
-        detail: { value: this._draft },
-        bubbles: true,
-      }))
+      this.dispatchEvent(
+        new CustomEvent('notes-changed', {
+          detail: { value: this._draft },
+          bubbles: true,
+        }),
+      )
     } catch {
       this._saved = prev
       this._draft = prev
       this._error = true
-      setTimeout(() => { this._error = false; this.requestUpdate() }, 2000)
+      setTimeout(() => {
+        this._error = false
+        this.requestUpdate()
+      }, 2000)
     }
   }
 
@@ -96,7 +103,11 @@ export class MarkdownEditor extends LitElement {
     if (this._editing) {
       return html`
         <div style="background: #1a1a1a; border: 1px solid #22d3ee44; border-radius: 8px; padding: 16px;">
-          <div style="font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;">Notes</div>
+          <div
+            style="font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;"
+          >
+            Notes
+          </div>
           <textarea
             style="width: 100%; background: transparent; border: none; color: #ccc; font-size: 12px; line-height: 1.7; resize: none; outline: none; font-family: var(--font); min-height: 80px; box-sizing: border-box;"
             .value=${this._draft}
@@ -118,7 +129,11 @@ export class MarkdownEditor extends LitElement {
         style="background: #1a1a1a; border: 1px solid ${borderColor}; border-radius: 8px; padding: 16px; cursor: text; transition: border-color 0.2s;"
         @click=${this._startEdit}
       >
-        <div style="font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;">Notes</div>
+        <div
+          style="font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;"
+        >
+          Notes
+        </div>
         ${this._saved
           ? html`<div class="md-prose" .innerHTML=${marked.parse(this._saved) as string}></div>`
           : html`<div style="font-size: 12px; color: #333; font-style: italic;">Click to add notes…</div>`}

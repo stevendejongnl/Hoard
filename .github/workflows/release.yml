@@ -40,6 +40,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --prefix frontend
 
+      - name: Frontend format check
+        run: npm run format:check --prefix frontend
+
       - name: Frontend typecheck
         run: npm run typecheck --prefix frontend
 

@@ -40,7 +40,7 @@ export class CostBreakdownPopup extends LitElement {
       border-radius: 8px;
       padding: 14px 16px;
       min-width: 280px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
       text-align: left;
     }
 
@@ -68,8 +68,12 @@ export class CostBreakdownPopup extends LitElement {
 
     @media (max-width: 600px) {
       /* Suppress hover-open on touch, but never hide an explicitly-opened popup */
-      :host(:hover) .popup:not(.open) { display: none; }
-      .popup-close { display: block; }
+      :host(:hover) .popup:not(.open) {
+        display: none;
+      }
+      .popup-close {
+        display: block;
+      }
       .popup.open {
         position: fixed;
         inset: auto 0 0 0;
@@ -79,14 +83,14 @@ export class CostBreakdownPopup extends LitElement {
         min-width: unset;
         max-height: 70vh;
         overflow-y: auto;
-        box-shadow: 0 -4px 32px rgba(0,0,0,0.6);
+        box-shadow: 0 -4px 32px rgba(0, 0, 0, 0.6);
         z-index: 50;
       }
       .backdrop {
         display: block;
         position: fixed;
         inset: 0;
-        background: rgba(0,0,0,0.5);
+        background: rgba(0, 0, 0, 0.5);
         z-index: 49;
       }
     }
@@ -172,8 +176,14 @@ export class CostBreakdownPopup extends LitElement {
       cursor: pointer;
     }
 
-    .recalc-btn:hover { color: var(--cyan, #22d3ee); border-color: var(--cyan, #22d3ee); }
-    .recalc-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .recalc-btn:hover {
+      color: var(--cyan, #22d3ee);
+      border-color: var(--cyan, #22d3ee);
+    }
+    .recalc-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
   `
 
   private async _recalculate(e: Event) {
@@ -207,36 +217,51 @@ export class CostBreakdownPopup extends LitElement {
   render() {
     const r = this.record
     const filG = r.filament_g ?? 0
-    const cpg = (r.cost_filament != null && filG > 0) ? r.cost_filament / filG : null
+    const cpg = r.cost_filament != null && filG > 0 ? r.cost_filament / filG : null
     const durationH = (r.duration_s ?? 0) / 3600
     const avgW = r.avg_watts
     const avgP = r.avg_eur_per_kwh
-    const energyKwh = avgW != null ? avgW * durationH / 1000 : null
+    const energyKwh = avgW != null ? (avgW * durationH) / 1000 : null
 
     return html`
-      <div class="trigger" @click=${() => { this._open = !this._open }}>
+      <div
+        class="trigger"
+        @click=${() => {
+          this._open = !this._open
+        }}
+      >
         <slot></slot>
       </div>
-      ${this._open ? html`<div class="backdrop" @click=${() => { this._open = false }}></div>` : ''}
+      ${this._open
+        ? html`<div
+            class="backdrop"
+            @click=${() => {
+              this._open = false
+            }}
+          ></div>`
+        : ''}
       <div class="popup ${this._open ? 'open' : ''}">
-        <button class="popup-close" @click=${(e: Event) => { e.stopPropagation(); this._open = false }}>×</button>
+        <button
+          class="popup-close"
+          @click=${(e: Event) => {
+            e.stopPropagation()
+            this._open = false
+          }}
+        >
+          ×
+        </button>
         <div class="popup-title">Cost breakdown</div>
 
         <div class="popup-row">
           <span class="row-label">Filament</span>
-          <span class="row-formula">
-            ${filG.toFixed(1)} g
-            ${cpg != null ? html`× €${cpg.toFixed(4)}/g` : ''}
-          </span>
+          <span class="row-formula"> ${filG.toFixed(1)} g ${cpg != null ? html`× €${cpg.toFixed(4)}/g` : ''} </span>
           <span class="row-value">${fmt(r.cost_filament)}</span>
         </div>
 
         <div class="popup-row">
           <span class="row-label">Electricity</span>
           <span class="row-formula">
-            ${energyKwh != null
-              ? html`${energyKwh.toFixed(4)} kWh × €${(avgP ?? 0).toFixed(4)}`
-              : '—'}
+            ${energyKwh != null ? html`${energyKwh.toFixed(4)} kWh × €${(avgP ?? 0).toFixed(4)}` : '—'}
           </span>
           <span class="row-value">${fmt(r.cost_electricity)}</span>
         </div>
@@ -247,21 +272,24 @@ export class CostBreakdownPopup extends LitElement {
           <span class="row-value"></span>
         </div>
 
-        ${avgW != null ? html`
-          <div class="popup-row">
-            <span class="row-label">Avg draw</span>
-            <span class="row-formula">${avgW.toFixed(1)} W (HA sensor)</span>
-            <span class="row-value"></span>
-          </div>
-        ` : ''}
-
-        ${avgP != null ? html`
-          <div class="popup-row">
-            <span class="row-label">Avg price</span>
-            <span class="row-formula">€${avgP.toFixed(4)}/kWh (at print time)</span>
-            <span class="row-value"></span>
-          </div>
-        ` : ''}
+        ${avgW != null
+          ? html`
+              <div class="popup-row">
+                <span class="row-label">Avg draw</span>
+                <span class="row-formula">${avgW.toFixed(1)} W (HA sensor)</span>
+                <span class="row-value"></span>
+              </div>
+            `
+          : ''}
+        ${avgP != null
+          ? html`
+              <div class="popup-row">
+                <span class="row-label">Avg price</span>
+                <span class="row-formula">€${avgP.toFixed(4)}/kWh (at print time)</span>
+                <span class="row-value"></span>
+              </div>
+            `
+          : ''}
 
         <div class="divider"></div>
 
@@ -270,28 +298,32 @@ export class CostBreakdownPopup extends LitElement {
           <span class="total-value">${fmt(r.cost_total, 4)}</span>
         </div>
 
-        ${r.spool && (r.cost_total == null || r.cost_total === 0) ? html`
-          <button
-            class="recalc-btn"
-            ?disabled=${this._recalculating}
-            @click=${this._recalculate}
-          >${this._recalculating ? 'Recalculating…' : '↻ Recalculate cost from HA'}</button>
-        ` : ''}
-        ${!r.spool || (r.cost_total != null && r.cost_total > 0.001) ? '' : html`
-          <button
-            class="recalc-btn"
-            ?disabled=${this._recalculating}
-            @click=${this._restore}
-          >${this._recalculating ? 'Restoring…' : '↻ Restore cost from HA history'}</button>
-        `}
-        ${r.cost_total != null && r.cost_total > 0 && r.cost_total < 0.01 ? html`
-          <button
-            class="recalc-btn"
-            style="border-color: #ef444444; color: #ef4444;"
-            ?disabled=${this._recalculating}
-            @click=${this._restore}
-          >${this._recalculating ? 'Restoring…' : '⚠ Cost looks wrong — restore from HA'}</button>
-        ` : ''}
+        ${r.spool && (r.cost_total == null || r.cost_total === 0)
+          ? html`
+              <button class="recalc-btn" ?disabled=${this._recalculating} @click=${this._recalculate}>
+                ${this._recalculating ? 'Recalculating…' : '↻ Recalculate cost from HA'}
+              </button>
+            `
+          : ''}
+        ${!r.spool || (r.cost_total != null && r.cost_total > 0.001)
+          ? ''
+          : html`
+              <button class="recalc-btn" ?disabled=${this._recalculating} @click=${this._restore}>
+                ${this._recalculating ? 'Restoring…' : '↻ Restore cost from HA history'}
+              </button>
+            `}
+        ${r.cost_total != null && r.cost_total > 0 && r.cost_total < 0.01
+          ? html`
+              <button
+                class="recalc-btn"
+                style="border-color: #ef444444; color: #ef4444;"
+                ?disabled=${this._recalculating}
+                @click=${this._restore}
+              >
+                ${this._recalculating ? 'Restoring…' : '⚠ Cost looks wrong — restore from HA'}
+              </button>
+            `
+          : ''}
       </div>
     `
   }

@@ -11,10 +11,12 @@ export class TopNav extends LitElement {
     try {
       const r = await fetch('/api/version')
       if (r.ok) {
-        const data = await r.json() as { version: string }
+        const data = (await r.json()) as { version: string }
         this._version = data.version
       }
-    } catch { /* version display is non-critical */ }
+    } catch {
+      /* version display is non-critical */
+    }
   }
 
   static styles = css`
@@ -93,18 +95,36 @@ export class TopNav extends LitElement {
     }
 
     @keyframes pulse {
-      0%   { opacity: 1; }
-      50%  { opacity: 0.4; }
-      100% { opacity: 1; }
+      0% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.4;
+      }
+      100% {
+        opacity: 1;
+      }
     }
 
     @media (max-width: 600px) {
-      .topbar { padding: 10px 16px; }
-      .app-name { font-size: 13px; }
-      .muted { display: none; }
-      .version-badge { display: none; }
-      .nav { gap: 14px; }
-      .nav-link { font-size: 11px; }
+      .topbar {
+        padding: 10px 16px;
+      }
+      .app-name {
+        font-size: 13px;
+      }
+      .muted {
+        display: none;
+      }
+      .version-badge {
+        display: none;
+      }
+      .nav {
+        gap: 14px;
+      }
+      .nav-link {
+        font-size: 11px;
+      }
     }
   `
 
@@ -112,15 +132,15 @@ export class TopNav extends LitElement {
     return html`
       <div class="topbar">
         <span class="app-name" @click=${() => window.router.navigate('/')}>
-          printer<span class="muted">.madebysteven.nl</span>${this._version ? html`<span class="version-badge">v${this._version}</span>` : ''}
+          printer<span class="muted">.madebysteven.nl</span>${this._version
+            ? html`<span class="version-badge">v${this._version}</span>`
+            : ''}
         </span>
         <div class="nav">
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
           <span class="nav-link" @click=${() => window.router.navigate('/projects')}>projects</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>
-          ${this.printing
-            ? html`<span class="status-badge"><span class="dot">●</span> printing</span>`
-            : ''}
+          ${this.printing ? html`<span class="status-badge"><span class="dot">●</span> printing</span>` : ''}
         </div>
       </div>
     `

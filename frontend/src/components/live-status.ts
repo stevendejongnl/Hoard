@@ -1,61 +1,61 @@
-import { LitElement, css, html, svg } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
-import type { PrinterState, Temps, Power, Spool, GcodeFile } from '../types';
-import { sseClient } from '../sse';
-import { getSpools, getFileMetadata } from '../api';
+import { LitElement, css, html, svg } from 'lit'
+import { customElement, state } from 'lit/decorators.js'
+import type { PrinterState, Temps, Power, Spool, GcodeFile } from '../types'
+import { sseClient } from '../sse'
+import { getSpools, getFileMetadata } from '../api'
 
 @customElement('live-status')
 export class LiveStatus extends LitElement {
-  @state() printerState: PrinterState | null = null;
-  @state() temps: Temps | null = null;
-  @state() power: Power | null = null;
-  @state() activeSpool: Spool | null = null;
-  @state() fileEstimatedTime: number | null = null;
-  @state() private _fileMeta: Pick<GcodeFile, 'layer_height' | 'first_layer_height' | 'layer_count'> | null = null;
+  @state() printerState: PrinterState | null = null
+  @state() temps: Temps | null = null
+  @state() power: Power | null = null
+  @state() activeSpool: Spool | null = null
+  @state() fileEstimatedTime: number | null = null
+  @state() private _fileMeta: Pick<GcodeFile, 'layer_height' | 'first_layer_height' | 'layer_count'> | null = null
 
-  private _unsubscribe: (() => void) | null = null;
-  private _lastFilename = '';
+  private _unsubscribe: (() => void) | null = null
+  private _lastFilename = ''
 
   async connectedCallback() {
-    super.connectedCallback();
+    super.connectedCallback()
     try {
-      const spools = await getSpools();
-      this.activeSpool = spools.find((s) => s.active === 1) ?? null;
+      const spools = await getSpools()
+      this.activeSpool = spools.find((s) => s.active === 1) ?? null
     } catch (e) {
-      console.error('[live-status] Failed to load spools:', e);
+      console.error('[live-status] Failed to load spools:', e)
     }
 
     this._unsubscribe = sseClient.subscribe((payload) => {
       if (payload.type === 'printer_state') {
-        this.printerState = payload.data;
-        this._maybeFetchMeta(payload.data.filename);
+        this.printerState = payload.data
+        this._maybeFetchMeta(payload.data.filename)
       } else if (payload.type === 'temps') {
-        this.temps = payload.data;
+        this.temps = payload.data
       } else if (payload.type === 'power') {
-        this.power = payload.data;
+        this.power = payload.data
       }
-    });
+    })
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback();
-    this._unsubscribe?.();
-    this._unsubscribe = null;
+    super.disconnectedCallback()
+    this._unsubscribe?.()
+    this._unsubscribe = null
   }
 
   private async _maybeFetchMeta(filename: string) {
-    if (!filename || filename === this._lastFilename) return;
-    this._lastFilename = filename;
-    this.fileEstimatedTime = null;
-    this._fileMeta = null;
+    if (!filename || filename === this._lastFilename) return
+    this._lastFilename = filename
+    this.fileEstimatedTime = null
+    this._fileMeta = null
     try {
-      const meta = await getFileMetadata(filename);
-      this.fileEstimatedTime = meta.estimated_time ?? null;
+      const meta = await getFileMetadata(filename)
+      this.fileEstimatedTime = meta.estimated_time ?? null
       this._fileMeta = {
         layer_height: meta.layer_height,
         first_layer_height: meta.first_layer_height,
         layer_count: meta.layer_count,
-      };
+      }
     } catch {
       // metadata unavailable — fine
     }
@@ -64,52 +64,49 @@ export class LiveStatus extends LitElement {
   private _computeLayer(ps: PrinterState): { current: number | null; total: number | null } {
     // Prefer Klipper's own SET_PRINT_STATS_INFO tracking
     if (ps.layer !== null && ps.layer_total) {
-      return { current: ps.layer, total: ps.layer_total };
+      return { current: ps.layer, total: ps.layer_total }
     }
     // Fall back: derive from Z position + slicer metadata
-    const m = this._fileMeta;
-    const z = ps.z_position ?? 0;
+    const m = this._fileMeta
+    const z = ps.z_position ?? 0
     if (!m?.layer_height || !m?.first_layer_height || !m?.layer_count || z <= 0) {
-      return { current: null, total: null };
+      return { current: null, total: null }
     }
-    const current = Math.min(
-      Math.max(1, Math.floor((z - m.first_layer_height) / m.layer_height) + 1),
-      m.layer_count,
-    );
-    return { current, total: m.layer_count };
+    const current = Math.min(Math.max(1, Math.floor((z - m.first_layer_height) / m.layer_height) + 1), m.layer_count)
+    return { current, total: m.layer_count }
   }
 
   private _fmt(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`;
-    if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`;
-    return `${s}s`;
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    const s = Math.floor(seconds % 60)
+    if (h > 0) return `${h}h ${m.toString().padStart(2, '0')}m`
+    if (m > 0) return `${m}m ${s.toString().padStart(2, '0')}s`
+    return `${s}s`
   }
 
   private _finishTime(): string | null {
-    const ps = this.printerState;
-    if (!ps || ps.state !== 'printing' || ps.progress <= 0 || ps.time_remaining === 0) return null;
-    const elapsed = ps.time_remaining;
-    const total = elapsed / (ps.progress / 100);
-    const remaining = total - elapsed;
-    const finish = new Date(Date.now() + remaining * 1000);
-    return finish.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    const ps = this.printerState
+    if (!ps || ps.state !== 'printing' || ps.progress <= 0 || ps.time_remaining === 0) return null
+    const elapsed = ps.time_remaining
+    const total = elapsed / (ps.progress / 100)
+    const remaining = total - elapsed
+    const finish = new Date(Date.now() + remaining * 1000)
+    return finish.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
   }
 
   private _ringPath(progress: number) {
-    const r = 44;
-    const cx = 56;
-    const cy = 56;
-    const circumference = 2 * Math.PI * r;
-    const offset = circumference * (1 - Math.min(progress, 100) / 100);
-    return { circumference, offset, cx, cy, r };
+    const r = 44
+    const cx = 56
+    const cy = 56
+    const circumference = 2 * Math.PI * r
+    const offset = circumference * (1 - Math.min(progress, 100) / 100)
+    return { circumference, offset, cx, cy, r }
   }
 
   render() {
-    const ps = this.printerState;
-    const isPrinting = ps?.state === 'printing' || ps?.state === 'paused';
+    const ps = this.printerState
+    const isPrinting = ps?.state === 'printing' || ps?.state === 'paused'
 
     return html`
       <div class="card">
@@ -117,13 +114,15 @@ export class LiveStatus extends LitElement {
         <div class="temps-row">
           <div class="temp-cell">
             <span class="temp-label">Hotend</span>
-            <span class="temp-value">${this.temps?.hotend_actual ?? 0}°
+            <span class="temp-value"
+              >${this.temps?.hotend_actual ?? 0}°
               <span class="temp-target">/ ${this.temps?.hotend_target ?? 0}°</span>
             </span>
           </div>
           <div class="temp-cell">
             <span class="temp-label">Bed</span>
-            <span class="temp-value">${this.temps?.bed_actual ?? 0}°
+            <span class="temp-value"
+              >${this.temps?.bed_actual ?? 0}°
               <span class="temp-target">/ ${this.temps?.bed_target ?? 0}°</span>
             </span>
           </div>
@@ -137,17 +136,17 @@ export class LiveStatus extends LitElement {
           </div>
         </div>
       </div>
-    `;
+    `
   }
 
   private _renderPrinting(ps: PrinterState) {
-    const { circumference, offset, cx, cy, r } = this._ringPath(ps.progress);
-    const finish = this._finishTime();
-    const elapsed = ps.time_remaining;
-    const filamentM = ps.filament_used ? (ps.filament_used / 1000).toFixed(2) : null;
-    const { current: currentLayer, total: totalLayers } = this._computeLayer(ps);
-    const hasLayers = totalLayers && totalLayers > 0;
-    const stateLabel = ps.state === 'paused' ? 'PAUSED' : 'PRINTING';
+    const { circumference, offset, cx, cy, r } = this._ringPath(ps.progress)
+    const finish = this._finishTime()
+    const elapsed = ps.time_remaining
+    const filamentM = ps.filament_used ? (ps.filament_used / 1000).toFixed(2) : null
+    const { current: currentLayer, total: totalLayers } = this._computeLayer(ps)
+    const hasLayers = totalLayers && totalLayers > 0
+    const stateLabel = ps.state === 'paused' ? 'PAUSED' : 'PRINTING'
 
     return html`
       <div class="print-header">
@@ -183,10 +182,12 @@ export class LiveStatus extends LitElement {
           <div class="metric-row">
             <span class="ml">Filament</span>
             <span class="mv">${filamentM ? filamentM + ' m' : '—'}</span>
-            ${this.fileEstimatedTime ? html`
-              <span class="ml">Total est.</span>
-              <span class="mv">${this._fmt(this.fileEstimatedTime)}</span>
-            ` : html`<span class="ml"></span><span class="mv"></span>`}
+            ${this.fileEstimatedTime
+              ? html`
+                  <span class="ml">Total est.</span>
+                  <span class="mv">${this._fmt(this.fileEstimatedTime)}</span>
+                `
+              : html`<span class="ml"></span><span class="mv"></span>`}
           </div>
           <div class="metric-row">
             <span class="ml">Layer</span>
@@ -200,7 +201,7 @@ export class LiveStatus extends LitElement {
       <div class="progress-bar">
         <div class="progress-fill" style="width:${Math.min(100, ps.progress)}%"></div>
       </div>
-    `;
+    `
   }
 
   private _renderIdle() {
@@ -209,44 +210,42 @@ export class LiveStatus extends LitElement {
 
     // Printer physically off
     if (sw === 'off') {
-      return html`
-        <div class="idle-row">
-          <span class="idle-dot off"></span>
-          <span class="idle-text off">Printer off</span>
-        </div>`
+      return html` <div class="idle-row">
+        <span class="idle-dot off"></span>
+        <span class="idle-text off">Printer off</span>
+      </div>`
     }
 
     // Printer on but firmware not connected / in error
     if (sw === 'on' && (state === 'error' || state === null || this.printerState === null)) {
-      return html`
-        <div class="idle-row">
-          <span class="idle-dot warn"></span>
-          <span class="idle-text warn">Firmware not connected</span>
-          <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
-        </div>`
+      return html` <div class="idle-row">
+        <span class="idle-dot warn"></span>
+        <span class="idle-text warn">Firmware not connected</span>
+        <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
+      </div>`
     }
 
     // Print just finished
     if (state === 'complete') {
-      return html`
-        <div class="idle-row">
-          <span class="idle-dot done"></span>
-          <span class="idle-text done">Print complete</span>
-          <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
-        </div>`
+      return html` <div class="idle-row">
+        <span class="idle-dot done"></span>
+        <span class="idle-text done">Print complete</span>
+        <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
+      </div>`
     }
 
     // Default: printer on, idle (standby)
-    return html`
-      <div class="idle-row">
-        <span class="idle-dot idle"></span>
-        <span class="idle-text idle">Printer idle</span>
-        <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
-      </div>`
+    return html` <div class="idle-row">
+      <span class="idle-dot idle"></span>
+      <span class="idle-text idle">Printer idle</span>
+      <a class="fluidd-link" href="http://klipper.madebysteven.nl" target="_blank" rel="noopener">fluidd →</a>
+    </div>`
   }
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
 
     .card {
       background: var(--bg-surface);
@@ -276,7 +275,7 @@ export class LiveStatus extends LitElement {
     }
 
     .state-badge.paused {
-      background: rgba(251,191,36,.12);
+      background: rgba(251, 191, 36, 0.12);
       color: #fbbf24;
     }
 
@@ -393,7 +392,9 @@ export class LiveStatus extends LitElement {
       border-right: 1px solid var(--border-sub, #1a1a1a);
     }
 
-    .temp-cell:last-child { border-right: none; }
+    .temp-cell:last-child {
+      border-right: none;
+    }
 
     .temp-label {
       font-size: 9px;
@@ -413,7 +414,9 @@ export class LiveStatus extends LitElement {
       color: var(--text-muted, #555);
     }
 
-    .temp-value.watts { color: var(--cyan, #22d3ee); }
+    .temp-value.watts {
+      color: var(--cyan, #22d3ee);
+    }
 
     /* idle / status row */
     .idle-row {
@@ -430,14 +433,30 @@ export class LiveStatus extends LitElement {
       border-radius: 50%;
       flex-shrink: 0;
     }
-    .idle-dot.idle  { background: #444; }
-    .idle-dot.off   { background: #333; }
-    .idle-dot.warn  { background: #f59e0b; box-shadow: 0 0 6px #f59e0b66; animation: pulse-warn 2s infinite; }
-    .idle-dot.done  { background: #22d3ee; box-shadow: 0 0 6px #22d3ee66; }
+    .idle-dot.idle {
+      background: #444;
+    }
+    .idle-dot.off {
+      background: #333;
+    }
+    .idle-dot.warn {
+      background: #f59e0b;
+      box-shadow: 0 0 6px #f59e0b66;
+      animation: pulse-warn 2s infinite;
+    }
+    .idle-dot.done {
+      background: #22d3ee;
+      box-shadow: 0 0 6px #22d3ee66;
+    }
 
     @keyframes pulse-warn {
-      0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.4;
+      }
     }
 
     .idle-text {
@@ -445,24 +464,45 @@ export class LiveStatus extends LitElement {
       font-weight: 400;
       flex: 1;
     }
-    .idle-text.idle { color: var(--text-muted, #555); }
-    .idle-text.off  { color: var(--text-dim, #333); }
-    .idle-text.warn { color: #f59e0b; }
-    .idle-text.done { color: var(--cyan, #22d3ee); }
+    .idle-text.idle {
+      color: var(--text-muted, #555);
+    }
+    .idle-text.off {
+      color: var(--text-dim, #333);
+    }
+    .idle-text.warn {
+      color: #f59e0b;
+    }
+    .idle-text.done {
+      color: var(--cyan, #22d3ee);
+    }
 
     /* mobile */
     @media (max-width: 600px) {
-      .print-body { flex-direction: column; align-items: stretch; }
-      .ring-wrap { width: 72px; height: 72px; align-self: center; }
-      .metric-row { grid-template-columns: 64px 1fr 64px 1fr; }
-      .temps-row { flex-wrap: wrap; }
-      .temp-cell { flex: 1 1 45%; }
+      .print-body {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .ring-wrap {
+        width: 72px;
+        height: 72px;
+        align-self: center;
+      }
+      .metric-row {
+        grid-template-columns: 64px 1fr 64px 1fr;
+      }
+      .temps-row {
+        flex-wrap: wrap;
+      }
+      .temp-cell {
+        flex: 1 1 45%;
+      }
     }
-  `;
+  `
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'live-status': LiveStatus;
+    'live-status': LiveStatus
   }
 }

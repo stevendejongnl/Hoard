@@ -1,128 +1,132 @@
-import { LitElement, css, html, PropertyValues } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import type { PredictResult, Spool } from '../types';
-import { getSpools, predict, startPrint, uploadFileChunked } from '../api';
+import { LitElement, css, html, PropertyValues } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import type { PredictResult, Spool } from '../types'
+import { getSpools, predict, startPrint, uploadFileChunked } from '../api'
 
 @customElement('cost-predictor')
 export class CostPredictor extends LitElement {
   // External property set by parent (file picker selection)
-  @property() set filename(val: string) { if (val) this._filename = val; }
-  get filename() { return this._filename; }
+  @property() set filename(val: string) {
+    if (val) this._filename = val
+  }
+  get filename() {
+    return this._filename
+  }
 
-  @state() private _filename: string = '';
-  @state() spools: Spool[] = [];
-  @state() selectedSpoolId: number | null = null;
-  @state() quantity: number = 1;
-  @state() result: PredictResult | null = null;
-  @state() loading = false;
-  @state() uploading = false;
-  @state() uploadProgress = '';
-  @state() uploadError = '';
+  @state() private _filename: string = ''
+  @state() spools: Spool[] = []
+  @state() selectedSpoolId: number | null = null
+  @state() quantity: number = 1
+  @state() result: PredictResult | null = null
+  @state() loading = false
+  @state() uploading = false
+  @state() uploadProgress = ''
+  @state() uploadError = ''
 
   async connectedCallback() {
-    super.connectedCallback();
+    super.connectedCallback()
     try {
-      const spools = await getSpools();
-      this.spools = spools;
-      const active = spools.find((s) => s.active === 1);
-      this.selectedSpoolId = active ? active.id : (spools[0]?.id ?? null);
+      const spools = await getSpools()
+      this.spools = spools
+      const active = spools.find((s) => s.active === 1)
+      this.selectedSpoolId = active ? active.id : (spools[0]?.id ?? null)
     } catch (e) {
-      console.error('[cost-predictor] Failed to load spools:', e);
+      console.error('[cost-predictor] Failed to load spools:', e)
     }
   }
 
   updated(changedProps: PropertyValues) {
     if ((changedProps.has('filename') || changedProps.has('_filename')) && this._filename) {
-      this._runPredict();
+      this._runPredict()
     }
   }
 
   private async _runPredict() {
-    if (!this._filename) return;
-    this.loading = true;
+    if (!this._filename) return
+    this.loading = true
     try {
-      this.result = await predict(this._filename, this.selectedSpoolId, this.quantity);
+      this.result = await predict(this._filename, this.selectedSpoolId, this.quantity)
     } catch (e) {
-      console.error('[cost-predictor] Predict failed:', e);
+      console.error('[cost-predictor] Predict failed:', e)
     } finally {
-      this.loading = false;
+      this.loading = false
     }
   }
 
   private _onQuantityInput(e: Event) {
-    const input = e.target as HTMLInputElement;
-    this.quantity = parseInt(input.value, 10);
-    const pct = ((this.quantity - 1) / 19) * 100;
-    input.style.setProperty('--pct', `${pct}%`);
-    this._runPredict();
+    const input = e.target as HTMLInputElement
+    this.quantity = parseInt(input.value, 10)
+    const pct = ((this.quantity - 1) / 19) * 100
+    input.style.setProperty('--pct', `${pct}%`)
+    this._runPredict()
   }
 
   private _onSpoolChange(e: Event) {
-    const select = e.target as HTMLSelectElement;
-    this.selectedSpoolId = select.value ? parseInt(select.value, 10) : null;
-    this._runPredict();
+    const select = e.target as HTMLSelectElement
+    this.selectedSpoolId = select.value ? parseInt(select.value, 10) : null
+    this._runPredict()
   }
 
   private _openFileBrowser() {
-    this.dispatchEvent(new CustomEvent('open-file-browser', { bubbles: true, composed: true }));
+    this.dispatchEvent(new CustomEvent('open-file-browser', { bubbles: true, composed: true }))
   }
 
   private _onUploadClick() {
-    this.shadowRoot?.querySelector<HTMLInputElement>('.hidden-input')?.click();
+    this.shadowRoot?.querySelector<HTMLInputElement>('.hidden-input')?.click()
   }
 
   private _onDragOver(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
-    (e.currentTarget as HTMLElement).classList.add('drag-over');
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+    ;(e.currentTarget as HTMLElement).classList.add('drag-over')
   }
 
   private _onDragLeave(e: DragEvent) {
-    e.preventDefault();
-    (e.currentTarget as HTMLElement).classList.remove('drag-over');
+    e.preventDefault()
+    ;(e.currentTarget as HTMLElement).classList.remove('drag-over')
   }
 
   private async _onDrop(e: DragEvent) {
-    e.preventDefault();
-    e.stopPropagation();
-    (e.currentTarget as HTMLElement).classList.remove('drag-over');
-    const file = e.dataTransfer?.files?.[0];
-    if (!file || !file.name.endsWith('.gcode')) return;
-    await this._uploadFile(file);
+    e.preventDefault()
+    e.stopPropagation()
+    ;(e.currentTarget as HTMLElement).classList.remove('drag-over')
+    const file = e.dataTransfer?.files?.[0]
+    if (!file || !file.name.endsWith('.gcode')) return
+    await this._uploadFile(file)
   }
 
   private async _onFileChange(e: Event) {
-    const input = e.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-    input.value = '';
-    await this._uploadFile(file);
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+    input.value = ''
+    await this._uploadFile(file)
   }
 
   private async _uploadFile(file: File) {
-    this.uploading = true;
-    this.uploadError = '';
-    this.uploadProgress = '';
-    const totalChunks = Math.ceil(file.size / (50 * 1024 * 1024));
+    this.uploading = true
+    this.uploadError = ''
+    this.uploadProgress = ''
+    const totalChunks = Math.ceil(file.size / (50 * 1024 * 1024))
     try {
       await uploadFileChunked(file, (sent, total) => {
-        this.uploadProgress = total > 1 ? `chunk ${sent}/${total}` : '';
-      });
-      this._filename = file.name;
+        this.uploadProgress = total > 1 ? `chunk ${sent}/${total}` : ''
+      })
+      this._filename = file.name
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err)
       this.uploadError = msg.includes('abort') ? 'Upload timed out — is Klipper running?' : `Upload failed: ${msg}`
     } finally {
-      this.uploading = false;
-      this.uploadProgress = '';
+      this.uploading = false
+      this.uploadProgress = ''
     }
   }
 
   private _formatDuration(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h}h ${m}m`;
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    return `${h}h ${m}m`
   }
 
   render() {
@@ -139,31 +143,34 @@ export class CostPredictor extends LitElement {
 
           <div class="field">
             <label class="field-label">Or upload to Klipper</label>
-            <div class="drop-zone ${this.uploading ? 'uploading' : ''}"
+            <div
+              class="drop-zone ${this.uploading ? 'uploading' : ''}"
               @click=${this._onUploadClick}
               @dragover=${this._onDragOver}
               @dragleave=${this._onDragLeave}
-              @drop=${this._onDrop}>
-              <span>${this.uploading
-                ? (this.uploadProgress ? `Uploading… ${this.uploadProgress}` : 'Uploading…')
-                : this.uploadError || 'drop .gcode or click to upload'}</span>
-              <input
-                type="file"
-                accept=".gcode"
-                class="hidden-input"
-                @change=${this._onFileChange}
-              />
+              @drop=${this._onDrop}
+            >
+              <span
+                >${this.uploading
+                  ? this.uploadProgress
+                    ? `Uploading… ${this.uploadProgress}`
+                    : 'Uploading…'
+                  : this.uploadError || 'drop .gcode or click to upload'}</span
+              >
+              <input type="file" accept=".gcode" class="hidden-input" @change=${this._onFileChange} />
             </div>
           </div>
 
           <div class="field">
             <label class="field-label">Spool</label>
             <select class="select" @change=${this._onSpoolChange} .value=${String(this.selectedSpoolId ?? '')}>
-              ${this.spools.map((s) => html`
-                <option value="${s.id}" ?selected=${s.id === this.selectedSpoolId}>
-                  ${s.brand} ${s.material} — €${s.cost_per_gram.toFixed(3)}/g
-                </option>
-              `)}
+              ${this.spools.map(
+                (s) => html`
+                  <option value="${s.id}" ?selected=${s.id === this.selectedSpoolId}>
+                    ${s.brand} ${s.material} — €${s.cost_per_gram.toFixed(3)}/g
+                  </option>
+                `,
+              )}
             </select>
           </div>
 
@@ -190,17 +197,16 @@ export class CostPredictor extends LitElement {
             ? html`<span class="result-empty">Calculating...</span>`
             : this.result
               ? this._renderResult()
-              : html`<span class="result-empty">Select a file to estimate cost</span>`
-          }
+              : html`<span class="result-empty">Select a file to estimate cost</span>`}
         </div>
       </div>
-    `;
+    `
   }
 
   private _renderResult() {
-    const r = this.result!;
-    const costPerG = r.filament_g > 0 ? r.cost_filament / r.filament_g : 0;
-    const totalHours = (r.estimated_time_s * r.quantity) / 3600;
+    const r = this.result!
+    const costPerG = r.filament_g > 0 ? r.cost_filament / r.filament_g : 0
+    const totalHours = (r.estimated_time_s * r.quantity) / 3600
 
     return html`
       <div class="result-total">€${r.cost_total.toFixed(2)}</div>
@@ -234,14 +240,15 @@ export class CostPredictor extends LitElement {
       </ul>
 
       <button class="print-btn" @click=${() => this._print()}>▶ Print now</button>
-    `;
+    `
   }
 
   private async _print() {
     if (!this._filename) return
-    const label = this.result && this.result.quantity > 1
-      ? `Print ${this.result.quantity}× ${this._filename}?`
-      : `Print ${this._filename}?`
+    const label =
+      this.result && this.result.quantity > 1
+        ? `Print ${this.result.quantity}× ${this._filename}?`
+        : `Print ${this._filename}?`
     if (!window.confirm(label)) return
     try {
       await startPrint(this._filename)
@@ -500,13 +507,15 @@ export class CostPredictor extends LitElement {
     }
 
     @media (max-width: 600px) {
-      .grid { grid-template-columns: 1fr; }
+      .grid {
+        grid-template-columns: 1fr;
+      }
     }
-  `;
+  `
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'cost-predictor': CostPredictor;
+    'cost-predictor': CostPredictor
   }
 }
