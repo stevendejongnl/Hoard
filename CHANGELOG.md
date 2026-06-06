@@ -1,3 +1,9 @@
+## [1.24.0](https://github.com/stevendejongnl/printer/compare/v1.23.0...v1.24.0) (2026-06-06)
+
+### Features
+
+* hover card on project links — shows cover image, title, description and print settings ([dadbf3c](https://github.com/stevendejongnl/printer/commit/dadbf3c30b67cb3969ac03369f9ad9065e08dc21))
+
 ## [1.23.0](https://github.com/stevendejongnl/printer/compare/v1.22.0...v1.23.0) (2026-06-06)
 
 ### Features
