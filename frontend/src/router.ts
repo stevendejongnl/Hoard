@@ -1,4 +1,4 @@
-type Route = '/' | '/history' | '/spools' | '/projects' | `/projects/${string}`
+type Route = '/' | '/history' | '/spools' | '/projects' | `/projects/${string}` | `/prints/${string}`
 
 class Router {
   private listeners: Array<(r: Route) => void> = []
@@ -9,6 +9,7 @@ class Router {
     if (p === '/spools') return '/spools'
     if (p === '/projects') return '/projects'
     if (p.startsWith('/projects/')) return p as `/projects/${string}`
+    if (p.startsWith('/prints/')) return p as `/prints/${string}`
     return '/'
   }
 
@@ -17,6 +18,14 @@ class Router {
     if (p.startsWith('/projects/')) {
       const id = parseInt(p.split('/')[2], 10)
       return isNaN(id) ? null : id
+    }
+    return null
+  }
+
+  get printJobId(): string | null {
+    const p = window.location.pathname
+    if (p.startsWith('/prints/')) {
+      return decodeURIComponent(p.slice('/prints/'.length)) || null
     }
     return null
   }

@@ -106,6 +106,26 @@ async def init_db(path: str) -> None:
         """)
         await db.commit()
 
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS print_jobs (
+                job_id      TEXT PRIMARY KEY,
+                notes       TEXT,
+                settings    TEXT,
+                tags        TEXT,
+                created_at  INTEGER NOT NULL
+            )
+        """)
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS print_photos (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id      TEXT    NOT NULL,
+                filename    TEXT    NOT NULL,
+                source      TEXT    NOT NULL,
+                captured_at INTEGER NOT NULL
+            )
+        """)
+        await db.commit()
+
 
 def _conn() -> aiosqlite.Connection:
     conn = aiosqlite.connect(_db_path)
@@ -484,3 +504,86 @@ async def get_project_for_job(job_id: str) -> dict[str, Any] | None:
         ) as cur:
             row = await cur.fetchone()
             return dict(row) if row else None
+
+
+async def get_or_create_print_job(job_id: str) -> dict[str, Any]:
+    """Return existing print_jobs row, creating it if necessary."""
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        await db.execute(
+            "INSERT OR IGNORE INTO print_jobs (job_id, created_at) VALUES (?, ?)",
+            (job_id, int(time.time())),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM print_jobs WHERE job_id = ?", (job_id,)) as cur:
+            row = await cur.fetchone()
+            assert row is not None
+            return dict(row)
+
+
+async def update_print_job(job_id: str, data: dict[str, Any]) -> dict[str, Any]:
+    """Update allowed fields on a print_jobs row and return the updated row."""
+    allowed = {k: v for k, v in data.items() if k in ("notes", "settings", "tags")}
+    if allowed:
+        sets = ", ".join(f"{k} = :{k}" for k in allowed)
+        async with _conn() as db:
+            await db.execute(
+                f"UPDATE print_jobs SET {sets} WHERE job_id = :_id",
+                {**allowed, "_id": job_id},
+            )
+            await db.commit()
+    return await get_or_create_print_job(job_id)
+
+
+async def add_print_photo(job_id: str, filename: str, source: str) -> dict[str, Any]:
+    """Insert a photo record and return it."""
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        cur = await db.execute(
+            "INSERT INTO print_photos (job_id, filename, source, captured_at) VALUES (?, ?, ?, ?)",
+            (job_id, filename, source, int(time.time())),
+        )
+        await db.commit()
+        async with db.execute("SELECT * FROM print_photos WHERE id = ?", (cur.lastrowid,)) as c:
+            row = await c.fetchone()
+            assert row is not None
+            return dict(row)
+
+
+async def list_print_photos(job_id: str) -> list[dict[str, Any]]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM print_photos WHERE job_id = ? ORDER BY captured_at",
+            (job_id,),
+        ) as cur:
+            return [dict(r) for r in await cur.fetchall()]
+
+
+async def delete_print_photo(photo_id: int) -> None:
+    async with _conn() as db:
+        await db.execute("DELETE FROM print_photos WHERE id = ?", (photo_id,))
+        await db.commit()
+
+
+async def get_print_detail_counts(job_ids: list[str]) -> dict[str, dict[str, Any]]:
+    """Return has_detail and photo_count for each job_id in a single batch query."""
+    if not job_ids:
+        return {}
+    placeholders = ",".join("?" * len(job_ids))
+    result: dict[str, dict[str, Any]] = {jid: {"has_detail": False, "photo_count": 0} for jid in job_ids}
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            f"SELECT job_id FROM print_jobs WHERE job_id IN ({placeholders})",
+            job_ids,
+        ) as cur:
+            for row in await cur.fetchall():
+                result[row["job_id"]]["has_detail"] = True
+        async with db.execute(
+            f"SELECT job_id, COUNT(*) AS cnt FROM print_photos WHERE job_id IN ({placeholders}) GROUP BY job_id",
+            job_ids,
+        ) as cur:
+            for row in await cur.fetchall():
+                result[row["job_id"]]["photo_count"] = row["cnt"]
+    return result

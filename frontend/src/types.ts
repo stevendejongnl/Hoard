@@ -61,6 +61,8 @@ export interface PrintRecord {
   spool: SpoolRef | null
   job_id?: string
   project?: { id: number; name: string } | null
+  has_detail?: boolean
+  photo_count?: number
 }
 
 export interface SpoolRef {
@@ -158,4 +160,43 @@ export interface ProjectPrint {
   duration_s: number | null
   filament_g: number | null
   cost_total: number | null
+}
+
+export interface PrintSettings {
+  layer_height?: string
+  infill?: string
+  walls?: string
+  nozzle_temp?: string
+  bed_temp?: string
+  material?: string
+  printer?: string
+  nozzle?: string
+}
+
+export interface PrintPhoto {
+  id: number
+  job_id: string
+  filename: string
+  source: 'upload' | 'webcam'
+  captured_at: number
+}
+
+export interface PrintJob {
+  job_id: string
+  notes: string | null
+  settings: PrintSettings | null
+  tags: string[]
+  photos: PrintPhoto[]
+  created_at: number
+  // merged from PrintRecord when returned by GET /api/prints/:job_id
+  filename?: string
+  time?: string | null
+  duration_s?: number | null
+  filament_g?: number | null
+  cost_total?: number | null
+  cost_electricity?: number | null
+  cost_filament?: number | null
+  spool_id?: string | null
+  spool?: SpoolRef | null
+  project?: { id: number; name: string } | null
 }

@@ -1,5 +1,6 @@
 import type { GcodeFile, PredictResult, PrintRecord, Spool } from './types'
 import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
+import type { PrintJob, PrintPhoto } from './types'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch(path, opts)
@@ -202,3 +203,25 @@ export const refreshProjectPrint = (projectId: number, jobId: string) =>
   req<ProjectPrint>(`/api/projects/${projectId}/prints/${encodeURIComponent(jobId)}/refresh`, {
     method: 'PATCH',
   })
+
+// Print jobs
+export const getPrintJob = (jobId: string) =>
+  req<PrintJob & { photos: PrintPhoto[] } & Partial<PrintRecord>>(`/api/prints/${encodeURIComponent(jobId)}`)
+
+export const updatePrintJob = (jobId: string, data: Partial<Pick<PrintJob, 'notes' | 'settings' | 'tags'>>) =>
+  req<PrintJob>(`/api/prints/${encodeURIComponent(jobId)}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+
+export const getPrintPhotos = (jobId: string) => req<PrintPhoto[]>(`/api/prints/${encodeURIComponent(jobId)}/photos`)
+
+export const uploadPrintPhoto = (jobId: string, file: File) => {
+  const fd = new FormData()
+  fd.append('file', file)
+  return req<PrintPhoto>(`/api/prints/${encodeURIComponent(jobId)}/photos`, { method: 'POST', body: fd })
+}
+
+export const deletePrintPhoto = (jobId: string, photoId: number) =>
+  fetch(`/api/prints/${encodeURIComponent(jobId)}/photos/${photoId}`, { method: 'DELETE' })
