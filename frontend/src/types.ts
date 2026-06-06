@@ -133,7 +133,21 @@ export interface ProjectLink {
   project_id: number
   url: string
   label: string | null
-  meta?: { title?: string; description?: string; image_url?: string } | null
+  meta?: {
+    title?: string
+    description?: string
+    image_url?: string
+    print_settings?: {
+      layer_height?: string
+      walls?: string
+      infill?: string
+      nozzle?: string
+      material?: string
+      printer?: string
+      weight_g?: string
+      parts?: string
+    } | null
+  } | null
 }
 
 export interface ProjectPrint {
