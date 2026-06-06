@@ -1,3 +1,9 @@
+## [1.30.1](https://github.com/stevendejongnl/printer/compare/v1.30.0...v1.30.1) (2026-06-06)
+
+### Bug Fixes
+
+* auto-stage prettier fixes in pre-commit hook ([ec57112](https://github.com/stevendejongnl/printer/commit/ec5711250dd03e1171e7516a4c6cfcc9f8c8e874))
+
 ## [1.30.0](https://github.com/stevendejongnl/printer/compare/v1.29.0...v1.30.0) (2026-06-06)
 
 ### Features
