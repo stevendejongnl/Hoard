@@ -146,6 +146,19 @@ async def _enrich_link(project_id: int, link_id: int, url: str) -> None:
         await db.set_project_cover(project_id, og["image_url"], link_id)
 
 
+async def enrich_existing_links() -> None:
+    """Backfill enrichment for links added before this feature. Runs once at startup."""
+    import logging
+    log = logging.getLogger(__name__)
+    links = await db.list_unenriched_links()
+    if not links:
+        return
+    log.info("enrichment: backfilling %d existing link(s)", len(links))
+    for link in links:
+        await _enrich_link(link["project_id"], link["id"], link["url"])
+    log.info("enrichment: backfill complete")
+
+
 @router.delete("/{project_id}/links/{link_id}", status_code=204)
 async def delete_link(project_id: int, link_id: int, clear_cover: bool = False) -> None:
     if clear_cover:

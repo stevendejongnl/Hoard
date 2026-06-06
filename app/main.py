@@ -13,6 +13,7 @@ from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
 from app.routes import chunks, control, files, history, predict, projects, spools, webcams
+from app.routes.projects import enrich_existing_links
 from app.sse import hub
 
 _APP_VERSION = os.getenv("APP_VERSION", "dev")
@@ -36,6 +37,7 @@ async def lifespan(app: FastAPI):
     # Full backfill on startup, then quick reconcile every 5 minutes
     asyncio.create_task(recorder.startup_reconcile())
     asyncio.create_task(recorder.periodic_reconcile())
+    asyncio.create_task(enrich_existing_links())
 
     log.info("printer started, db=%s", settings.database_path)
     yield
