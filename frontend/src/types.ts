@@ -109,6 +109,8 @@ export interface Project {
   total_cost: number | null
   avg_cost: number | null
   total_filament_g: number | null
+  cover_url?: string | null
+  cover_link_id?: number | null
   files?: ProjectFile[]
   links?: ProjectLink[]
   prints?: ProjectPrint[]
@@ -131,6 +133,7 @@ export interface ProjectLink {
   project_id: number
   url: string
   label: string | null
+  meta?: { title?: string; description?: string; image_url?: string } | null
 }
 
 export interface ProjectPrint {

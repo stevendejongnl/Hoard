@@ -25,6 +25,16 @@ export class ProjectCard extends LitElement {
         style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px; cursor: pointer; display: flex; flex-direction: column; gap: 10px;"
         @click=${() => window.router.navigate(`/projects/${p.id}` as any)}
       >
+        ${p.cover_url ? html`
+          <div style="margin: -16px -16px 10px; height: 100px; overflow: hidden; border-radius: 8px 8px 0 0;">
+            <img
+              src="${p.cover_url}"
+              alt=""
+              style="width: 100%; height: 100%; object-fit: cover; display: block;"
+              @error=${(e: Event) => { (e.target as HTMLImageElement).parentElement!.style.display = 'none' }}
+            />
+          </div>
+        ` : ''}
         <div style="display: flex; flex-direction: column; gap: 3px;">
           <span style="font-size: 13px; font-weight: 600; color: #e0e0e0;">${p.name}</span>
         </div>
