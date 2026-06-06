@@ -5,6 +5,7 @@ import { getProject, deleteProject, addProjectLink, deleteProjectLink } from '..
 import { router } from '../router'
 import '../components/markdown-editor'
 import '../components/project-files-section'
+import '../components/link-preview-card'
 
 const styles = html`<style>
 .pd-wrap { max-width: 760px; margin: 0 auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -191,30 +192,17 @@ export class ProjectDetailPage extends LitElement {
           </div>
           ${(p.links ?? []).length === 0
             ? html`<div style="font-size: 11px; color: #333;">No links yet.</div>`
-            : (p.links ?? []).map(l => {
-              const ps = l.meta?.print_settings
-              const psEntries = ps ? Object.entries(ps).filter(([, v]) => v) : []
-              return html`
-                <div style="background: #141414; border-radius: 5px; padding: 7px 10px; margin-bottom: 5px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                      <span style="font-size: 9px; background: #141414; color: #555; border: 1px solid #222; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;">${l.label || _linkHost(l.url)}</span>
-                      <a href=${l.url} target="_blank" style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${l.meta?.title || l.url}</a>
-                    </div>
-                    <span style="font-size: 10px; color: #333; cursor: pointer; padding: 2px 6px; flex-shrink: 0;" @click=${() => this._removeLink(l.id)}>✕</span>
+            : (p.links ?? []).map(l => html`
+              <link-preview-card .link=${l} style="display:block;margin-bottom:5px;">
+                <div style="background: #141414; border-radius: 5px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between;">
+                  <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                    <span style="font-size: 9px; background: #141414; color: #555; border: 1px solid #222; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;">${l.label || _linkHost(l.url)}</span>
+                    <a href=${l.url} target="_blank" style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${l.meta?.title || l.url}</a>
                   </div>
-                  ${psEntries.length > 0 ? html`
-                    <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px;">
-                      ${psEntries.map(([key, val]) => html`
-                        <span style="font-size: 9px; background: #1a1a1a; color: #888; border: 1px solid #2a2a2a; border-radius: 3px; padding: 1px 6px; white-space: nowrap;">
-                          ${_settingLabel(key)}: ${val}
-                        </span>
-                      `)}
-                    </div>
-                  ` : ''}
+                  <span style="font-size: 10px; color: #333; cursor: pointer; padding: 2px 6px; flex-shrink: 0;" @click=${() => this._removeLink(l.id)}>✕</span>
                 </div>
-              `
-            })}
+              </link-preview-card>
+            `)}
         </div>
 
         <!-- files -->
