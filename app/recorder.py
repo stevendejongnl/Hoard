@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import time
 from datetime import UTC, datetime, timedelta
@@ -9,6 +10,7 @@ import httpx
 
 from app import db, ha
 from app.config import settings
+from app.gcode_meta import extract_gcode_meta
 from app.influx import influx
 from app.moonraker import moonraker
 from app.sse import hub
@@ -110,6 +112,16 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     await db.link_print_spool(job_id, spool_id, filament_g)
     # Keep project_prints stats in sync so projects auto-update without manual refresh
     await db.refresh_project_prints_stats(job_id, duration_s, filament_g, cost_total)
+
+    # Extract and store gcode metadata while file is still on printer
+    try:
+        gcode_meta = await extract_gcode_meta(filename)
+        if gcode_meta:
+            await db.update_print_job(job_id, {"gcode_meta": json.dumps(gcode_meta)})
+            log.info("recorder: stored gcode_meta for %s (%d fields)", filename, len(gcode_meta))
+    except Exception as exc:
+        log.warning("recorder: gcode_meta extraction failed for %s: %s", filename, exc)
+
     await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
 
     # Best-effort webcam snapshot — errors must never block the completion flow
