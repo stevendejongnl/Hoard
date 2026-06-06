@@ -74,3 +74,9 @@ def test_map_moonraker_meta_list_fields_single():
 def test_map_moonraker_meta_list_fields_multi():
     result = map_moonraker_meta({"filament_type": ["PLA", "PLA"]})
     assert result["filament_type"] == "PLA"
+
+
+def test_map_moonraker_meta_empty_list_skipped():
+    result = map_moonraker_meta({"filament_type": [], "nozzle_diameter": []})
+    assert "filament_type" not in result
+    assert "nozzle_diameter" not in result

@@ -46,11 +46,11 @@ def map_moonraker_meta(data: dict[str, Any]) -> dict[str, Any]:
         if val is not None:
             result[dst] = val
 
-    # List fields — take first unique value
     for src, dst in [("nozzle_diameter", "nozzle_diameter"), ("filament_type", "filament_type")]:
         val = data.get(src)
-        if isinstance(val, list) and val:
-            result[dst] = val[0]
+        if isinstance(val, list):
+            if val:
+                result[dst] = val[0]
         elif val is not None:
             result[dst] = val
 
