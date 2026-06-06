@@ -90,11 +90,18 @@ export const restoreCost = (jobId: string) =>
 // Spools
 export const getSpools = () => req<Spool[]>('/api/spools')
 export const createSpool = (data: Partial<Spool>) =>
-  req<Spool>('/api/spools', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+  req<Spool>('/api/spools', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
 export const updateSpool = (id: number, data: Partial<Spool>) =>
-  req<Spool>(`/api/spools/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
-export const deleteSpool = (id: number) =>
-  fetch(`/api/spools/${id}`, { method: 'DELETE' })
+  req<Spool>(`/api/spools/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  })
+export const deleteSpool = (id: number) => fetch(`/api/spools/${id}`, { method: 'DELETE' })
 
 // Webcams
 export interface Webcam {
@@ -147,13 +154,9 @@ export const updateProject = (id: number, data: { name?: string; notes?: string 
     body: JSON.stringify(data),
   })
 
-export const deleteProject = (id: number) =>
-  fetch(`/api/projects/${id}`, { method: 'DELETE' })
+export const deleteProject = (id: number) => fetch(`/api/projects/${id}`, { method: 'DELETE' })
 
-export const addProjectFile = (
-  projectId: number,
-  data: { type: string; filename: string; label?: string },
-) =>
+export const addProjectFile = (projectId: number, data: { type: string; filename: string; label?: string }) =>
   req<ProjectFile>(`/api/projects/${projectId}/files`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -173,10 +176,7 @@ export const uploadProjectStl = (projectId: number, file: File, label?: string) 
 export const deleteProjectFile = (projectId: number, fileId: number) =>
   fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
 
-export const addProjectLink = (
-  projectId: number,
-  data: { url: string; label?: string },
-) =>
+export const addProjectLink = (projectId: number, data: { url: string; label?: string }) =>
   req<ProjectLink>(`/api/projects/${projectId}/links`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -186,10 +186,7 @@ export const addProjectLink = (
 export const deleteProjectLink = (projectId: number, linkId: number, clearCover = false) =>
   fetch(`/api/projects/${projectId}/links/${linkId}?clear_cover=${clearCover}`, { method: 'DELETE' })
 
-export const linkProjectPrint = (
-  projectId: number,
-  data: { job_id: string; project_file_id?: number },
-) =>
+export const linkProjectPrint = (projectId: number, data: { job_id: string; project_file_id?: number }) =>
   req<ProjectPrint>(`/api/projects/${projectId}/prints`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

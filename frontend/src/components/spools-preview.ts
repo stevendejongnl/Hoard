@@ -1,25 +1,25 @@
-import { LitElement, css, html } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
-import type { Spool } from '../types';
-import { getSpools } from '../api';
+import { LitElement, css, html } from 'lit'
+import { customElement, state } from 'lit/decorators.js'
+import type { Spool } from '../types'
+import { getSpools } from '../api'
 
-declare const window: Window & { router: { navigate: (path: string) => void } };
+declare const window: Window & { router: { navigate: (path: string) => void } }
 
 @customElement('spools-preview')
 export class SpoolsPreview extends LitElement {
-  @state() spools: Spool[] = [];
+  @state() spools: Spool[] = []
 
   async connectedCallback() {
-    super.connectedCallback();
+    super.connectedCallback()
     try {
-      this.spools = await getSpools();
+      this.spools = await getSpools()
     } catch (e) {
-      console.error('[spools-preview] Failed to load spools:', e);
+      console.error('[spools-preview] Failed to load spools:', e)
     }
   }
 
   render() {
-    const preview = this.spools.slice(0, 2);
+    const preview = this.spools.slice(0, 2)
 
     return html`
       <div class="header">
@@ -27,18 +27,13 @@ export class SpoolsPreview extends LitElement {
         <a class="header-link" @click=${() => window.router.navigate('/spools')}>manage →</a>
       </div>
 
-      <div class="grid">
-        ${preview.map((spool) => this._renderSpoolCard(spool))}
-        ${this._renderAddCard()}
-      </div>
-    `;
+      <div class="grid">${preview.map((spool) => this._renderSpoolCard(spool))} ${this._renderAddCard()}</div>
+    `
   }
 
   private _renderSpoolCard(spool: Spool) {
-    const pct = spool.initial_weight_g > 0
-      ? Math.min(100, (spool.current_weight_g / spool.initial_weight_g) * 100)
-      : 0;
-    const isActive = spool.active === 1;
+    const pct = spool.initial_weight_g > 0 ? Math.min(100, (spool.current_weight_g / spool.initial_weight_g) * 100) : 0
+    const isActive = spool.active === 1
 
     return html`
       <div class="spool-card ${isActive ? 'active' : ''}">
@@ -63,15 +58,11 @@ export class SpoolsPreview extends LitElement {
           </div>
         </div>
       </div>
-    `;
+    `
   }
 
   private _renderAddCard() {
-    return html`
-      <div class="add-card" @click=${() => window.router.navigate('/spools')}>
-        add spool
-      </div>
-    `;
+    return html` <div class="add-card" @click=${() => window.router.navigate('/spools')}>add spool</div> `
   }
 
   static styles = css`
@@ -219,7 +210,9 @@ export class SpoolsPreview extends LitElement {
       color: var(--text-dim);
       cursor: pointer;
       font-size: 11px;
-      transition: border-color 0.15s, color 0.15s;
+      transition:
+        border-color 0.15s,
+        color 0.15s;
     }
 
     .add-card:hover {
@@ -228,13 +221,15 @@ export class SpoolsPreview extends LitElement {
     }
 
     @media (max-width: 600px) {
-      .grid { grid-template-columns: 1fr 1fr; }
+      .grid {
+        grid-template-columns: 1fr 1fr;
+      }
     }
-  `;
+  `
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'spools-preview': SpoolsPreview;
+    'spools-preview': SpoolsPreview
   }
 }

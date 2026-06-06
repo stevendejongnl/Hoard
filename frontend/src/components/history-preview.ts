@@ -1,57 +1,65 @@
-import { LitElement, css, html } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
-import type { PrintRecord, Spool, Project } from '../types';
-import { assignSpool, getHistory, getSpools, injectThumbnail, getProjects, linkProjectPrint, unlinkProjectPrint } from '../api';
-import { sseClient } from '../sse';
-import './spool-modal';
-import './cost-breakdown-popup';
-import './print-ready-modal';
+import { LitElement, css, html } from 'lit'
+import { customElement, state } from 'lit/decorators.js'
+import type { PrintRecord, Spool, Project } from '../types'
+import {
+  assignSpool,
+  getHistory,
+  getSpools,
+  injectThumbnail,
+  getProjects,
+  linkProjectPrint,
+  unlinkProjectPrint,
+} from '../api'
+import { sseClient } from '../sse'
+import './spool-modal'
+import './cost-breakdown-popup'
+import './print-ready-modal'
 
-declare const window: Window & { router: { navigate: (path: string) => void } };
+declare const window: Window & { router: { navigate: (path: string) => void } }
 
 @customElement('history-preview')
 export class HistoryPreview extends LitElement {
-  @state() records: PrintRecord[] = [];
-  @state() loading = true;
-  @state() private _assigningJobId: string | null = null;
-  @state() private _spools: Spool[] = [];
-  @state() private _spoolModalOpen = false;
-  private _pendingJobId: string | null = null;
-  private _unsubscribe: (() => void) | null = null;
-  @state() private _thumbErrors = new Set<string>();
-  @state() private _thumbGenerating = new Set<string>();
+  @state() records: PrintRecord[] = []
+  @state() loading = true
+  @state() private _assigningJobId: string | null = null
+  @state() private _spools: Spool[] = []
+  @state() private _spoolModalOpen = false
+  private _pendingJobId: string | null = null
+  private _unsubscribe: (() => void) | null = null
+  @state() private _thumbErrors = new Set<string>()
+  @state() private _thumbGenerating = new Set<string>()
   @state() private _projectModal: string | null = null
   @state() private _projects: Project[] = []
   @state() private _assignedProjectIds: Map<string, number> = new Map()
 
-  private _total = 0;
+  private _total = 0
 
   async connectedCallback() {
-    super.connectedCallback();
-    await this._load();
+    super.connectedCallback()
+    await this._load()
     this._unsubscribe = sseClient.subscribe((payload) => {
       if (payload.type === 'history_updated') {
-        this._load();
+        this._load()
       }
-    });
+    })
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback();
-    this._unsubscribe?.();
-    this._unsubscribe = null;
+    super.disconnectedCallback()
+    this._unsubscribe?.()
+    this._unsubscribe = null
   }
 
   private async _load() {
     try {
-      const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()]);
-      this.records = data.records;
-      this._total = data.total;
-      this._spools = spools;
+      const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()])
+      this.records = data.records
+      this._total = data.total
+      this._spools = spools
     } catch (e) {
-      console.error('[history-preview] Failed to load history:', e);
+      console.error('[history-preview] Failed to load history:', e)
     } finally {
-      this.loading = false;
+      this.loading = false
     }
   }
 
@@ -76,51 +84,51 @@ export class HistoryPreview extends LitElement {
     this._thumbGenerating = new Set([...this._thumbGenerating, target])
     try {
       await injectThumbnail(target, file)
-      this._thumbErrors = new Set([...this._thumbErrors].filter(f => f !== target))
+      this._thumbErrors = new Set([...this._thumbErrors].filter((f) => f !== target))
     } catch (err) {
       console.error('STL inject failed', err)
     } finally {
-      this._thumbGenerating = new Set([...this._thumbGenerating].filter(f => f !== target))
+      this._thumbGenerating = new Set([...this._thumbGenerating].filter((f) => f !== target))
       await this._load()
     }
   }
 
   private async _onSpoolSelect(jobId: string, e: Event) {
-    const val = (e.target as HTMLSelectElement).value;
-    if (!val) return;
+    const val = (e.target as HTMLSelectElement).value
+    if (!val) return
     if (val === '__new__') {
-      this._pendingJobId = jobId;
-      this._spoolModalOpen = true;
-      (e.target as HTMLSelectElement).value = '';
-      return;
+      this._pendingJobId = jobId
+      this._spoolModalOpen = true
+      ;(e.target as HTMLSelectElement).value = ''
+      return
     }
     try {
-      await assignSpool(jobId, parseInt(val));
-      const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()]);
-      this.records = data.records;
-      this._spools = spools;
+      await assignSpool(jobId, parseInt(val))
+      const [data, spools] = await Promise.all([getHistory(3, 0), getSpools()])
+      this.records = data.records
+      this._spools = spools
     } catch (err) {
-      console.error('assign failed', err);
+      console.error('assign failed', err)
     }
-    this._assigningJobId = null;
+    this._assigningJobId = null
   }
 
   private async _onSpoolSaved() {
-    this._spoolModalOpen = false;
+    this._spoolModalOpen = false
     // Reload spools, then auto-assign the newly created one (last in list)
-    this._spools = await getSpools();
-    const newest = this._spools[this._spools.length - 1];
+    this._spools = await getSpools()
+    const newest = this._spools[this._spools.length - 1]
     if (newest && this._pendingJobId) {
       try {
-        await assignSpool(this._pendingJobId, newest.id);
-        const data = await getHistory(3, 0);
-        this.records = data.records;
+        await assignSpool(this._pendingJobId, newest.id)
+        const data = await getHistory(3, 0)
+        this.records = data.records
       } catch (err) {
-        console.error('auto-assign failed', err);
+        console.error('auto-assign failed', err)
       }
     }
-    this._pendingJobId = null;
-    this._assigningJobId = null;
+    this._pendingJobId = null
+    this._assigningJobId = null
   }
 
   private async _openProjectPicker(jobId: string) {
@@ -145,19 +153,19 @@ export class HistoryPreview extends LitElement {
   }
 
   private _formatDuration(seconds: number): string {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    return `${h}h ${m}m`;
+    const h = Math.floor(seconds / 3600)
+    const m = Math.floor((seconds % 3600) / 60)
+    return `${h}h ${m}m`
   }
 
   private _formatDate(dateStr: string): string {
-    const d = new Date(dateStr);
-    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
+    const d = new Date(dateStr)
+    return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' })
   }
 
   render() {
     if (this.loading) {
-      return html`<span class="loading">Loading...</span>`;
+      return html`<span class="loading">Loading...</span>`
     }
 
     return html`
@@ -167,7 +175,10 @@ export class HistoryPreview extends LitElement {
         .open=${this._spoolModalOpen}
         .spool=${null}
         @spool-saved=${this._onSpoolSaved}
-        @close=${() => { this._spoolModalOpen = false; this._assigningJobId = null; }}
+        @close=${() => {
+          this._spoolModalOpen = false
+          this._assigningJobId = null
+        }}
       ></spool-modal>
 
       <div class="header">
@@ -187,79 +198,104 @@ export class HistoryPreview extends LitElement {
           </tr>
         </thead>
         <tbody>
-          ${this.records.map((record) => html`
-            <tr>
-              <td class="td-thumb">
-                ${this._thumbGenerating.has(record.filename)
-                  ? html`<div class="thumb-spin">↻</div>`
-                  : this._thumbErrors.has(record.filename)
-                    ? html`<button class="thumb-add" title="Add preview from STL"
-                        @click=${(e: Event) => { e.stopPropagation(); this._triggerStlUpload(record.filename) }}>⊕</button>`
-                    : html`<img
-                        class="row-thumb"
-                        src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}"
-                        alt=""
-                        loading="lazy"
-                        @error=${() => { this._thumbErrors = new Set([...this._thumbErrors, record.filename]) }}
-                      />`
-                }
-              </td>
-              <td>
-                <div class="file-name">${record.filename}</div>
-                <div class="file-sub">${record.time ? this._formatDate(record.time) : '—'} · ${record.filament_g.toFixed(1)} g</div>
-                ${record.project ? html`
-                  <div
-                    style="margin-top:3px;font-size:9px;color:var(--cyan);cursor:pointer;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                    title="${record.project.name}"
-                    @click=${() => window.router.navigate(`/projects/${record.project!.id}` as any)}
-                  >📁 ${record.project.name}</div>
-                ` : ''}
-              </td>
-              <td class="duration">${this._formatDuration(record.duration_s)}</td>
-              <td>
-                ${this._assigningJobId === (record.job_id ?? record.filename)
-                  ? html`<select class="spool-select"
-                      @change=${(e: Event) => this._onSpoolSelect(record.job_id ?? record.filename, e)}
-                      @blur=${() => { if (!this._spoolModalOpen) this._assigningJobId = null }}>
-                      <option value="">pick spool…</option>
-                      ${this._spools.map(s => html`<option value=${s.id}>${s.brand} ${s.material}</option>`)}
-                      <option value="__new__">＋ create spool</option>
-                    </select>`
-                  : record.spool?.material
-                    ? html`<span class="spool-tag spool-assigned"
+          ${this.records.map(
+            (record) => html`
+              <tr>
+                <td class="td-thumb">
+                  ${this._thumbGenerating.has(record.filename)
+                    ? html`<div class="thumb-spin">↻</div>`
+                    : this._thumbErrors.has(record.filename)
+                      ? html`<button
+                          class="thumb-add"
+                          title="Add preview from STL"
+                          @click=${(e: Event) => {
+                            e.stopPropagation()
+                            this._triggerStlUpload(record.filename)
+                          }}
+                        >
+                          ⊕
+                        </button>`
+                      : html`<img
+                          class="row-thumb"
+                          src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}"
+                          alt=""
+                          loading="lazy"
+                          @error=${() => {
+                            this._thumbErrors = new Set([...this._thumbErrors, record.filename])
+                          }}
+                        />`}
+                </td>
+                <td>
+                  <div class="file-name">${record.filename}</div>
+                  <div class="file-sub">
+                    ${record.time ? this._formatDate(record.time) : '—'} · ${record.filament_g.toFixed(1)} g
+                  </div>
+                  ${record.project
+                    ? html`
+                        <div
+                          style="margin-top:3px;font-size:9px;color:var(--cyan);cursor:pointer;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                          title="${record.project.name}"
+                          @click=${() => window.router.navigate(`/projects/${record.project!.id}` as any)}
+                        >
+                          📁 ${record.project.name}
+                        </div>
+                      `
+                    : ''}
+                </td>
+                <td class="duration">${this._formatDuration(record.duration_s)}</td>
+                <td>
+                  ${this._assigningJobId === (record.job_id ?? record.filename)
+                    ? html`<select
+                        class="spool-select"
+                        @change=${(e: Event) => this._onSpoolSelect(record.job_id ?? record.filename, e)}
+                        @blur=${() => {
+                          if (!this._spoolModalOpen) this._assigningJobId = null
+                        }}
+                      >
+                        <option value="">pick spool…</option>
+                        ${this._spools.map((s) => html`<option value=${s.id}>${s.brand} ${s.material}</option>`)}
+                        <option value="__new__">＋ create spool</option>
+                      </select>`
+                    : record.spool?.material
+                      ? html`<span
+                          class="spool-tag spool-assigned"
                           title="Click to reassign"
-                          @click=${() => this._assigningJobId = (record.job_id ?? record.filename)}>
+                          @click=${() => (this._assigningJobId = record.job_id ?? record.filename)}
+                        >
                           ${record.spool.color_hex
                             ? html`<span class="spool-dot" style="background:${record.spool.color_hex}"></span>`
                             : ''}
                           ${record.spool.material}
                         </span>`
-                    : html`<span class="spool-tag spool-assign"
-                        @click=${() => this._assigningJobId = (record.job_id ?? record.filename)}>assign →</span>`
-                }
-              </td>
-              <td class="right">
-                ${record.cost_total != null
-                  ? html`<cost-breakdown-popup .record=${record} @cost-recalculated=${() => this._load()}>
-                      <div class="cost-main">€${record.cost_total.toFixed(2)}</div>
-                    </cost-breakdown-popup>`
-                  : html`<div class="cost-main" style="color:var(--text-dim)">—</div>
-                    <div class="cost-sub">${record.filament_g.toFixed(1)} g</div>`
-                }
-              </td>
-              <td>
-                <div style="display: flex; align-items: center; gap: 6px;">
-                  <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
-                  ${record.project
-                    ? ''
-                    : html`<span
-                        class="spool-tag spool-assign"
-                        @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}
-                      >+ proj</span>`}
-                </div>
-              </td>
-            </tr>
-          `)}
+                      : html`<span
+                          class="spool-tag spool-assign"
+                          @click=${() => (this._assigningJobId = record.job_id ?? record.filename)}
+                          >assign →</span
+                        >`}
+                </td>
+                <td class="right">
+                  ${record.cost_total != null
+                    ? html`<cost-breakdown-popup .record=${record} @cost-recalculated=${() => this._load()}>
+                        <div class="cost-main">€${record.cost_total.toFixed(2)}</div>
+                      </cost-breakdown-popup>`
+                    : html`<div class="cost-main" style="color:var(--text-dim)">—</div>
+                        <div class="cost-sub">${record.filament_g.toFixed(1)} g</div>`}
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <button class="print-btn" @click=${() => this._print(record.filename)}>▶</button>
+                    ${record.project
+                      ? ''
+                      : html`<span
+                          class="spool-tag spool-assign"
+                          @click=${() => this._openProjectPicker(record.job_id ?? record.filename)}
+                          >+ proj</span
+                        >`}
+                  </div>
+                </td>
+              </tr>
+            `,
+          )}
         </tbody>
         <tfoot>
           <tr>
@@ -271,38 +307,57 @@ export class HistoryPreview extends LitElement {
         </tfoot>
       </table>
 
-      ${this._projectModal ? html`
-        <div
-          style="position: fixed; inset: 0; background: #00000088; display: flex; align-items: center; justify-content: center; z-index: 100;"
-          @click=${(e: Event) => { if (e.target === e.currentTarget) this._projectModal = null }}
-        >
-          <div style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; width: min(360px, calc(100vw - 32px)); max-height: 60vh; display: flex; flex-direction: column; gap: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 13px; font-weight: 600; color: #e0e0e0;">Assign to project</span>
-              <span style="cursor: pointer; color: #555; font-size: 16px;" @click=${() => { this._projectModal = null }}>✕</span>
+      ${this._projectModal
+        ? html`
+            <div
+              style="position: fixed; inset: 0; background: #00000088; display: flex; align-items: center; justify-content: center; z-index: 100;"
+              @click=${(e: Event) => {
+                if (e.target === e.currentTarget) this._projectModal = null
+              }}
+            >
+              <div
+                style="background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 20px; width: min(360px, calc(100vw - 32px)); max-height: 60vh; display: flex; flex-direction: column; gap: 10px;"
+              >
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 13px; font-weight: 600; color: #e0e0e0;">Assign to project</span>
+                  <span
+                    style="cursor: pointer; color: #555; font-size: 16px;"
+                    @click=${() => {
+                      this._projectModal = null
+                    }}
+                    >✕</span
+                  >
+                </div>
+                <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
+                  ${this._projects.length === 0
+                    ? html`<div style="color: #555; font-size: 11px; padding: 8px;">No projects yet.</div>`
+                    : this._projects.map((proj) => {
+                        const isAssigned = this._assignedProjectIds.get(this._projectModal!) === proj.id
+                        return html`
+                          <div
+                            style="padding: 8px 10px; background: ${isAssigned
+                              ? '#22d3ee14'
+                              : '#141414'}; border: 1px solid ${isAssigned
+                              ? '#22d3ee33'
+                              : '#222'}; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
+                            @click=${() =>
+                              isAssigned
+                                ? this._unassignProject(this._projectModal!, proj.id)
+                                : this._assignProject(this._projectModal!, proj.id)}
+                          >
+                            <span style="font-size: 11px; color: #ccc;">${proj.name}</span>
+                            <span style="font-size: 10px; color: ${isAssigned ? '#22d3ee' : '#333'};"
+                              >${isAssigned ? '✓' : '+'}</span
+                            >
+                          </div>
+                        `
+                      })}
+                </div>
+              </div>
             </div>
-            <div style="overflow-y: auto; display: flex; flex-direction: column; gap: 4px;">
-              ${this._projects.length === 0
-                ? html`<div style="color: #555; font-size: 11px; padding: 8px;">No projects yet.</div>`
-                : this._projects.map(proj => {
-                  const isAssigned = this._assignedProjectIds.get(this._projectModal!) === proj.id
-                  return html`
-                    <div
-                      style="padding: 8px 10px; background: ${isAssigned ? '#22d3ee14' : '#141414'}; border: 1px solid ${isAssigned ? '#22d3ee33' : '#222'}; border-radius: 4px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;"
-                      @click=${() => isAssigned
-                        ? this._unassignProject(this._projectModal!, proj.id)
-                        : this._assignProject(this._projectModal!, proj.id)}
-                    >
-                      <span style="font-size: 11px; color: #ccc;">${proj.name}</span>
-                      <span style="font-size: 10px; color: ${isAssigned ? '#22d3ee' : '#333'};">${isAssigned ? '✓' : '+'}</span>
-                    </div>
-                  `
-                })}
-            </div>
-          </div>
-        </div>
-      ` : ''}
-    `;
+          `
+        : ''}
+    `
   }
 
   static styles = css`
@@ -345,8 +400,13 @@ export class HistoryPreview extends LitElement {
       border-collapse: collapse;
     }
 
-    .th-thumb { width: 44px; }
-    .td-thumb { width: 44px; padding-right: 8px; }
+    .th-thumb {
+      width: 44px;
+    }
+    .td-thumb {
+      width: 44px;
+      padding-right: 8px;
+    }
     .row-thumb {
       width: 40px;
       height: 40px;
@@ -368,14 +428,25 @@ export class HistoryPreview extends LitElement {
       align-items: center;
       justify-content: center;
     }
-    .thumb-add:hover { color: var(--cyan, #22d3ee); border-color: var(--cyan, #22d3ee); }
+    .thumb-add:hover {
+      color: var(--cyan, #22d3ee);
+      border-color: var(--cyan, #22d3ee);
+    }
     .thumb-spin {
-      width: 40px; height: 40px;
-      display: flex; align-items: center; justify-content: center;
-      color: var(--cyan, #22d3ee); font-size: 18px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--cyan, #22d3ee);
+      font-size: 18px;
       animation: spin 1s linear infinite;
     }
-    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
 
     thead th {
       font-size: 9px;
@@ -554,11 +625,11 @@ export class HistoryPreview extends LitElement {
         padding: 2px 6px;
       }
     }
-  `;
+  `
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'history-preview': HistoryPreview;
+    'history-preview': HistoryPreview
   }
 }

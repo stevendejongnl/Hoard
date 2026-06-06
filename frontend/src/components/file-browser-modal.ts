@@ -163,7 +163,9 @@ export class FileBrowserModal extends LitElement {
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: color 0.15s, border-color 0.15s;
+      transition:
+        color 0.15s,
+        border-color 0.15s;
     }
 
     .thumb-gen-btn:hover {
@@ -186,7 +188,9 @@ export class FileBrowserModal extends LitElement {
     }
 
     @keyframes spin {
-      to { transform: rotate(360deg); }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     .file-item:hover {
@@ -343,7 +347,7 @@ export class FileBrowserModal extends LitElement {
 
   private get _filteredFiles(): GcodeFile[] {
     const q = this.search.toLowerCase()
-    return this.files.filter(f => f.filename?.toLowerCase().includes(q))
+    return this.files.filter((f) => f.filename?.toLowerCase().includes(q))
   }
 
   private _close() {
@@ -358,7 +362,7 @@ export class FileBrowserModal extends LitElement {
         detail: { filename: this.selected },
         bubbles: true,
         composed: true,
-      })
+      }),
     )
     this._close()
   }
@@ -404,14 +408,14 @@ export class FileBrowserModal extends LitElement {
     this.thumbGenerating = new Set([...this.thumbGenerating, target])
     try {
       await injectThumbnail(target, file)
-      this.thumbErrors = new Set([...this.thumbErrors].filter(f => f !== target))
+      this.thumbErrors = new Set([...this.thumbErrors].filter((f) => f !== target))
       const v = new Map(this.thumbVersion)
       v.set(target, Date.now())
       this.thumbVersion = v
     } catch (err) {
       console.error('Thumbnail inject failed', err)
     } finally {
-      this.thumbGenerating = new Set([...this.thumbGenerating].filter(f => f !== target))
+      this.thumbGenerating = new Set([...this.thumbGenerating].filter((f) => f !== target))
     }
   }
 
@@ -422,10 +426,7 @@ export class FileBrowserModal extends LitElement {
     const filtered = this._filteredFiles
 
     return html`
-      <div
-        class="overlay"
-        @click=${this._onOverlayClick}
-      >
+      <div class="overlay" @click=${this._onOverlayClick}>
         <div class="modal">
           <div class="modal-header">
             <span class="modal-title">Klipper files</span>
@@ -448,7 +449,7 @@ export class FileBrowserModal extends LitElement {
             ${this.loading
               ? html`<div class="loading">Loading…</div>`
               : filtered.map(
-                  f => html`
+                  (f) => html`
                     <div
                       class="file-item ${this.selected === f.filename ? 'selected' : ''}"
                       @click=${() => {
@@ -458,32 +459,32 @@ export class FileBrowserModal extends LitElement {
                       ${this.thumbGenerating.has(f.filename)
                         ? html`<div class="thumb-generating">↻</div>`
                         : this.thumbErrors.has(f.filename)
-                          ? html`
-                              <div class="file-thumb-placeholder">
-                                <button
-                                  class="thumb-gen-btn"
-                                  title="Generate preview from STL"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation()
-                                    this._triggerThumbUpload(f.filename)
-                                  }}
-                                >⊕</button>
-                              </div>`
+                          ? html` <div class="file-thumb-placeholder">
+                              <button
+                                class="thumb-gen-btn"
+                                title="Generate preview from STL"
+                                @click=${(e: Event) => {
+                                  e.stopPropagation()
+                                  this._triggerThumbUpload(f.filename)
+                                }}
+                              >
+                                ⊕
+                              </button>
+                            </div>`
                           : html`<img
                               class="file-thumb"
-                              src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(f.filename)}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
+                              src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(
+                                f.filename,
+                              )}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
                               alt=""
                               @error=${() => {
                                 this.thumbErrors = new Set([...this.thumbErrors, f.filename])
                               }}
-                            />`
-                      }
+                            />`}
                       <div>
                         <div class="file-name">${f.filename}</div>
                         <div class="file-sub">
-                          ${f.filament_weight_total
-                            ? f.filament_weight_total.toFixed(1) + ' g'
-                            : ''}
+                          ${f.filament_weight_total ? f.filament_weight_total.toFixed(1) + ' g' : ''}
                           ${f.estimated_time ? fmtDuration(f.estimated_time) : ''}
                         </div>
                       </div>
@@ -495,26 +496,18 @@ export class FileBrowserModal extends LitElement {
                         })}
                       </div>
                     </div>
-                  `
+                  `,
                 )}
           </div>
 
           <div class="modal-footer">
-            <div class="footer-left">
-              ${this.selected ? this.selected : 'No file selected'}
-            </div>
+            <div class="footer-left">${this.selected ? this.selected : 'No file selected'}</div>
             <div class="footer-right">
               <input type="file" accept=".gcode" data-gcode-upload @change=${this._onUpload} />
               <input type="file" accept=".stl" data-stl-upload @change=${this._onThumbUpload} />
               <button class="btn-ghost-dashed" @click=${this._triggerUpload}>↑ upload new</button>
               <button class="btn-ghost" @click=${this._close}>cancel</button>
-              <button
-                class="btn-primary"
-                ?disabled=${!this.selected}
-                @click=${this._confirm}
-              >
-                select
-              </button>
+              <button class="btn-primary" ?disabled=${!this.selected} @click=${this._confirm}>select</button>
             </div>
           </div>
         </div>

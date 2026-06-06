@@ -1,47 +1,47 @@
-import { LitElement, css, html } from 'lit';
-import { customElement, state } from 'lit/decorators.js';
-import type { PiStats } from '../types';
-import { sseClient } from '../sse';
+import { LitElement, css, html } from 'lit'
+import { customElement, state } from 'lit/decorators.js'
+import type { PiStats } from '../types'
+import { sseClient } from '../sse'
 
 @customElement('pi-strip')
 export class PiStrip extends LitElement {
-  @state() stats: PiStats | null = null;
+  @state() stats: PiStats | null = null
 
-  private _unsubscribe: (() => void) | null = null;
+  private _unsubscribe: (() => void) | null = null
 
   connectedCallback() {
-    super.connectedCallback();
+    super.connectedCallback()
     this._unsubscribe = sseClient.subscribe((payload) => {
       if (payload.type === 'pi_stats') {
-        this.stats = payload.data;
+        this.stats = payload.data
       }
-    });
+    })
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback();
-    this._unsubscribe?.();
-    this._unsubscribe = null;
+    super.disconnectedCallback()
+    this._unsubscribe?.()
+    this._unsubscribe = null
   }
 
   private fmtUptime(s: number): string {
-    const days = Math.floor(s / 86400);
-    const hours = Math.floor((s % 86400) / 3600);
-    const minutes = Math.floor((s % 3600) / 60);
+    const days = Math.floor(s / 86400)
+    const hours = Math.floor((s % 86400) / 3600)
+    const minutes = Math.floor((s % 3600) / 60)
     if (days > 0) {
-      return `${days}d ${hours}h`;
+      return `${days}d ${hours}h`
     }
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m`
   }
 
   render() {
-    const s = this.stats;
+    const s = this.stats
 
-    const cpuTemp = s?.cpu_temp ?? 0;
-    const cpuLoad = s?.cpu_load ?? 0;
-    const memUsed = s?.memory_pct ?? 0;
-    const diskUsed = s?.disk_pct ?? 0;
-    const uptimeSec = s?.uptime_s ?? 0;
+    const cpuTemp = s?.cpu_temp ?? 0
+    const cpuLoad = s?.cpu_load ?? 0
+    const memUsed = s?.memory_pct ?? 0
+    const diskUsed = s?.disk_pct ?? 0
+    const uptimeSec = s?.uptime_s ?? 0
 
     return html`
       <div class="strip">
@@ -50,10 +50,7 @@ export class PiStrip extends LitElement {
           <span class="value">${cpuTemp.toFixed(1)}°C</span>
           <span class="label">CPU Temp</span>
           <div class="bar-track">
-            <div
-              class="bar-fill"
-              style="width: ${Math.min(100, (cpuTemp / 90) * 100)}%"
-            ></div>
+            <div class="bar-fill" style="width: ${Math.min(100, (cpuTemp / 90) * 100)}%"></div>
           </div>
         </div>
 
@@ -62,10 +59,7 @@ export class PiStrip extends LitElement {
           <span class="value">${cpuLoad.toFixed(1)}%</span>
           <span class="label">CPU Load</span>
           <div class="bar-track">
-            <div
-              class="bar-fill"
-              style="width: ${Math.min(100, cpuLoad)}%"
-            ></div>
+            <div class="bar-fill" style="width: ${Math.min(100, cpuLoad)}%"></div>
           </div>
         </div>
 
@@ -74,10 +68,7 @@ export class PiStrip extends LitElement {
           <span class="value">${memUsed.toFixed(1)}%</span>
           <span class="label">Memory</span>
           <div class="bar-track">
-            <div
-              class="bar-fill"
-              style="width: ${Math.min(100, memUsed)}%"
-            ></div>
+            <div class="bar-fill" style="width: ${Math.min(100, memUsed)}%"></div>
           </div>
         </div>
 
@@ -86,10 +77,7 @@ export class PiStrip extends LitElement {
           <span class="value">${diskUsed.toFixed(1)}%</span>
           <span class="label">Disk</span>
           <div class="bar-track">
-            <div
-              class="bar-fill"
-              style="width: ${Math.min(100, diskUsed)}%"
-            ></div>
+            <div class="bar-fill" style="width: ${Math.min(100, diskUsed)}%"></div>
           </div>
         </div>
 
@@ -99,7 +87,7 @@ export class PiStrip extends LitElement {
           <span class="label">Uptime</span>
         </div>
       </div>
-    `;
+    `
   }
 
   static styles = css`
@@ -180,11 +168,11 @@ export class PiStrip extends LitElement {
         height: 4px;
       }
     }
-  `;
+  `
 }
 
 declare global {
   interface HTMLElementTagNameMap {
-    'pi-strip': PiStrip;
+    'pi-strip': PiStrip
   }
 }

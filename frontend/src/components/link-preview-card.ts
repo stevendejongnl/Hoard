@@ -36,7 +36,7 @@ export class LinkPreviewCard extends LitElement {
 
   private _onOutsideClick = (e: Event) => {
     if (!this._visible) return
-    if (!this._isTouch()) return          // desktop uses mouseleave to hide
+    if (!this._isTouch()) return // desktop uses mouseleave to hide
     if (!this.contains(e.target as Node)) {
       this._visible = false
     }
@@ -45,18 +45,22 @@ export class LinkPreviewCard extends LitElement {
   private _onEnter = () => {
     if (this._isTouch()) return
     clearTimeout(this._hideTimer)
-    this._showTimer = window.setTimeout(() => { this._visible = true }, 120)
+    this._showTimer = window.setTimeout(() => {
+      this._visible = true
+    }, 120)
   }
 
   private _onLeave = () => {
     if (this._isTouch()) return
     clearTimeout(this._showTimer)
-    this._hideTimer = window.setTimeout(() => { this._visible = false }, 150)
+    this._hideTimer = window.setTimeout(() => {
+      this._visible = false
+    }, 150)
   }
 
   private _onClick = (e: Event) => {
-    if (!this._isTouch()) return         // desktop: don't intercept, let <a> navigate
-    if (!this._hasContent()) return      // nothing to show, let <a> navigate
+    if (!this._isTouch()) return // desktop: don't intercept, let <a> navigate
+    if (!this._hasContent()) return // nothing to show, let <a> navigate
     e.preventDefault()
     e.stopImmediatePropagation()
     this._visible = !this._visible
@@ -83,18 +87,26 @@ export class LinkPreviewCard extends LitElement {
       background: #1e1e1e;
       border: 1px solid #333;
       border-radius: 8px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
       z-index: 100;
       overflow: hidden;
       animation: fade-in 0.12s ease;
       pointer-events: auto;
     }
 
-    .card.visible { display: block; }
+    .card.visible {
+      display: block;
+    }
 
     @keyframes fade-in {
-      from { opacity: 0; transform: translateY(4px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .cover {
@@ -168,7 +180,8 @@ export class LinkPreviewCard extends LitElement {
       box-sizing: border-box;
     }
 
-    .open-btn:hover, .open-btn:active {
+    .open-btn:hover,
+    .open-btn:active {
       background: #22d3ee14;
     }
 
@@ -191,47 +204,66 @@ export class LinkPreviewCard extends LitElement {
     return html`
       <slot></slot>
 
-      ${this._hasContent() ? html`
-        <div class="card ${this._visible ? 'visible' : ''}">
-          ${m?.image_url ? html`
-            <img
-              class="cover"
-              src="${m.image_url}"
-              alt=""
-              @error=${(e: Event) => { (e.target as HTMLElement).style.display = 'none' }}
-            />
-          ` : ''}
-          <div class="body">
-            ${m?.title    ? html`<div class="title">${m.title}</div>` : ''}
-            ${m?.description ? html`<div class="desc">${_stripHtml(m.description)}</div>` : ''}
-            ${psEntries.length > 0 ? html`
-              <div class="chips">
-                ${psEntries.map(([k, v]) => html`
-                  <span class="chip">${_label(k)}: ${v}</span>
-                `)}
+      ${this._hasContent()
+        ? html`
+            <div class="card ${this._visible ? 'visible' : ''}">
+              ${m?.image_url
+                ? html`
+                    <img
+                      class="cover"
+                      src="${m.image_url}"
+                      alt=""
+                      @error=${(e: Event) => {
+                        ;(e.target as HTMLElement).style.display = 'none'
+                      }}
+                    />
+                  `
+                : ''}
+              <div class="body">
+                ${m?.title ? html`<div class="title">${m.title}</div>` : ''}
+                ${m?.description ? html`<div class="desc">${_stripHtml(m.description)}</div>` : ''}
+                ${psEntries.length > 0
+                  ? html`
+                      <div class="chips">
+                        ${psEntries.map(([k, v]) => html` <span class="chip">${_label(k)}: ${v}</span> `)}
+                      </div>
+                    `
+                  : ''}
               </div>
-            ` : ''}
-          </div>
-          <div class="footer">
-            <button class="open-btn" @click=${this._open}>Open link ↗</button>
-          </div>
-        </div>
-      ` : ''}
+              <div class="footer">
+                <button class="open-btn" @click=${this._open}>Open link ↗</button>
+              </div>
+            </div>
+          `
+        : ''}
     `
   }
 }
 
 function _stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
+  return html
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 const _LABELS: Record<string, string> = {
-  layer_height: 'Layer', walls: 'Walls', infill: 'Infill',
-  nozzle: 'Nozzle', material: 'Material', printer: 'Printer',
-  weight_g: 'Weight', parts: 'Parts',
+  layer_height: 'Layer',
+  walls: 'Walls',
+  infill: 'Infill',
+  nozzle: 'Nozzle',
+  material: 'Material',
+  printer: 'Printer',
+  weight_g: 'Weight',
+  parts: 'Parts',
 }
-function _label(k: string) { return _LABELS[k] ?? k }
+function _label(k: string) {
+  return _LABELS[k] ?? k
+}
 
 declare global {
-  interface HTMLElementTagNameMap { 'link-preview-card': LinkPreviewCard }
+  interface HTMLElementTagNameMap {
+    'link-preview-card': LinkPreviewCard
+  }
 }

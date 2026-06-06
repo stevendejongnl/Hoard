@@ -23,14 +23,14 @@ class Router {
 
   navigate(path: Route): void {
     window.history.pushState({}, '', path)
-    this.listeners.forEach(l => l(this.current))
+    this.listeners.forEach((l) => l(this.current))
   }
 
   listen(fn: (r: Route) => void): () => void {
     this.listeners.push(fn)
     window.addEventListener('popstate', () => fn(this.current))
     return () => {
-      this.listeners = this.listeners.filter(l => l !== fn)
+      this.listeners = this.listeners.filter((l) => l !== fn)
     }
   }
 }
@@ -38,6 +38,8 @@ class Router {
 export const router = new Router()
 
 declare global {
-  interface Window { router: Router }
+  interface Window {
+    router: Router
+  }
 }
 window.router = router

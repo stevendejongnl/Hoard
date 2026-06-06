@@ -20,7 +20,9 @@ export class WebcamView extends LitElement {
   private _errorCount = 0
 
   static styles = css`
-    :host { display: block; }
+    :host {
+      display: block;
+    }
 
     .header {
       display: flex;
@@ -35,7 +37,9 @@ export class WebcamView extends LitElement {
       transition: border-color 0.15s;
     }
 
-    .header:hover { border-color: #333; }
+    .header:hover {
+      border-color: #333;
+    }
 
     .header.open {
       border-radius: var(--radius, 8px) var(--radius, 8px) 0 0;
@@ -62,7 +66,9 @@ export class WebcamView extends LitElement {
       box-shadow: 0 0 4px var(--cyan);
     }
 
-    .cam-name { color: var(--text); }
+    .cam-name {
+      color: var(--text);
+    }
 
     .cam-tabs {
       display: flex;
@@ -91,7 +97,9 @@ export class WebcamView extends LitElement {
       transition: transform 0.2s;
     }
 
-    .chevron.open { transform: rotate(180deg); }
+    .chevron.open {
+      transform: rotate(180deg);
+    }
 
     .stream-wrap {
       background: #000;
@@ -123,7 +131,7 @@ export class WebcamView extends LitElement {
       top: 10px;
       left: 10px;
       font-size: 9px;
-      color: rgba(255,255,255,0.4);
+      color: rgba(255, 255, 255, 0.4);
       letter-spacing: 0.06em;
       text-transform: uppercase;
       pointer-events: none;
@@ -164,13 +172,19 @@ export class WebcamView extends LitElement {
   private _startSnapshotPolling() {
     if (this._snapshotInterval) return
     const cam = this.cams[this.active]
-    if (!cam?.snapshot_url) { this.imgError = true; return }
+    if (!cam?.snapshot_url) {
+      this.imgError = true
+      return
+    }
     this._useSnapshot = true
     const fps = cam.target_fps ?? 5
     this._snapshotSrc = `${cam.snapshot_url}?t=${Date.now()}`
-    this._snapshotInterval = setInterval(() => {
-      this._snapshotSrc = `${cam.snapshot_url}?t=${Date.now()}`
-    }, Math.max(200, 1000 / fps))
+    this._snapshotInterval = setInterval(
+      () => {
+        this._snapshotSrc = `${cam.snapshot_url}?t=${Date.now()}`
+      },
+      Math.max(200, 1000 / fps),
+    )
   }
 
   private _stopSnapshotPolling() {
@@ -233,10 +247,7 @@ export class WebcamView extends LitElement {
     const src = this._useSnapshot ? this._snapshotSrc : cam.stream_url
 
     return html`
-      <div
-        class="header ${this.expanded ? 'open' : ''}"
-        @click=${this._toggle}
-      >
+      <div class="header ${this.expanded ? 'open' : ''}" @click=${this._toggle}>
         <div class="header-left">
           <div class="cam-dot ${this.expanded ? 'live' : ''}"></div>
           <span class="cam-name">${cam.name}</span>
@@ -244,38 +255,43 @@ export class WebcamView extends LitElement {
         </div>
 
         <div style="display:flex;align-items:center;gap:10px" @click=${(e: Event) => e.stopPropagation()}>
-          ${this.cams.length > 1 ? html`
-            <div class="cam-tabs">
-              ${this.cams.map((c, i) => html`
-                <button
-                  class="cam-tab ${i === this.active ? 'active' : ''}"
-                  @click=${() => this._switchCam(i)}
-                >${c.name}</button>
-              `)}
-            </div>
-          ` : ''}
+          ${this.cams.length > 1
+            ? html`
+                <div class="cam-tabs">
+                  ${this.cams.map(
+                    (c, i) => html`
+                      <button class="cam-tab ${i === this.active ? 'active' : ''}" @click=${() => this._switchCam(i)}>
+                        ${c.name}
+                      </button>
+                    `,
+                  )}
+                </div>
+              `
+            : ''}
           <span class="chevron ${this.expanded ? 'open' : ''}">▾</span>
         </div>
       </div>
 
-      ${this.expanded ? html`
-        <div class="stream-wrap">
-          <span class="cam-label">${cam.name}</span>
-          ${this.imgError ? html`
-            <div class="stream-error">stream unavailable</div>
-          ` : this._streamPaused ? html`
-            <div class="stream-error">paused</div>
-          ` : html`
-            <img
-              class="stream-img"
-              src=${src}
-              style="transform: ${this._transform(cam)}"
-              @error=${this._onStreamError}
-              @load=${this._onStreamLoad}
-            />
-          `}
-        </div>
-      ` : ''}
+      ${this.expanded
+        ? html`
+            <div class="stream-wrap">
+              <span class="cam-label">${cam.name}</span>
+              ${this.imgError
+                ? html` <div class="stream-error">stream unavailable</div> `
+                : this._streamPaused
+                  ? html` <div class="stream-error">paused</div> `
+                  : html`
+                      <img
+                        class="stream-img"
+                        src=${src}
+                        style="transform: ${this._transform(cam)}"
+                        @error=${this._onStreamError}
+                        @load=${this._onStreamLoad}
+                      />
+                    `}
+            </div>
+          `
+        : ''}
     `
   }
 }

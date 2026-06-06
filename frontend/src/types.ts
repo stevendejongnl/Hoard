@@ -1,13 +1,13 @@
 export interface PrinterState {
   state: 'printing' | 'standby' | 'paused' | 'error' | 'complete' | string
   filename: string
-  progress: number       // 0–100
+  progress: number // 0–100
   layer: number | null
   layer_total: number | null
   time_remaining: number // elapsed seconds (print_duration)
-  filament_used: number  // mm
-  speed: number          // mm/s
-  z_position: number     // mm
+  filament_used: number // mm
+  speed: number // mm/s
+  z_position: number // mm
 }
 
 export interface Temps {
