@@ -49,6 +49,24 @@ async def init_db(path: str) -> None:
                 label      TEXT
             )
         """)
+        # Migrate project_files to drop the CHECK constraint so any file extension is allowed
+        async with db.execute(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='project_files'"
+        ) as cur:
+            row = await cur.fetchone()
+            if row and "CHECK" in (row[0] or ""):
+                await db.execute("""
+                    CREATE TABLE project_files_new (
+                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+                        type       TEXT    NOT NULL,
+                        filename   TEXT    NOT NULL,
+                        label      TEXT
+                    )
+                """)
+                await db.execute("INSERT INTO project_files_new SELECT * FROM project_files")
+                await db.execute("DROP TABLE project_files")
+                await db.execute("ALTER TABLE project_files_new RENAME TO project_files")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS project_links (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,

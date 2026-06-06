@@ -103,8 +103,8 @@ export class ProjectFilesSection extends LitElement {
           <span style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.05em;">Files</span>
           <div style="display: flex; gap: 6px;">
             <label style="background: transparent; border: 1px solid #333; color: #888; border-radius: 4px; padding: 3px 10px; font-size: 10px; cursor: pointer; min-height: 28px; display: flex; align-items: center;">
-              ↑ upload stl
-              <input type="file" accept=".stl" style="display: none;" @change=${this._uploadStl}>
+              ↑ upload file
+              <input type="file" accept=".stl,.3mf,.scad,.step,.stp,.obj,.f3d,.FCStd" style="display: none;" @change=${this._uploadStl}>
             </label>
             <button
               style="background: transparent; border: 1px solid #22d3ee33; color: #22d3ee; border-radius: 4px; padding: 3px 10px; font-size: 10px; cursor: pointer;"
