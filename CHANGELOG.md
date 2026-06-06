@@ -1,3 +1,9 @@
+## [1.28.1](https://github.com/stevendejongnl/printer/compare/v1.28.0...v1.28.1) (2026-06-06)
+
+### Bug Fixes
+
+* use constant additional_costs=0.10 matching HA nordpool entity config 3_10_021 ([3db5f71](https://github.com/stevendejongnl/printer/commit/3db5f71da75e693e039f53fd0473f6c820c7079c))
+
 ## [1.28.0](https://github.com/stevendejongnl/printer/compare/v1.27.0...v1.28.0) (2026-06-06)
 
 ### Features
