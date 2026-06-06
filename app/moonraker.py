@@ -99,7 +99,7 @@ class MoonrakerClient:
             return r.content
 
     async def get_history_job(self, job_id: str) -> dict[str, Any]:
-        result = await self.get(f"/server/history/job", uid=job_id)
+        result = await self.get("/server/history/job", uid=job_id)
         return result.get("job", result)
 
     async def get_proc_stats(self) -> dict[str, Any]:

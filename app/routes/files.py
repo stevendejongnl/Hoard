@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 from fastapi import APIRouter, Form, HTTPException, UploadFile
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import Response
 
 from app.config import settings
 from app.gcode_thumbnail import extract_thumbnail_png, inject_thumbnails
@@ -89,7 +89,7 @@ async def file_thumbnail(filename: str) -> Response:
         inline_data = thumb.get("data", "")
         if inline_data:
             try:
-                png_bytes = base64.b64decode(inline_data)
+                png_bytes = _b64.b64decode(inline_data)
                 _cache_set(filename, png_bytes)
                 return Response(
                     content=png_bytes,

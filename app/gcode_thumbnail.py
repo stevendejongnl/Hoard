@@ -2,6 +2,7 @@ import base64
 import io
 import math
 import re
+
 from PIL import Image, ImageDraw
 
 

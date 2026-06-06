@@ -79,7 +79,7 @@ async def stream(request: Request):
                 try:
                     msg = await asyncio.wait_for(q.get(), timeout=15.0)
                     yield msg
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     yield ": ping\n\n"
         finally:
             hub.unsubscribe(q)

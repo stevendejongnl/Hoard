@@ -43,6 +43,15 @@ jobs:
       - name: Frontend typecheck
         run: npm run typecheck --prefix frontend
 
+      - name: Install Python dev dependencies
+        run: uv sync --group dev
+
+      - name: Ruff lint
+        run: uv run ruff check app/
+
+      - name: Mypy type check
+        run: uv run mypy app/ --ignore-missing-imports
+
       - name: Install release dependencies
         run: npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog @semantic-release/exec conventional-changelog-conventionalcommits
 

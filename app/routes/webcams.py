@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Response, Request
-from fastapi.responses import StreamingResponse
-from app.moonraker import moonraker
 import httpx
+from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi.responses import StreamingResponse
+
+from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/webcams", tags=["webcams"])
 

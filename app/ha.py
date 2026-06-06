@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
@@ -68,7 +68,7 @@ def time_weighted_avg(states: list[dict[str, Any]], window_end: datetime | None 
     """
     if not states:
         return 0.0
-    cap = window_end if window_end is not None else datetime.now(timezone.utc)
+    cap = window_end if window_end is not None else datetime.now(UTC)
     total_weight = 0.0
     weighted_sum = 0.0
     for i, entry in enumerate(states):
@@ -100,8 +100,7 @@ async def avg_price_over(start: datetime, end: datetime) -> float:
 
 async def avg_price_hours(hours: int = 27) -> float:
     """Recent N-hour time-weighted average electricity price."""
-    from datetime import timedelta
-    end = datetime.now(timezone.utc)
+    end = datetime.now(UTC)
     start = end - timedelta(hours=hours)
     return await avg_price_over(start, end)
 
@@ -113,7 +112,6 @@ async def energy_used_kwh(start: datetime, end: datetime) -> float | None:
     database indefinitely — works for any historical print, not just the last 10 days.
     Returns None if statistics are unavailable for the period.
     """
-    from datetime import timedelta
     # Widen the window slightly so we always capture a data point just before start
     req_start = (start - timedelta(hours=1)).isoformat()
     req_end = (end + timedelta(minutes=10)).isoformat()

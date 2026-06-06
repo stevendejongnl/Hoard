@@ -1,5 +1,6 @@
 import asyncio
 import json as _json
+import logging
 import math
 import os
 import uuid
@@ -7,11 +8,12 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app import db
-from app.enrichment import fetch_og
 from app.config import settings
+from app.enrichment import fetch_og
 from app.influx import influx
 from app.moonraker import moonraker
 
@@ -148,7 +150,6 @@ async def _enrich_link(project_id: int, link_id: int, url: str) -> None:
 
 async def enrich_existing_links() -> None:
     """Backfill enrichment for links added before this feature. Runs once at startup."""
-    import logging
     log = logging.getLogger(__name__)
     links = await db.list_unenriched_links()
     if not links:
@@ -245,7 +246,6 @@ async def unlink_print(project_id: int, job_id: str) -> None:
 
 @router.get("/{project_id}/files/{file_id}/download")
 async def download_file(project_id: int, file_id: int) -> Any:
-    from fastapi.responses import FileResponse
     f = await db.get_project_file(file_id)
     if not f or f["project_id"] != project_id or f["type"] == "gcode":
         raise HTTPException(404, "File not found")

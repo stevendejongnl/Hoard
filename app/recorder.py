@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from app import db, ha
@@ -42,8 +42,8 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
         log.info("recorder: print finished %s, waiting %ds for HA sensors to settle", filename, _HA_SETTLE_DELAY)
         await asyncio.sleep(_HA_SETTLE_DELAY)
 
-    start_dt = datetime.fromtimestamp(start_ts, tz=timezone.utc)
-    end_dt = datetime.fromtimestamp(end_ts, tz=timezone.utc) if end_ts else datetime.now(timezone.utc)
+    start_dt = datetime.fromtimestamp(start_ts, tz=UTC)
+    end_dt = datetime.fromtimestamp(end_ts, tz=UTC) if end_ts else datetime.now(UTC)
     duration_s = (end_dt - start_dt).total_seconds()
 
     # Get filament weight from gcode metadata (slicer-provided, most accurate)
@@ -53,8 +53,6 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
         filament_g = float(meta.get("filament_weight_total", 0) or 0)
     except Exception as exc:
         log.warning("recorder: metadata fetch failed for %s: %s", filename, exc)
-
-    from datetime import timedelta
 
     # Try exact energy delta first (long-term statistics, works for all history)
     energy_kwh = await ha.energy_used_kwh(start_dt, end_dt)
@@ -131,7 +129,6 @@ async def startup_reconcile(lookback: int = 1000) -> None:
 
     def _minute(iso: str) -> int:
         try:
-            from datetime import datetime
             dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
             return int(dt.timestamp()) // 60
         except Exception:
