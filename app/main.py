@@ -2,16 +2,18 @@ import asyncio
 import logging
 import os
 from contextlib import asynccontextmanager
+from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import db, recorder, sse
+from app import db, ha, recorder, sse
 from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
+from app.nordpool import backfill_prices, record_current_price
 from app.routes import chunks, control, files, history, predict, projects, search, spools, webcams
 from app.routes.projects import enrich_existing_links
 from app.sse import hub
@@ -20,6 +22,36 @@ _APP_VERSION = os.getenv("APP_VERSION", "dev")
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
+
+
+async def _price_startup_backfill() -> None:
+    """Backfill Nord Pool prices from Dec 2021 up to today if InfluxDB is missing data."""
+    await asyncio.sleep(10)  # let the app finish starting first
+    oldest = influx.oldest_electricity_price()
+    target_start = date(2021, 12, 1)
+    if oldest is None or oldest.date() > target_start:
+        start = target_start
+        end = date.today()
+        log.info("nordpool: starting backfill %s → %s", start, end)
+        written = await backfill_prices(start, end)
+        log.info("nordpool: backfill complete, %d points written", written)
+    else:
+        # Just fill any recent gap (last 3 days in case of missed updates)
+        end = date.today()
+        start = end - timedelta(days=3)
+        await backfill_prices(start, end)
+
+
+async def _price_recorder_loop() -> None:
+    """Record the current electricity price to InfluxDB every 30 minutes."""
+    while True:
+        await asyncio.sleep(1800)
+        try:
+            price = await ha.get_current_price()
+            if price > 0:
+                await record_current_price(price)
+        except Exception as exc:
+            log.warning("price recorder error: %s", exc)
 
 
 @asynccontextmanager
@@ -38,6 +70,8 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(recorder.startup_reconcile())
     asyncio.create_task(recorder.periodic_reconcile())
     asyncio.create_task(enrich_existing_links())
+    asyncio.create_task(_price_startup_backfill())
+    asyncio.create_task(_price_recorder_loop())
 
     log.info("printer started, db=%s", settings.database_path)
     yield

@@ -7,6 +7,7 @@ import httpx
 import websockets
 
 from app.config import settings
+from app.influx import influx
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +107,14 @@ async def avg_power_over(start: datetime, end: datetime) -> float:
 
 
 async def avg_price_over(start: datetime, end: datetime) -> float:
+    """Return average electricity price for a window.
+
+    Priority: InfluxDB (full history) → HA history (recent 10 days) → 0.
+    """
+    influx_price = influx.query_avg_price_between(start, end)
+    if influx_price and influx_price > 0.001:
+        return influx_price
+
     states = await get_history(_PRICE_SENSOR, start, end)
     return time_weighted_avg(states, window_end=end)
 
