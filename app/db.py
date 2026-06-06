@@ -355,6 +355,16 @@ async def delete_project_link(link_id: int) -> None:
         await db.commit()
 
 
+async def list_unenriched_links() -> list[dict[str, Any]]:
+    """Return all project links that have no enrichment metadata yet."""
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute(
+            "SELECT * FROM project_links WHERE meta IS NULL ORDER BY id"
+        ) as cur:
+            return [dict(r) for r in await cur.fetchall()]
+
+
 async def set_link_meta(link_id: int, meta_json: str) -> None:
     async with _conn() as db:
         await db.execute("UPDATE project_links SET meta = ? WHERE id = ?", (meta_json, link_id))
