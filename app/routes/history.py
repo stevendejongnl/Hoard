@@ -126,6 +126,14 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
         if proj:
             record["project"] = {"id": proj["id"], "name": proj["name"]}
 
+    # Enrich all records with has_detail / photo_count in a single batch query
+    job_ids = [r["job_id"] for r in records]
+    detail_counts = await db.get_print_detail_counts(job_ids)
+    for record in records:
+        counts = detail_counts.get(record["job_id"], {"has_detail": False, "photo_count": 0})
+        record["has_detail"] = counts["has_detail"]
+        record["photo_count"] = counts["photo_count"]
+
     return {"records": records, "total": total, "limit": limit, "offset": offset}
 
 

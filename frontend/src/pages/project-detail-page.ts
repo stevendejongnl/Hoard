@@ -285,6 +285,35 @@ export class ProjectDetailPage extends LitElement {
             if (p.id) this._load(p.id)
           }}
         ></project-files-section>
+
+        <!-- linked prints -->
+        ${(p.prints ?? []).length > 0
+          ? html`
+              <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px;">
+                <span
+                  style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 10px;"
+                  >Prints</span
+                >
+                ${(p.prints ?? []).map(
+                  (pr) => html`
+                    <div
+                      style="display: flex; align-items: center; justify-content: space-between; background: #141414; border-radius: 5px; padding: 8px 12px; margin-bottom: 5px; cursor: pointer;"
+                      @click=${() => router.navigate(`/prints/${encodeURIComponent(pr.job_id)}`)}
+                    >
+                      <span
+                        style="font-size: 11px; color: #ccc; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
+                        >${pr.job_id}</span
+                      >
+                      <span
+                        style="font-size: 11px; color: #22d3ee; white-space: nowrap; margin-left: 12px; flex-shrink: 0;"
+                        >${pr.cost_total != null ? '€' + pr.cost_total.toFixed(2) : '—'}</span
+                      >
+                    </div>
+                  `,
+                )}
+              </div>
+            `
+          : ''}
       </div>
     `
   }

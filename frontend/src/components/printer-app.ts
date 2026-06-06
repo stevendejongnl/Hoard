@@ -10,6 +10,7 @@ import '../pages/history-page'
 import '../pages/spools-page'
 import '../pages/projects-page'
 import '../pages/project-detail-page'
+import '../pages/print-detail-page'
 
 @customElement('printer-app')
 export class PrinterApp extends LitElement {
@@ -74,7 +75,9 @@ export class PrinterApp extends LitElement {
             ? html`<projects-page></projects-page>`
             : route.startsWith('/projects/')
               ? html`<project-detail-page></project-detail-page>`
-              : html`<home-page></home-page>`}
+              : route.startsWith('/prints/')
+                ? html`<print-detail-page></print-detail-page>`
+                : html`<home-page></home-page>`}
     `
   }
 }

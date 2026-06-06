@@ -1,9 +1,14 @@
 import asyncio
 import logging
+import time
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
+import httpx
+
 from app import db, ha
+from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
 from app.sse import hub
@@ -106,6 +111,42 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     # Keep project_prints stats in sync so projects auto-update without manual refresh
     await db.refresh_project_prints_stats(job_id, duration_s, filament_g, cost_total)
     await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
+
+    # Best-effort webcam snapshot — errors must never block the completion flow
+    asyncio.create_task(_try_webcam_snapshot(job_id))
+
+
+async def _try_webcam_snapshot(job_id: str) -> None:
+    """Fetch a webcam snapshot and store it as a print photo. Errors are logged only."""
+    try:
+        data = await moonraker.get("/server/webcams/list")
+        cams = data.get("webcams", [])
+        if not cams:
+            return
+        cam = cams[0]
+        snapshot_url: str = cam.get("snapshot_url", "")
+        if not snapshot_url:
+            return
+        # Resolve relative URLs to Moonraker base
+        if snapshot_url.startswith("/"):
+            snapshot_url = moonraker._client_base() + snapshot_url
+
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(snapshot_url, timeout=10)
+            resp.raise_for_status()
+            image_bytes = resp.content
+
+        ts = int(time.time())
+        filename = f"webcam_{ts}.jpg"
+        data_dir = Path(settings.database_path).parent
+        photo_dir = data_dir / "photos" / job_id
+        photo_dir.mkdir(parents=True, exist_ok=True)
+        (photo_dir / filename).write_bytes(image_bytes)
+
+        await db.add_print_photo(job_id, filename, source="webcam")
+        log.info("recorder: saved webcam snapshot for %s → %s", job_id, filename)
+    except Exception as exc:
+        log.warning("recorder: webcam snapshot failed for %s: %s", job_id, exc)
 
 
 async def startup_reconcile(lookback: int = 1000) -> None:

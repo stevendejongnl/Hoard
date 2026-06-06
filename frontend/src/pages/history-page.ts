@@ -302,6 +302,9 @@ export class HistoryPage extends LitElement {
         .history-table tr:hover td {
           background: #141414;
         }
+        .history-table tbody tr {
+          cursor: pointer;
+        }
         .filename-cell {
           max-width: 200px;
           overflow: hidden;
@@ -323,6 +326,7 @@ export class HistoryPage extends LitElement {
           border: 1px solid #222;
           border-radius: 8px;
           padding: 12px 14px;
+          cursor: pointer;
         }
         .print-card__top {
           display: flex;
@@ -413,7 +417,11 @@ export class HistoryPage extends LitElement {
                 <tbody>
                   ${this.records.map(
                     (r) => html`
-                      <tr>
+                      <tr
+                        @click=${() => {
+                          if (r.job_id) router.navigate(`/prints/${encodeURIComponent(r.job_id)}`)
+                        }}
+                      >
                         <td style="width:44px;padding-right:8px">
                           ${this.thumbGenerating.has(r.filename)
                             ? html`<div
@@ -451,7 +459,14 @@ export class HistoryPage extends LitElement {
                                 />`}
                         </td>
                         <td class="filename-cell" title="${r.filename}">
-                          <div>${r.filename}</div>
+                          <div style="display:flex;align-items:center;gap:5px">
+                            <span>${r.filename}</span>
+                            ${(r.photo_count ?? 0) > 0
+                              ? html`<span title="${r.photo_count} photo(s)" style="font-size:10px;opacity:0.7"
+                                  >📷</span
+                                >`
+                              : ''}
+                          </div>
                           ${r.project
                             ? html`
                                 <div
@@ -493,10 +508,21 @@ export class HistoryPage extends LitElement {
               <div class="card-list">
                 ${this.records.map(
                   (r) => html`
-                    <div class="print-card">
+                    <div
+                      class="print-card"
+                      @click=${() => {
+                        if (r.job_id) router.navigate(`/prints/${encodeURIComponent(r.job_id)}`)
+                      }}
+                    >
                       <div class="print-card__top">
                         <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-                          <span class="print-card__filename" title="${r.filename}">${r.filename}</span>
+                          <span class="print-card__filename" title="${r.filename}">
+                            ${r.filename}${(r.photo_count ?? 0) > 0
+                              ? html`&nbsp;<span title="${r.photo_count} photo(s)" style="font-size:10px;opacity:0.7"
+                                    >📷</span
+                                  >`
+                              : ''}
+                          </span>
                           ${r.project
                             ? html`
                                 <span
