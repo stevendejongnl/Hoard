@@ -1,3 +1,13 @@
+## [1.29.0](https://github.com/stevendejongnl/printer/compare/v1.28.1...v1.29.0) (2026-06-06)
+
+### Features
+
+* add print job detail pages at /prints/:job_id ([7c09964](https://github.com/stevendejongnl/printer/commit/7c099643073ba51fd4f3dba78065372395acfbeb))
+
+### Documentation
+
+* add print detail pages design spec ([8a948dc](https://github.com/stevendejongnl/printer/commit/8a948dc60e7d7f59a573a774a904bc2b5c3b4911))
+
 ## [1.28.1](https://github.com/stevendejongnl/printer/compare/v1.28.0...v1.28.1) (2026-06-06)
 
 ### Bug Fixes
