@@ -1,3 +1,9 @@
+## [1.20.0](https://github.com/stevendejongnl/printer/compare/v1.19.2...v1.20.0) (2026-06-06)
+
+### Features
+
+* enrich projects from link OG metadata — cover image, ask on delete ([71c8645](https://github.com/stevendejongnl/printer/commit/71c86453c3dcc1bcdd758b4bc913735753c5d2f6))
+
 ## [1.19.2](https://github.com/stevendejongnl/printer/compare/v1.19.1...v1.19.2) (2026-06-06)
 
 ### Bug Fixes
