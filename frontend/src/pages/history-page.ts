@@ -26,6 +26,7 @@ export class HistoryPage extends LitElement {
   connectedCallback() {
     super.connectedCallback()
     this._loadPage(0)
+    getSpools().then((s) => (this.spools = s))
     this._unsubscribe = sseClient.subscribe((payload) => {
       if (payload.type === 'history_updated') {
         this._loadPage(this.page)
