@@ -1,3 +1,9 @@
+## [1.23.0](https://github.com/stevendejongnl/printer/compare/v1.22.0...v1.23.0) (2026-06-06)
+
+### Features
+
+* support any file type in project uploads (3mf, scad, step, obj, f3d…) ([cc8d38b](https://github.com/stevendejongnl/printer/commit/cc8d38bd7891393f4df192eadcaa3b971b29c3e8))
+
 ## [1.22.0](https://github.com/stevendejongnl/printer/compare/v1.21.2...v1.22.0) (2026-06-06)
 
 ### Features
