@@ -5,7 +5,6 @@ import type { ProjectLink } from '../types'
 @customElement('link-preview-card')
 export class LinkPreviewCard extends LitElement {
   @property({ type: Object }) link!: ProjectLink
-
   @state() private _visible = false
   private _showTimer = 0
   private _hideTimer = 0
@@ -14,43 +13,56 @@ export class LinkPreviewCard extends LitElement {
     return window.matchMedia('(hover: none)').matches
   }
 
-  // Attached to the host element (light DOM) so it intercepts slotted <a> clicks
-  private _hostClick = (e: Event) => {
-    if (!this._isTouch()) return
-    if (!this.link?.meta?.title && !this.link?.meta?.image_url) return
-    e.preventDefault()
-    e.stopPropagation()
-    this._visible = !this._visible
+  private _hasContent() {
+    return !!(this.link?.meta?.title || this.link?.meta?.image_url)
   }
 
+  // All events on the host element — avoids Shadow DOM / slotted-content event issues
   connectedCallback() {
     super.connectedCallback()
-    this.addEventListener('click', this._hostClick)
+    this.addEventListener('mouseenter', this._onEnter)
+    this.addEventListener('mouseleave', this._onLeave)
+    this.addEventListener('click', this._onClick, true) // capture phase beats <a> navigation
   }
 
   disconnectedCallback() {
     super.disconnectedCallback()
-    this.removeEventListener('click', this._hostClick)
+    this.removeEventListener('mouseenter', this._onEnter)
+    this.removeEventListener('mouseleave', this._onLeave)
+    this.removeEventListener('click', this._onClick, true)
   }
 
-  private _show() {
+  private _onEnter = () => {
     if (this._isTouch()) return
     clearTimeout(this._hideTimer)
     this._showTimer = window.setTimeout(() => { this._visible = true }, 120)
   }
 
-  private _hide() {
+  private _onLeave = () => {
     if (this._isTouch()) return
     clearTimeout(this._showTimer)
     this._hideTimer = window.setTimeout(() => { this._visible = false }, 150)
   }
 
-  private _closeCard() {
+  private _onClick = (e: Event) => {
+    if (!this._isTouch()) return         // desktop: don't intercept, let <a> navigate
+    if (!this._hasContent()) return      // nothing to show, let <a> navigate
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    this._visible = !this._visible
+  }
+
+  private _open(e: Event) {
+    e.stopPropagation()
     this._visible = false
+    window.open(this.link.url, '_blank', 'noopener')
   }
 
   static styles = css`
-    :host { display: block; position: relative; }
+    :host {
+      display: block;
+      position: relative;
+    }
 
     .card {
       display: none;
@@ -65,6 +77,7 @@ export class LinkPreviewCard extends LitElement {
       z-index: 100;
       overflow: hidden;
       animation: fade-in 0.12s ease;
+      pointer-events: auto;
     }
 
     .card.visible { display: block; }
@@ -82,7 +95,12 @@ export class LinkPreviewCard extends LitElement {
       background: #141414;
     }
 
-    .body { padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+    .body {
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
     .title {
       font-size: 12px;
@@ -133,11 +151,10 @@ export class LinkPreviewCard extends LitElement {
       border: 1px solid #22d3ee33;
       color: #22d3ee;
       border-radius: 5px;
-      padding: 6px 10px;
+      padding: 7px 10px;
       font-size: 11px;
       cursor: pointer;
       text-align: center;
-      text-decoration: none;
       box-sizing: border-box;
     }
 
@@ -145,7 +162,6 @@ export class LinkPreviewCard extends LitElement {
       background: #22d3ee14;
     }
 
-    /* Mobile: card is wider and positioned fixed to avoid viewport overflow */
     @media (max-width: 600px) {
       .card {
         position: fixed;
@@ -161,22 +177,12 @@ export class LinkPreviewCard extends LitElement {
     const m = this.link?.meta
     const ps = m?.print_settings
     const psEntries = ps ? Object.entries(ps).filter(([, v]) => v) : []
-    const hasContent = m?.title || m?.description || m?.image_url
 
     return html`
-      <div
-        @mouseenter=${this._show}
-        @mouseleave=${this._hide}
-      >
-        <slot></slot>
-      </div>
+      <slot></slot>
 
-      ${hasContent ? html`
-        <div
-          class="card ${this._visible ? 'visible' : ''}"
-          @mouseenter=${this._show}
-          @mouseleave=${this._hide}
-        >
+      ${this._hasContent() ? html`
+        <div class="card ${this._visible ? 'visible' : ''}">
           ${m?.image_url ? html`
             <img
               class="cover"
@@ -186,7 +192,7 @@ export class LinkPreviewCard extends LitElement {
             />
           ` : ''}
           <div class="body">
-            ${m?.title ? html`<div class="title">${m.title}</div>` : ''}
+            ${m?.title    ? html`<div class="title">${m.title}</div>` : ''}
             ${m?.description ? html`<div class="desc">${m.description}</div>` : ''}
             ${psEntries.length > 0 ? html`
               <div class="chips">
@@ -197,13 +203,7 @@ export class LinkPreviewCard extends LitElement {
             ` : ''}
           </div>
           <div class="footer">
-            <a
-              class="open-btn"
-              href="${this.link.url}"
-              target="_blank"
-              rel="noopener"
-              @click=${this._closeCard}
-            >Open link ↗</a>
+            <button class="open-btn" @click=${this._open}>Open link ↗</button>
           </div>
         </div>
       ` : ''}

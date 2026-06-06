@@ -223,11 +223,11 @@ async def list_projects() -> list[dict[str, Any]]:
                       SUM(pp.cost_total)           AS total_cost,
                       AVG(pp.cost_total)           AS avg_cost,
                       SUM(pp.filament_g)           AS total_filament_g,
-                      MAX(pp.id)                  AS last_print_row_id
+                      MAX(pp.job_id)              AS last_job_id
                FROM projects p
                LEFT JOIN project_prints pp ON pp.project_id = p.id
                GROUP BY p.id
-               ORDER BY last_print_row_id DESC NULLS LAST, p.created_at DESC"""
+               ORDER BY last_job_id DESC NULLS LAST, p.created_at DESC"""
         ) as cur:
             return [dict(r) for r in await cur.fetchall()]
 
