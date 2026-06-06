@@ -125,6 +125,12 @@ async def init_db(path: str) -> None:
             )
         """)
         await db.commit()
+        # gcode_meta column — stores slicer-extracted metadata as JSON
+        try:
+            await db.execute("ALTER TABLE print_jobs ADD COLUMN gcode_meta TEXT")
+        except Exception:
+            pass  # column already exists
+        await db.commit()
 
 
 def _conn() -> aiosqlite.Connection:
@@ -520,7 +526,7 @@ async def get_or_create_print_job(job_id: str) -> dict[str, Any]:
             assert row is not None
             result = dict(row)
     # Deserialize JSON-stored fields
-    for field, default in (("tags", []), ("settings", None)):
+    for field, default in (("tags", []), ("settings", None), ("gcode_meta", None)):
         raw = result.get(field)
         if raw is not None:
             try:
@@ -534,7 +540,7 @@ async def get_or_create_print_job(job_id: str) -> dict[str, Any]:
 
 async def update_print_job(job_id: str, data: dict[str, Any]) -> dict[str, Any]:
     """Update allowed fields on a print_jobs row and return the updated row."""
-    allowed = {k: v for k, v in data.items() if k in ("notes", "settings", "tags")}
+    allowed = {k: v for k, v in data.items() if k in ("notes", "settings", "tags", "gcode_meta")}
     if allowed:
         sets = ", ".join(f"{k} = :{k}" for k in allowed)
         async with _conn() as db:
