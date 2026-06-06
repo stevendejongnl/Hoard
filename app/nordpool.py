@@ -4,15 +4,16 @@ Fetches historical hourly day-ahead prices for the NL bidding zone and
 stores them as an `electricity_price` measurement in InfluxDB so we can
 look up the actual price at any historical print time.
 
-The all-in formula (from sensor.nordpool_kwh_nl_eur_3_10_021):
-    all_in = (spot_eur_per_kwh + additional_costs) * (1 + vat)
+The all-in formula mirrors the HA integration entity sensor.nordpool_kwh_nl_eur_3_10_021:
+    all_in = (spot_eur_per_kwh + ADDITIONAL_COSTS) * (1 + VAT)
 
-Dutch energy tax (energiebelasting) rates used as additional_costs:
-    2021: 0.0808 €/kWh
-    2022: 0.0549 €/kWh  (reduced during energy crisis)
-    2023: 0.1274 €/kWh
-    2024: 0.1274 €/kWh
-    2025+: 0.10   €/kWh (from HA config entity name: 3_10_021)
+The entity name encodes the config that has been constant since setup:
+    3   = 3 decimal display precision (irrelevant for calculation)
+    10  = additional_costs = 0.10 €/kWh  (energy tax + grid costs per contract)
+    021 = vat = 21%
+
+Using these same constants ensures backfilled prices match what the sensor
+would have shown at any historical point in time.
 """
 
 import logging
@@ -29,36 +30,16 @@ log = logging.getLogger(__name__)
 # Nord Pool public API — returns Elspot day-ahead prices for all European areas
 _NP_URL = "https://www.nordpoolgroup.com/api/marketdata/page/10"
 
-# VAT — constant 21% in NL
-_VAT = 0.21
-
-# Dutch energy tax (energiebelasting excl. VAT) per year — used as additional_costs
-_ENERGY_TAX: dict[int, float] = {
-    2021: 0.0808,
-    2022: 0.0549,
-    2023: 0.1274,
-    2024: 0.1274,
-    2025: 0.10,
-    2026: 0.10,
-}
+# Constants from the HA entity name: sensor.nordpool_kwh_nl_eur_3_10_021
+# These have been constant since initial setup — do not vary by year.
+_ADDITIONAL_COSTS = 0.10  # €/kWh — from "10" in entity slug
+_VAT = 0.21  # 21% — from "021" in entity slug
 
 
-def _energy_tax_for(year: int) -> float:
-    """Return the energy tax rate for a given year, clamping to known range."""
-    if year in _ENERGY_TAX:
-        return _ENERGY_TAX[year]
-    # Use closest known year
-    known = sorted(_ENERGY_TAX.keys())
-    if year < known[0]:
-        return _ENERGY_TAX[known[0]]
-    return _ENERGY_TAX[known[-1]]
-
-
-def spot_to_all_in(spot_eur_per_mwh: float, year: int) -> float:
+def spot_to_all_in(spot_eur_per_mwh: float, year: int = 0) -> float:
     """Convert Nord Pool spot price (€/MWh) to all-in retail price (€/kWh)."""
     spot_kwh = spot_eur_per_mwh / 1000
-    additional = _energy_tax_for(year)
-    return round((spot_kwh + additional) * (1 + _VAT), 6)
+    return round((spot_kwh + _ADDITIONAL_COSTS) * (1 + _VAT), 6)
 
 
 def _parse_ms_date(raw: str) -> datetime | None:
