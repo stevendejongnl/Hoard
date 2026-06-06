@@ -1,3 +1,9 @@
+## [1.19.2](https://github.com/stevendejongnl/printer/compare/v1.19.1...v1.19.2) (2026-06-06)
+
+### Bug Fixes
+
+* compact idle state row with distinct off/disconnected/idle/complete indicators ([3a57a9e](https://github.com/stevendejongnl/printer/commit/3a57a9eb547eef8bc10fb215f7f26f00e0d7010d))
+
 ## [1.19.1](https://github.com/stevendejongnl/printer/compare/v1.19.0...v1.19.1) (2026-06-05)
 
 ### Bug Fixes
