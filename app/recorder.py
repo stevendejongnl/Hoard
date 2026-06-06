@@ -134,11 +134,19 @@ async def startup_reconcile(lookback: int = 1000) -> None:
         except Exception:
             return 0
 
-    influx_by_file_minute: dict[tuple[str, int], bool] = {}
+    # Index InfluxDB entries: (filename, minute) → {cost_filament, filament_g}
+    influx_by_file_minute: dict[tuple[str, int], dict] = {}
     for r in influx_records:
-        influx_by_file_minute[(r.get("filename", ""), _minute(r.get("time", "")))] = True
+        key = (r.get("filename", ""), _minute(r.get("time", "")))
+        influx_by_file_minute[key] = r
 
-    missing = []
+    # Get all spool assignments so we can detect zero-filament-cost issues
+    all_print_spools = {ps["job_id"]: ps for ps in await db._list_all_print_spools()}
+
+    # Fetch current spools for cost lookup
+    spools_by_id = {s["id"]: s for s in await db.list_spools()}
+
+    needs_fix = []
     for job in jobs:
         job_id = job.get("job_id", "")
         filename = job.get("filename", "")
@@ -146,12 +154,28 @@ async def startup_reconcile(lookback: int = 1000) -> None:
         if not job_id or not filename or not end_ts:
             continue
         record_minute = int(end_ts) // 60
-        found = any(
-            influx_by_file_minute.get((filename, record_minute + d))
-            for d in range(-5, 6)
-        )
-        if not found:
-            missing.append(job)
+        influx_entry = None
+        for d in range(-5, 6):
+            e = influx_by_file_minute.get((filename, record_minute + d))
+            if e:
+                influx_entry = e
+                break
+
+        if not influx_entry:
+            needs_fix.append(job)
+            continue
+
+        # Also fix if filament cost is zero but a priced spool is assigned
+        cost_filament = float(influx_entry.get("cost_filament") or 0)
+        filament_g = float(influx_entry.get("filament_g") or 0)
+        if cost_filament == 0 and filament_g > 0.1:
+            ps = all_print_spools.get(job_id)
+            if ps and ps.get("spool_id"):
+                spool = spools_by_id.get(ps["spool_id"])
+                if spool and float(spool.get("cost_per_gram") or 0) > 0:
+                    needs_fix.append(job)
+
+    missing = needs_fix
 
     if not missing:
         log.info("reconcile: all %d prints have cost data — nothing to do", len(jobs))
@@ -176,6 +200,38 @@ async def startup_reconcile(lookback: int = 1000) -> None:
     await asyncio.gather(*[_restore_one(j) for j in missing])
 
     log.info("reconcile: complete — %d restored, %d errors (out of %d missing)", restored, errors, len(missing))
+
+
+async def _recalculate_spool_prints(spool_id: int) -> None:
+    """Recalculate InfluxDB cost entries for all prints using a specific spool.
+
+    Triggered when a spool's cost_per_gram is updated.
+    """
+    try:
+        all_ps = await db._list_all_print_spools()
+        job_ids = [ps["job_id"] for ps in all_ps if ps.get("spool_id") == spool_id]
+        if not job_ids:
+            return
+        log.info("spool cost update: recalculating %d prints for spool %d", len(job_ids), spool_id)
+        sem = asyncio.Semaphore(3)
+        done = 0
+
+        async def _fix_one(job_id: str) -> None:
+            nonlocal done
+            async with sem:
+                try:
+                    job_data = await moonraker.get("/server/history/job", uid=job_id)
+                    job = job_data.get("job", {})
+                    if job:
+                        await _record_print(job, skip_settle=True)
+                        done += 1
+                except Exception as exc:
+                    log.warning("spool recalc: failed %s: %s", job_id, exc)
+
+        await asyncio.gather(*[_fix_one(jid) for jid in job_ids])
+        log.info("spool cost update: recalculated %d/%d prints", done, len(job_ids))
+    except Exception as exc:
+        log.warning("spool cost update failed: %s", exc)
 
 
 async def periodic_reconcile(interval_s: int = 300) -> None:

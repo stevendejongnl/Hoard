@@ -51,9 +51,7 @@ async def init_db(path: str) -> None:
             )
         """)
         # Migrate project_files to drop the CHECK constraint so any file extension is allowed
-        async with db.execute(
-            "SELECT sql FROM sqlite_master WHERE type='table' AND name='project_files'"
-        ) as cur:
+        async with db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='project_files'") as cur:
             row = await cur.fetchone()
             if row and "CHECK" in (row[0] or ""):
                 await db.execute("""
@@ -117,9 +115,7 @@ def _conn() -> aiosqlite.Connection:
 async def get_active_spool() -> dict[str, Any] | None:
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM spools WHERE active = 1 LIMIT 1"
-        ) as cur:
+        async with db.execute("SELECT * FROM spools WHERE active = 1 LIMIT 1") as cur:
             row = await cur.fetchone()
             return dict(row) if row else None
 
@@ -127,9 +123,7 @@ async def get_active_spool() -> dict[str, Any] | None:
 async def list_spools() -> list[dict[str, Any]]:
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM spools ORDER BY active DESC, created_at DESC"
-        ) as cur:
+        async with db.execute("SELECT * FROM spools ORDER BY active DESC, created_at DESC") as cur:
             return [dict(r) for r in await cur.fetchall()]
 
 
@@ -167,9 +161,7 @@ async def update_spool(spool_id: int, data: dict[str, Any]) -> dict[str, Any] | 
 
 async def delete_spool(spool_id: int) -> bool:
     async with _conn() as db:
-        async with db.execute(
-            "SELECT 1 FROM print_spools WHERE spool_id = ? LIMIT 1", (spool_id,)
-        ) as cur:
+        async with db.execute("SELECT 1 FROM print_spools WHERE spool_id = ? LIMIT 1", (spool_id,)) as cur:
             if await cur.fetchone():
                 return False
         await db.execute("DELETE FROM spools WHERE id = ?", (spool_id,))
@@ -196,6 +188,13 @@ async def link_print_spool(job_id: str, spool_id: int | None, filament_used_g: f
             (job_id, spool_id, filament_used_g),
         )
         await db.commit()
+
+
+async def _list_all_print_spools() -> list[dict[str, Any]]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT job_id, spool_id, filament_used_g FROM print_spools") as cur:
+            return [dict(r) for r in await cur.fetchall()]
 
 
 async def get_print_spool(job_id: str) -> dict[str, Any] | None:
@@ -309,12 +308,19 @@ async def create_project(name: str) -> dict[str, Any]:
         await db.commit()
         async with db.execute("SELECT * FROM projects WHERE id = ?", (cur.lastrowid,)) as c:
             row = dict(await c.fetchone())
-    row.update({
-        "print_count": 0, "total_duration_s": None,
-        "total_cost": None, "total_filament_g": None,
-        "files": [], "links": [], "prints": [],
-        "cover_url": None, "cover_link_id": None,
-    })
+    row.update(
+        {
+            "print_count": 0,
+            "total_duration_s": None,
+            "total_cost": None,
+            "total_filament_g": None,
+            "files": [],
+            "links": [],
+            "prints": [],
+            "cover_url": None,
+            "cover_link_id": None,
+        }
+    )
     return row
 
 
@@ -335,9 +341,7 @@ async def delete_project(project_id: int) -> None:
         await db.commit()
 
 
-async def add_project_file(
-    project_id: int, file_type: str, filename: str, label: str | None
-) -> dict[str, Any]:
+async def add_project_file(project_id: int, file_type: str, filename: str, label: str | None) -> dict[str, Any]:
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
         cur = await db.execute(
@@ -363,9 +367,7 @@ async def delete_project_file(file_id: int) -> None:
         await db.commit()
 
 
-async def add_project_link(
-    project_id: int, url: str, label: str | None
-) -> dict[str, Any]:
+async def add_project_link(project_id: int, url: str, label: str | None) -> dict[str, Any]:
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
         cur = await db.execute(
@@ -387,9 +389,7 @@ async def list_unenriched_links() -> list[dict[str, Any]]:
     """Return all project links that have no enrichment metadata yet."""
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT * FROM project_links WHERE meta IS NULL ORDER BY id"
-        ) as cur:
+        async with db.execute("SELECT * FROM project_links WHERE meta IS NULL ORDER BY id") as cur:
             return [dict(r) for r in await cur.fetchall()]
 
 
