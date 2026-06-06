@@ -1,3 +1,13 @@
+## [1.27.0](https://github.com/stevendejongnl/printer/compare/v1.26.0...v1.27.0) (2026-06-06)
+
+### Features
+
+* warn in cost breakdown when electricity data is missing ([5774574](https://github.com/stevendejongnl/printer/commit/577457475de130eabcb284f3416e86758f0dc146))
+
+### Bug Fixes
+
+* switch HA energy statistics to WebSocket — REST endpoint removed in HA 2026 ([fc0c69c](https://github.com/stevendejongnl/printer/commit/fc0c69ce0f4fdc18bfb5b739e3c974aa6742c25e))
+
 ## [1.26.0](https://github.com/stevendejongnl/printer/compare/v1.25.4...v1.26.0) (2026-06-06)
 
 ### Features
