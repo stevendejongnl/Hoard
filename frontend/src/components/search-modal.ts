@@ -147,26 +147,30 @@ export class SearchModal extends LitElement {
   }
 
   static styles = css`
-    :host { display: contents; }
+    :host {
+      display: contents;
+    }
 
     .overlay {
       display: none;
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.6);
+      background: rgba(0, 0, 0, 0.6);
       z-index: 200;
       align-items: flex-start;
       justify-content: center;
       padding-top: 80px;
     }
-    .overlay.open { display: flex; }
+    .overlay.open {
+      display: flex;
+    }
 
     .box {
       width: min(560px, calc(100vw - 32px));
       background: #1a1a1a;
       border: 1px solid #333;
       border-radius: 10px;
-      box-shadow: 0 16px 48px rgba(0,0,0,0.8);
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
       overflow: hidden;
     }
 
@@ -178,7 +182,11 @@ export class SearchModal extends LitElement {
       border-bottom: 1px solid #222;
     }
 
-    .search-icon { color: #555; font-size: 14px; flex-shrink: 0; }
+    .search-icon {
+      color: #555;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
 
     input {
       flex: 1;
@@ -189,11 +197,20 @@ export class SearchModal extends LitElement {
       font-size: 14px;
       font-family: inherit;
     }
-    input::placeholder { color: #444; }
+    input::placeholder {
+      color: #444;
+    }
 
-    .hint { font-size: 10px; color: #333; flex-shrink: 0; }
+    .hint {
+      font-size: 10px;
+      color: #333;
+      flex-shrink: 0;
+    }
 
-    .results { max-height: 360px; overflow-y: auto; }
+    .results {
+      max-height: 360px;
+      overflow-y: auto;
+    }
 
     .result {
       display: flex;
@@ -203,8 +220,13 @@ export class SearchModal extends LitElement {
       cursor: pointer;
       border-bottom: 1px solid #1e1e1e;
     }
-    .result:last-child { border-bottom: none; }
-    .result:hover, .result.active { background: #222; }
+    .result:last-child {
+      border-bottom: none;
+    }
+    .result:hover,
+    .result.active {
+      background: #222;
+    }
 
     .badge {
       font-size: 8px;
@@ -217,14 +239,42 @@ export class SearchModal extends LitElement {
       width: 38px;
       text-align: center;
     }
-    .badge.project { background: #22d3ee14; color: #22d3ee; border: 1px solid #22d3ee28; }
-    .badge.spool   { background: #a78bfa14; color: #a78bfa; border: 1px solid #a78bfa28; }
-    .badge.print   { background: #34d39914; color: #34d399; border: 1px solid #34d39928; }
+    .badge.project {
+      background: #22d3ee14;
+      color: #22d3ee;
+      border: 1px solid #22d3ee28;
+    }
+    .badge.spool {
+      background: #a78bfa14;
+      color: #a78bfa;
+      border: 1px solid #a78bfa28;
+    }
+    .badge.print {
+      background: #34d39914;
+      color: #34d399;
+      border: 1px solid #34d39928;
+    }
 
-    .label { font-size: 13px; color: #e0e0e0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .sub   { font-size: 11px; color: #555; flex-shrink: 0; }
+    .label {
+      font-size: 13px;
+      color: #e0e0e0;
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sub {
+      font-size: 11px;
+      color: #555;
+      flex-shrink: 0;
+    }
 
-    .empty { padding: 20px 16px; text-align: center; font-size: 12px; color: #444; }
+    .empty {
+      padding: 20px 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #444;
+    }
 
     .prefixes {
       padding: 10px 16px;
@@ -241,7 +291,9 @@ export class SearchModal extends LitElement {
       border-radius: 3px;
       padding: 2px 6px;
     }
-    .prefix-tag span { color: #22d3ee; }
+    .prefix-tag span {
+      color: #22d3ee;
+    }
   `
 
   render() {
@@ -249,7 +301,12 @@ export class SearchModal extends LitElement {
     const hasQuery = !!this._query.trim()
 
     return html`
-      <div class="overlay ${this._open ? 'open' : ''}" @click=${(e: Event) => { if (e.target === e.currentTarget) this._close() }}>
+      <div
+        class="overlay ${this._open ? 'open' : ''}"
+        @click=${(e: Event) => {
+          if (e.target === e.currentTarget) this._close()
+        }}
+      >
         <div class="box">
           <div class="input-row">
             <span class="search-icon">⌕</span>
@@ -263,31 +320,37 @@ export class SearchModal extends LitElement {
             <span class="hint">esc to close</span>
           </div>
 
-          ${hasQuery ? html`
-            <div class="results">
-              ${this._loading
-                ? html`<div class="empty">Searching…</div>`
-                : this._results.length === 0
-                  ? html`<div class="empty">No results for "${this._query}"</div>`
-                  : this._results.map((r, i) => html`
-                    <div
-                      class="result ${i === this._cursor ? 'active' : ''}"
-                      @click=${() => this._select(r)}
-                      @mouseover=${() => { this._cursor = i }}
-                    >
-                      <span class="badge ${r.badge ?? ''}">${r.badge}</span>
-                      <span class="label">${r.label}</span>
-                      ${r.sub ? html`<span class="sub">${r.sub}</span>` : ''}
-                    </div>
-                  `)}
-            </div>
-          ` : html`
-            <div class="prefixes">
-              <span class="prefix-tag"><span>!p</span> projects</span>
-              <span class="prefix-tag"><span>!h</span> history</span>
-              <span class="prefix-tag"><span>!s</span> spools</span>
-            </div>
-          `}
+          ${hasQuery
+            ? html`
+                <div class="results">
+                  ${this._loading
+                    ? html`<div class="empty">Searching…</div>`
+                    : this._results.length === 0
+                      ? html`<div class="empty">No results for "${this._query}"</div>`
+                      : this._results.map(
+                          (r, i) => html`
+                            <div
+                              class="result ${i === this._cursor ? 'active' : ''}"
+                              @click=${() => this._select(r)}
+                              @mouseover=${() => {
+                                this._cursor = i
+                              }}
+                            >
+                              <span class="badge ${r.badge ?? ''}">${r.badge}</span>
+                              <span class="label">${r.label}</span>
+                              ${r.sub ? html`<span class="sub">${r.sub}</span>` : ''}
+                            </div>
+                          `,
+                        )}
+                </div>
+              `
+            : html`
+                <div class="prefixes">
+                  <span class="prefix-tag"><span>!p</span> projects</span>
+                  <span class="prefix-tag"><span>!h</span> history</span>
+                  <span class="prefix-tag"><span>!s</span> spools</span>
+                </div>
+              `}
         </div>
       </div>
     `
@@ -295,5 +358,7 @@ export class SearchModal extends LitElement {
 }
 
 declare global {
-  interface HTMLElementTagNameMap { 'search-modal': SearchModal }
+  interface HTMLElementTagNameMap {
+    'search-modal': SearchModal
+  }
 }

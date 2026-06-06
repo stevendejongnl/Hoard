@@ -144,7 +144,12 @@ export class TopNav extends LitElement {
             : ''}
         </span>
         <div class="nav">
-          <span class="nav-link search-btn" title="Search (press /)" @click=${() => (this.shadowRoot?.getElementById('search') as any)?.open()}>⌕</span>
+          <span
+            class="nav-link search-btn"
+            title="Search (press /)"
+            @click=${() => (this.shadowRoot?.getElementById('search') as any)?.open()}
+            >⌕</span
+          >
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
           <span class="nav-link" @click=${() => window.router.navigate('/projects')}>projects</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>
