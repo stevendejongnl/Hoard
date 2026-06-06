@@ -1,3 +1,26 @@
+## [1.30.0](https://github.com/stevendejongnl/printer/compare/v1.29.0...v1.30.0) (2026-06-06)
+
+### Features
+
+* add cost breakdown to print detail page, remove printer field ([dad5c0f](https://github.com/stevendejongnl/printer/commit/dad5c0f65621583d2e56b4ba700dd44476f82e8b))
+* add gcode metadata extraction module ([daa6fd3](https://github.com/stevendejongnl/printer/commit/daa6fd3502ae9cbce72c8f12cd76b05b3438a8ac))
+* add gcode_meta column to print_jobs ([cd406c5](https://github.com/stevendejongnl/printer/commit/cd406c5308c5ee9b73140ae433ce2636b8586a86))
+* display gcode metadata on print detail page ([35be64d](https://github.com/stevendejongnl/printer/commit/35be64d10aef85b602774d470188244874c65478))
+* extract gcode metadata at job completion ([0b75d9c](https://github.com/stevendejongnl/printer/commit/0b75d9c016b9a30186c43ab6ecc2d3d892428e54))
+* lazy gcode metadata extraction on first print detail view ([b74ae0f](https://github.com/stevendejongnl/printer/commit/b74ae0f314d05a1d34ba7feb4a328d5ea6f0a9a8))
+
+### Bug Fixes
+
+* prettier formatting on print-detail-page ([54ed6c5](https://github.com/stevendejongnl/printer/commit/54ed6c59b29655218e000725c0227122244c8de7))
+* prints PATCH accepts list for tags and dict for settings, deserialize JSON from DB ([7c8d36b](https://github.com/stevendejongnl/printer/commit/7c8d36b73682ea620c19022a539f7019cf41897f))
+* robust empty check and url validation in gcode meta renderer ([62e8734](https://github.com/stevendejongnl/printer/commit/62e8734c2f7a4fc1f9527168660ba14b6d9d4c07))
+* skip empty list values in map_moonraker_meta, add empty list test ([e3dcd6d](https://github.com/stevendejongnl/printer/commit/e3dcd6d2381c58284a79c653b5c7ba3ce0623494))
+* store empty gcode_meta to prevent re-extraction, move moonraker import to module level ([00ece8f](https://github.com/stevendejongnl/printer/commit/00ece8fe338d887e6c1b8d808b4bd79a844c50c7))
+
+### Documentation
+
+* add gcode metadata design spec with Cura setup instructions ([6f2f57b](https://github.com/stevendejongnl/printer/commit/6f2f57bc87c16d50277d2ee8e1ae7afc9c68a35f))
+
 ## [1.29.0](https://github.com/stevendejongnl/printer/compare/v1.28.1...v1.29.0) (2026-06-06)
 
 ### Features
