@@ -1,5 +1,6 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
+import './search-modal'
 
 @customElement('top-nav')
 export class TopNav extends LitElement {
@@ -81,6 +82,11 @@ export class TopNav extends LitElement {
       color: var(--text);
     }
 
+    .search-btn {
+      font-size: 16px;
+      line-height: 1;
+    }
+
     .status-badge {
       background: var(--cyan-dim);
       color: var(--cyan);
@@ -130,6 +136,7 @@ export class TopNav extends LitElement {
 
   render() {
     return html`
+      <search-modal id="search"></search-modal>
       <div class="topbar">
         <span class="app-name" @click=${() => window.router.navigate('/')}>
           printer<span class="muted">.madebysteven.nl</span>${this._version
@@ -137,6 +144,7 @@ export class TopNav extends LitElement {
             : ''}
         </span>
         <div class="nav">
+          <span class="nav-link search-btn" title="Search (press /)" @click=${() => (this.shadowRoot?.getElementById('search') as any)?.open()}>⌕</span>
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
           <span class="nav-link" @click=${() => window.router.navigate('/projects')}>projects</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>
