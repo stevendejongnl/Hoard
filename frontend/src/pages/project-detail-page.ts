@@ -197,7 +197,7 @@ export class ProjectDetailPage extends LitElement {
                 <div style="background: #141414; border-radius: 5px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
                   <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
                     <span style="font-size: 9px; background: #141414; color: #555; border: 1px solid #222; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;">${l.label || _linkHost(l.url)}</span>
-                    <span style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${l.meta?.title || l.url}</span>
+                    <a href="${l.url}" target="_blank" rel="noopener" style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none;">${l.meta?.title || l.url}</a>
                   </div>
                   <span style="font-size: 10px; color: #333; cursor: pointer; padding: 2px 6px; flex-shrink: 0;" @click=${(e: Event) => { e.stopPropagation(); this._removeLink(l.id) }}>✕</span>
                 </div>
