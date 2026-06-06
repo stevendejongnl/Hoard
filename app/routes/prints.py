@@ -102,13 +102,23 @@ async def get_print_detail(job_id: str) -> dict[str, Any]:
 
 class PrintUpdate(BaseModel):
     notes: str | None = None
-    settings: str | None = None
-    tags: str | None = None
+    settings: dict[str, str | None] | None = None
+    tags: list[str] | None = None
 
 
 @router.patch("/api/prints/{job_id}")
 async def update_print(job_id: str, body: PrintUpdate) -> dict[str, Any]:
-    data = {k: v for k, v in body.model_dump().items() if v is not None}
+    import json as _json
+
+    raw = body.model_dump()
+    data: dict[str, Any] = {}
+    for k, v in raw.items():
+        if v is None:
+            continue
+        if k in ("settings", "tags"):
+            data[k] = _json.dumps(v)
+        else:
+            data[k] = v
     return await db.update_print_job(job_id, data)
 
 

@@ -518,7 +518,18 @@ async def get_or_create_print_job(job_id: str) -> dict[str, Any]:
         async with db.execute("SELECT * FROM print_jobs WHERE job_id = ?", (job_id,)) as cur:
             row = await cur.fetchone()
             assert row is not None
-            return dict(row)
+            result = dict(row)
+    # Deserialize JSON-stored fields
+    for field, default in (("tags", []), ("settings", None)):
+        raw = result.get(field)
+        if raw is not None:
+            try:
+                result[field] = _json.loads(raw)
+            except Exception:
+                result[field] = default
+        else:
+            result[field] = default
+    return result
 
 
 async def update_print_job(job_id: str, data: dict[str, Any]) -> dict[str, Any]:
