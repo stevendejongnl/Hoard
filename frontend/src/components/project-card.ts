@@ -29,7 +29,7 @@ export class ProjectCard extends LitElement {
     return html`
       <div
         style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px; cursor: pointer; display: flex; flex-direction: column; gap: 10px; height: 100%; box-sizing: border-box;"
-        @click=${() => window.router.navigate(`/projects/${p.id}` as any)}
+        @click=${() => window.router.navigate(`/projects/${String(p.id)}`)}
       >
         ${p.cover_url
           ? html`

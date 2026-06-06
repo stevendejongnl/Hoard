@@ -235,7 +235,7 @@ export class HistoryPreview extends LitElement {
                         <div
                           style="margin-top:3px;font-size:9px;color:var(--cyan);cursor:pointer;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
                           title="${record.project.name}"
-                          @click=${() => window.router.navigate(`/projects/${record.project!.id}` as any)}
+                          @click=${() => window.router.navigate(`/projects/${String(record.project!.id)}`)}
                         >
                           📁 ${record.project.name}
                         </div>

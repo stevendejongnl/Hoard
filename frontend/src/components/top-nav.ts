@@ -1,6 +1,7 @@
 import { LitElement, html, css } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import './search-modal'
+import type { SearchModal } from './search-modal'
 
 @customElement('top-nav')
 export class TopNav extends LitElement {
@@ -147,7 +148,7 @@ export class TopNav extends LitElement {
           <span
             class="nav-link search-btn"
             title="Search (press /)"
-            @click=${() => (this.shadowRoot?.getElementById('search') as any)?.open()}
+            @click=${() => (this.shadowRoot?.getElementById('search') as SearchModal | null)?.open()}
             >⌕</span
           >
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>

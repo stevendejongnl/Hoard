@@ -17,7 +17,7 @@ NotifyHandler = Callable[[list[Any]], Coroutine[Any, Any, None]]
 
 class MoonrakerClient:
     def __init__(self) -> None:
-        self._ws: websockets.WebSocketClientProtocol | None = None
+        self._ws: websockets.ClientConnection | None = None
         self._handlers: dict[str, list[NotifyHandler]] = {}
         self._running = False
         self._req_id = 0
@@ -145,7 +145,8 @@ class MoonrakerClient:
                     asyncio.create_task(self._watchdog(ws))
                     async for raw in ws:
                         self._last_msg_at = asyncio.get_event_loop().time()
-                        await self._dispatch(raw)
+                        if isinstance(raw, str):
+                            await self._dispatch(raw)
             except ConnectionClosed:
                 log.warning("Moonraker WS closed, reconnecting in 5s")
             except Exception as exc:
@@ -155,9 +156,9 @@ class MoonrakerClient:
             if self._running:
                 await asyncio.sleep(5)
 
-    async def _watchdog(self, ws: websockets.WebSocketClientProtocol) -> None:
+    async def _watchdog(self, ws: websockets.ClientConnection) -> None:
         """Force-close the WS if no message arrives for 90s — catches silent subscription loss after Klipper restarts."""
-        while not ws.closed:
+        while ws.state.value == 1:  # OPEN
             await asyncio.sleep(30)
             idle = asyncio.get_event_loop().time() - self._last_msg_at
             if idle > 90:
@@ -170,23 +171,27 @@ class MoonrakerClient:
         if self._ws:
             asyncio.create_task(self._ws.close())
 
-    async def _subscribe(self, ws: websockets.WebSocketClientProtocol) -> None:
+    async def _subscribe(self, ws: websockets.ClientConnection) -> None:
         self._req_id += 1
-        await ws.send(json.dumps({
-            "jsonrpc": "2.0",
-            "method": "printer.objects.subscribe",
-            "params": {
-                "objects": {
-                    "print_stats": None,
-                    "display_status": None,
-                    "motion_report": None,
-                    "extruder": None,
-                    "heater_bed": None,
-                    "toolhead": None,
+        await ws.send(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "method": "printer.objects.subscribe",
+                    "params": {
+                        "objects": {
+                            "print_stats": None,
+                            "display_status": None,
+                            "motion_report": None,
+                            "extruder": None,
+                            "heater_bed": None,
+                            "toolhead": None,
+                        }
+                    },
+                    "id": self._req_id,
                 }
-            },
-            "id": self._req_id,
-        }))
+            )
+        )
 
     async def _dispatch(self, raw: str) -> None:
         try:

@@ -138,7 +138,7 @@ export class SearchModal extends LitElement {
   private _select(r: SearchResult) {
     this._close()
     if (r.type === 'project') {
-      router.navigate(`/projects/${r.id}` as any)
+      router.navigate(`/projects/${String(r.id)}`)
     } else if (r.type === 'spool') {
       router.navigate('/spools')
     } else if (r.type === 'history') {

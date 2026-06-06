@@ -1,5 +1,5 @@
 from datetime import UTC, datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 from influxdb_client import InfluxDBClient, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -57,7 +57,9 @@ class InfluxClient:
         )
         ts = int(timestamp.timestamp())
         line = f"print_job,{tag_str} {fields} {ts}"
-        self._write.write(bucket=self._bucket, org=self._org, record=line, write_precision=WritePrecision.S)
+        self._write.write(
+            bucket=self._bucket, org=self._org, record=line, write_precision=cast(WritePrecision, WritePrecision.S)
+        )
 
     def delete_print_job(self, timestamp: datetime, filename: str) -> None:
         """Delete the InfluxDB entry for one specific print (±10 min window around its end time)."""
