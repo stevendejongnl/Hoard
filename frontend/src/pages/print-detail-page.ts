@@ -209,7 +209,7 @@ export class PrintDetailPage extends LitElement {
 
   private _renderGcodeMeta() {
     const meta = this.job?.gcode_meta
-    if (!meta || Object.keys(meta).length === 0) return html``
+    if (!meta || !Object.values(meta).some((v) => v != null && v !== '')) return html``
 
     const labelMap: Record<string, string> = {
       layer_height: 'Layer height',
@@ -252,8 +252,8 @@ export class PrintDetailPage extends LitElement {
           ${entries.map(([key, val]) => {
             const label = labelMap[key] ?? key.replace(/_/g, ' ')
             const display = formatValue(key, val as string | number)
-            if (key === 'source_url') {
-              return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><a href="${display}" target="_blank" rel="noopener" class="ppd-meta-value ppd-meta-link">${display}</a></div>`
+            if (key === 'source_url' && String(val).startsWith('http')) {
+              return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><a href="${val}" target="_blank" rel="noopener" class="ppd-meta-value ppd-meta-link">${val}</a></div>`
             }
             return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><span class="ppd-meta-value">${display}</span></div>`
           })}
