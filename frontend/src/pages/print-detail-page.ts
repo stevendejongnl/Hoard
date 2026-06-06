@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { marked } from 'marked'
-import type { PrintJob } from '../types'
+import type { PrintJob, GcodeMeta } from '../types'
 import { getPrintJob, updatePrintJob } from '../api'
 import { router } from '../router'
 import '../components/print-settings-editor'
@@ -29,6 +29,52 @@ const styles = html`<style>
     .ppd-stats {
       grid-template-columns: repeat(2, 1fr);
     }
+  }
+  .ppd-section {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+  .ppd-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .ppd-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 8px;
+  }
+  .ppd-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .ppd-meta-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ppd-meta-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .ppd-meta-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .ppd-meta-link:hover {
+    text-decoration: underline;
   }
 </style>`
 
@@ -159,6 +205,63 @@ export class PrintDetailPage extends LitElement {
     }
   }
 
+  // ── Gcode Meta ───────────────────────────────────────────────────────────
+
+  private _renderGcodeMeta() {
+    const meta = this.job?.gcode_meta
+    if (!meta || Object.keys(meta).length === 0) return html``
+
+    const labelMap: Record<string, string> = {
+      layer_height: 'Layer height',
+      first_layer_height: 'First layer',
+      filament_weight_g: 'Filament weight',
+      estimated_time_s: 'Estimated time',
+      nozzle_diameter: 'Nozzle',
+      filament_type: 'Filament type',
+      nozzle_temp: 'Nozzle temp',
+      bed_temp: 'Bed temp',
+      slicer: 'Slicer',
+      slicer_version: 'Slicer version',
+      layer_count: 'Layers',
+      object_height: 'Object height',
+      source_url: 'Source',
+      project_name: 'Project',
+    }
+
+    const formatValue = (key: string, val: string | number): string => {
+      if (key === 'layer_height' || key === 'first_layer_height' || key === 'nozzle_diameter')
+        return `${val} mm`
+      if (key === 'filament_weight_g') return `${val} g`
+      if (key === 'estimated_time_s') {
+        const s = Number(val)
+        const h = Math.floor(s / 3600)
+        const m = Math.floor((s % 3600) / 60)
+        return h > 0 ? `${h}h ${m}m` : `${m}m`
+      }
+      if (key === 'nozzle_temp' || key === 'bed_temp') return `${val}°C`
+      if (key === 'object_height') return `${val} mm`
+      return String(val)
+    }
+
+    const entries = Object.entries(meta).filter(([, v]) => v != null && v !== '')
+
+    return html`
+      <div class="ppd-section">
+        <div class="ppd-section-title">Slicer Info</div>
+        <div class="ppd-meta-grid">
+          ${entries.map(([key, val]) => {
+            const label = labelMap[key] ?? key.replace(/_/g, ' ')
+            const display = formatValue(key, val as string | number)
+            if (key === 'source_url') {
+              return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><a href="${display}" target="_blank" rel="noopener" class="ppd-meta-value ppd-meta-link">${display}</a></div>`
+            }
+            return html`<div class="ppd-meta-item"><span class="ppd-meta-label">${label}</span><span class="ppd-meta-value">${display}</span></div>`
+          })}
+        </div>
+      </div>
+    `
+  }
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   render() {
@@ -255,6 +358,9 @@ export class PrintDetailPage extends LitElement {
               </div>
             `
           : ''}
+
+        <!-- gcode meta -->
+        ${this._renderGcodeMeta()}
 
         <!-- print settings -->
         <print-settings-editor

@@ -199,5 +199,24 @@ export interface PrintJob {
   avg_eur_per_kwh?: number | null
   spool_id?: string | null
   spool?: SpoolRef | null
+  gcode_meta?: GcodeMeta | null
   project?: { id: number; name: string } | null
+}
+
+export interface GcodeMeta {
+  layer_height?: number
+  first_layer_height?: number
+  filament_weight_g?: number
+  estimated_time_s?: number
+  nozzle_diameter?: number
+  filament_type?: string
+  nozzle_temp?: number
+  bed_temp?: number
+  slicer?: string
+  slicer_version?: string
+  layer_count?: number
+  object_height?: number
+  source_url?: string
+  project_name?: string
+  [key: string]: string | number | undefined
 }
