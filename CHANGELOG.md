@@ -1,3 +1,9 @@
+## [1.21.0](https://github.com/stevendejongnl/printer/compare/v1.20.0...v1.21.0) (2026-06-06)
+
+### Features
+
+* auto-enrich existing project links on startup ([1c7ade1](https://github.com/stevendejongnl/printer/commit/1c7ade1e4e094139f6981e71226339fabceb88db))
+
 ## [1.20.0](https://github.com/stevendejongnl/printer/compare/v1.19.2...v1.20.0) (2026-06-06)
 
 ### Features
