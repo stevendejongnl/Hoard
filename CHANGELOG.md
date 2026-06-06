@@ -1,3 +1,9 @@
+## [1.25.4](https://github.com/stevendejongnl/printer/compare/v1.25.3...v1.25.4) (2026-06-06)
+
+### Bug Fixes
+
+* strip HTML tags from enrichment description in hover card ([f4ad996](https://github.com/stevendejongnl/printer/commit/f4ad996878fc50501ec3dce962f56c645383ab0d))
+
 ## [1.25.3](https://github.com/stevendejongnl/printer/compare/v1.25.2...v1.25.3) (2026-06-06)
 
 ### Bug Fixes
