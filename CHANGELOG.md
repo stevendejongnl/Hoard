@@ -1,3 +1,9 @@
+## [1.22.0](https://github.com/stevendejongnl/printer/compare/v1.21.2...v1.22.0) (2026-06-06)
+
+### Features
+
+* extract print settings from MakerWorld and Printables, display as chips on project links ([5307115](https://github.com/stevendejongnl/printer/commit/53071158223b1ba6abcd25cba839ff49a3c00224))
+
 ## [1.21.2](https://github.com/stevendejongnl/printer/compare/v1.21.1...v1.21.2) (2026-06-06)
 
 ### Bug Fixes
