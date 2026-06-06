@@ -1,3 +1,9 @@
+## [1.25.0](https://github.com/stevendejongnl/printer/compare/v1.24.0...v1.25.0) (2026-06-06)
+
+### Features
+
+* link hover card — tap on mobile, always shows open button, fixed position on small screens ([1832299](https://github.com/stevendejongnl/printer/commit/183229944a5da4ac02c34482f966e57d6d5c4aad))
+
 ## [1.24.0](https://github.com/stevendejongnl/printer/compare/v1.23.0...v1.24.0) (2026-06-06)
 
 ### Features
