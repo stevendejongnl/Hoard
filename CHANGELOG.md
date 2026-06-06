@@ -1,3 +1,9 @@
+## [1.28.0](https://github.com/stevendejongnl/printer/compare/v1.27.0...v1.28.0) (2026-06-06)
+
+### Features
+
+* Nord Pool NL price backfill + InfluxDB price recorder for historical cost accuracy ([e787bee](https://github.com/stevendejongnl/printer/commit/e787bee23e0a94f2c1f9fed01bcd3c1bd54f0ea0))
+
 ## [1.27.0](https://github.com/stevendejongnl/printer/compare/v1.26.0...v1.27.0) (2026-06-06)
 
 ### Features
