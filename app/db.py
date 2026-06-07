@@ -134,6 +134,20 @@ async def init_db(path: str) -> None:
             await db.execute("ALTER TABLE print_jobs DROP COLUMN tags")
         except Exception:
             pass  # column already dropped or never existed
+        # end_time column — unix timestamp when the print completed
+        try:
+            await db.execute("ALTER TABLE print_jobs ADD COLUMN end_time INTEGER")
+        except Exception:
+            pass  # column already exists
+        await db.commit()
+
+        # Indexes — idempotent, safe to run on every startup
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)"
+        )
+        await db.execute(
+            "CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)"
+        )
         await db.commit()
 
 
@@ -459,9 +473,13 @@ async def add_project_print(
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
         await db.execute(
-            """INSERT OR IGNORE INTO project_prints
+            """INSERT INTO project_prints
                (project_id, project_file_id, job_id, duration_s, filament_g, cost_total)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+               VALUES (?, ?, ?, ?, ?, ?)
+               ON CONFLICT(project_id, job_id) DO UPDATE SET
+                   duration_s = excluded.duration_s,
+                   filament_g = excluded.filament_g,
+                   cost_total = excluded.cost_total""",
             (project_id, project_file_id, job_id, duration_s, filament_g, cost_total),
         )
         await db.commit()
@@ -585,6 +603,65 @@ async def delete_print_photo(photo_id: int) -> None:
     async with _conn() as db:
         await db.execute("DELETE FROM print_photos WHERE id = ?", (photo_id,))
         await db.commit()
+
+
+async def set_print_end_time(job_id: str, end_time: int) -> None:
+    async with _conn() as db:
+        await db.execute(
+            "UPDATE print_jobs SET end_time = ? WHERE job_id = ? AND end_time IS NULL",
+            (end_time, job_id),
+        )
+        await db.commit()
+
+
+async def bulk_set_print_end_times(job_end_times: dict[str, int]) -> None:
+    """Set end_time for many jobs at once (only fills nulls). Used by reconcile."""
+    if not job_end_times:
+        return
+    async with _conn() as db:
+        await db.executemany(
+            "UPDATE print_jobs SET end_time = ? WHERE job_id = ? AND end_time IS NULL",
+            [(et, jid) for jid, et in job_end_times.items()],
+        )
+        await db.commit()
+
+
+async def cleanup_stale_webcam_photos(grace_s: int = 3600) -> int:
+    """Delete webcam photos captured > grace_s after their print ended.
+
+    Only acts on jobs that have a known end_time. Returns total deleted count.
+    """
+    async with _conn() as db:
+        cur = await db.execute(
+            """
+            DELETE FROM print_photos
+            WHERE source = 'webcam'
+              AND id IN (
+                SELECT pp.id FROM print_photos pp
+                JOIN print_jobs pj ON pj.job_id = pp.job_id
+                WHERE pj.end_time IS NOT NULL
+                  AND pp.captured_at > pj.end_time + ?
+              )
+            """,
+            (grace_s,),
+        )
+        await db.commit()
+        return cur.rowcount or 0
+
+
+async def delete_stale_webcam_photos(job_id: str, print_end_time: int, grace_s: int = 3600) -> int:
+    """Delete webcam photos captured more than grace_s after the print ended.
+
+    Returns count of deleted rows. Used to clean up snapshots taken during reconcile backfill.
+    """
+    cutoff = print_end_time + grace_s
+    async with _conn() as db:
+        cur = await db.execute(
+            "DELETE FROM print_photos WHERE job_id = ? AND source = 'webcam' AND captured_at > ?",
+            (job_id, cutoff),
+        )
+        await db.commit()
+        return cur.rowcount or 0
 
 
 async def get_print_detail_counts(job_ids: list[str]) -> dict[str, dict[str, Any]]:

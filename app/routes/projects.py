@@ -161,11 +161,10 @@ async def enrich_existing_links() -> None:
 
 
 @router.delete("/{project_id}/links/{link_id}", status_code=204)
-async def delete_link(project_id: int, link_id: int, clear_cover: bool = False) -> None:
-    if clear_cover:
-        project = await db.get_project(project_id)
-        if project and project.get("cover_link_id") == link_id:
-            await db.set_project_cover(project_id, None, None)
+async def delete_link(project_id: int, link_id: int) -> None:
+    project = await db.get_project(project_id)
+    if project and project.get("cover_link_id") == link_id:
+        await db.set_project_cover(project_id, None, None)
     await db.delete_project_link(link_id)
 
 
