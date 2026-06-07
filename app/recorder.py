@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import math
 import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -16,6 +17,8 @@ from app.moonraker import moonraker
 from app.sse import hub
 
 log = logging.getLogger(__name__)
+
+_MM_TO_GRAMS = math.pi * (0.875**2) * 1.24 * 0.001
 
 # Delay before querying HA history — gives power sensors time to settle
 _HA_SETTLE_DELAY = 30
@@ -220,7 +223,11 @@ async def startup_reconcile(lookback: int = 1000) -> None:
 
         # Also fix if filament cost is zero but a priced spool is assigned
         cost_filament = float(influx_entry.get("cost_filament") or 0)
+        # Use Moonraker filament_used as fallback if InfluxDB has 0
         filament_g = float(influx_entry.get("filament_g") or 0)
+        if filament_g <= 0.1:
+            filament_mm = float(job.get("filament_used") or 0)
+            filament_g = round(filament_mm * _MM_TO_GRAMS, 2)
         if cost_filament == 0 and filament_g > 0.1:
             ps = all_print_spools.get(job_id)
             if ps and ps.get("spool_id"):
