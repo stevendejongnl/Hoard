@@ -279,9 +279,7 @@ export class PrintDetailPage extends LitElement {
 
         <!-- header: filename + date -->
         <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-          <span style="font-size: 18px; font-weight: 600; color: #e0e0e0; word-break: break-word;"
-            >${j.filename}</span
-          >
+          <span style="font-size: 18px; font-weight: 600; color: #e0e0e0; word-break: break-word;">${j.filename}</span>
           <span style="font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; padding-top: 4px;"
             >${_fmtDate(j.time ?? null)}</span
           >
