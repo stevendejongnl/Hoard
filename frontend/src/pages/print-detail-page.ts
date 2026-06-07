@@ -313,11 +313,15 @@ export class PrintDetailPage extends LitElement {
             ${(j.tags ?? []).map(
               (tag) => html`
                 <span
-                  style="font-size: 10px; color: #f59e0b; border: 1px solid #f59e0b44; border-radius: 3px; padding: 1px 7px; cursor: pointer;"
-                  title="click to remove"
-                  @click=${() => this._removeTag(tag)}
-                  >${tag}</span
+                  style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #f59e0b; border: 1px solid #f59e0b44; border-radius: 3px; padding: 1px 5px 1px 7px;"
                 >
+                  ${tag}
+                  <button
+                    style="background: transparent; border: none; color: #f59e0b88; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; display: flex; align-items: center;"
+                    title="remove tag"
+                    @click=${() => this._removeTag(tag)}
+                  >×</button>
+                </span>
               `,
             )}
             <input
@@ -370,13 +374,7 @@ export class PrintDetailPage extends LitElement {
         ${this._renderGcodeMeta()}
 
         <!-- print settings -->
-        <print-settings-editor
-          .settings=${j.settings}
-          .jobId=${j.job_id}
-          @settings-changed=${(e: CustomEvent) => {
-            if (this.job) this.job = { ...this.job, settings: e.detail.settings }
-          }}
-        ></print-settings-editor>
+        <print-settings-editor .settings=${j.settings} .jobId=${j.job_id}></print-settings-editor>
 
         <!-- photos -->
         <print-photos
