@@ -116,6 +116,10 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     # Keep project_prints stats in sync so projects auto-update without manual refresh
     await db.refresh_project_prints_stats(job_id, duration_s, filament_g, cost_total)
 
+    # Store end_time so we can detect stale webcam photos from reconcile runs
+    if end_ts:
+        await db.set_print_end_time(job_id, int(end_ts))
+
     # Extract and store gcode metadata while file is still on printer
     try:
         gcode_meta = await extract_gcode_meta(filename)
@@ -127,8 +131,9 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
 
     await hub.broadcast("history_updated", {"job_id": job_id, "filename": filename})
 
-    # Best-effort webcam snapshot — errors must never block the completion flow
-    asyncio.create_task(_try_webcam_snapshot(job_id))
+    # Best-effort webcam snapshot — only for real-time completions, not reconcile backfill
+    if not skip_settle:
+        asyncio.create_task(_try_webcam_snapshot(job_id))
 
 
 async def _try_webcam_snapshot(job_id: str) -> None:
@@ -234,6 +239,19 @@ async def startup_reconcile(lookback: int = 1000) -> None:
                 spool = spools_by_id.get(ps["spool_id"])
                 if spool and float(spool.get("cost_per_gram") or 0) > 0:
                     needs_fix.append(job)
+
+    # Bulk-store end_time for all historical prints so cleanup can detect stale photos
+    job_end_times = {
+        j["job_id"]: int(j["end_time"])
+        for j in jobs
+        if j.get("job_id") and j.get("end_time")
+    }
+    await db.bulk_set_print_end_times(job_end_times)
+
+    # Remove webcam photos taken during previous reconcile runs (captured long after print ended)
+    deleted = await db.cleanup_stale_webcam_photos(grace_s=3600)
+    if deleted:
+        log.info("reconcile: removed %d stale webcam photo(s) from previous reconcile runs", deleted)
 
     missing = needs_fix
 
