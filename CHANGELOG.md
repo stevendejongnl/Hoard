@@ -1,3 +1,9 @@
+## [1.34.2](https://github.com/stevendejongnl/printer/compare/v1.34.1...v1.34.2) (2026-06-07)
+
+### Bug Fixes
+
+* **prints:** include project info in print detail response ([a269ef9](https://github.com/stevendejongnl/printer/commit/a269ef9e5cf9df8357208fb1ad42719a1f71dda1))
+
 ## [1.34.1](https://github.com/stevendejongnl/printer/compare/v1.34.0...v1.34.1) (2026-06-07)
 
 ### Bug Fixes
