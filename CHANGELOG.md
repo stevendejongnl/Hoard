@@ -1,3 +1,9 @@
+## [1.34.1](https://github.com/stevendejongnl/printer/compare/v1.34.0...v1.34.1) (2026-06-07)
+
+### Bug Fixes
+
+* **recorder:** use moonraker filament_used in reconcile zero-cost check ([5437bde](https://github.com/stevendejongnl/printer/commit/5437bde6dba6562468f7bde622ae47419ba83d3e))
+
 ## [1.34.0](https://github.com/stevendejongnl/printer/compare/v1.33.1...v1.34.0) (2026-06-07)
 
 ### Features
