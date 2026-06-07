@@ -1,3 +1,9 @@
+## [1.34.3](https://github.com/stevendejongnl/printer/compare/v1.34.2...v1.34.3) (2026-06-07)
+
+### Bug Fixes
+
+* **data:** fix webcam misattribution, stale project stats, and orphaned cover links ([00178e8](https://github.com/stevendejongnl/printer/commit/00178e812affdf05cbefc2e2760084a06e6a47d5))
+
 ## [1.34.2](https://github.com/stevendejongnl/printer/compare/v1.34.1...v1.34.2) (2026-06-07)
 
 ### Bug Fixes
