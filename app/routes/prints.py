@@ -98,8 +98,8 @@ async def _get_job_stats(job_id: str) -> dict[str, Any]:
 async def get_print_detail(job_id: str) -> dict[str, Any]:
     job_row = await db.get_or_create_print_job(job_id)
 
-    # Lazy extraction for prints that completed before this feature shipped
-    if job_row.get("gcode_meta") is None:
+    # Lazy extraction for prints with no metadata or empty metadata (pre-gcode-header-parsing)
+    if not job_row.get("gcode_meta"):
         filename = ""
         try:
             job_data = await moonraker.get("/server/history/job", uid=job_id)
