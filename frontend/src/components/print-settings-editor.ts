@@ -30,7 +30,9 @@ export class PrintSettingsEditor extends LitElement {
 
     return html`
       <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px;">
-        <div style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;">
+        <div
+          style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px;"
+        >
           Print settings
         </div>
         <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">

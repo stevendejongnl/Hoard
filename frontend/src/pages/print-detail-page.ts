@@ -320,7 +320,9 @@ export class PrintDetailPage extends LitElement {
                     style="background: transparent; border: none; color: #f59e0b88; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; display: flex; align-items: center;"
                     title="remove tag"
                     @click=${() => this._removeTag(tag)}
-                  >×</button>
+                  >
+                    ×
+                  </button>
                 </span>
               `,
             )}
