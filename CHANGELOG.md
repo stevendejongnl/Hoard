@@ -1,3 +1,9 @@
+## [1.32.0](https://github.com/stevendejongnl/printer/compare/v1.31.0...v1.32.0) (2026-06-07)
+
+### Features
+
+* **ui:** make print settings and slicer info read-only, add tag remove button ([5b9aed2](https://github.com/stevendejongnl/printer/commit/5b9aed2ba490915ab20c81e200bbbaf78eee3595))
+
 ## [1.31.0](https://github.com/stevendejongnl/printer/compare/v1.30.1...v1.31.0) (2026-06-07)
 
 ### Features
