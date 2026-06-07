@@ -25,7 +25,10 @@ export class HistoryPage extends LitElement {
 
   connectedCallback() {
     super.connectedCallback()
-    const initialPage = Math.max(0, (parseInt(new URLSearchParams(window.location.search).get('page') ?? '1', 10) || 1) - 1)
+    const initialPage = Math.max(
+      0,
+      (parseInt(new URLSearchParams(window.location.search).get('page') ?? '1', 10) || 1) - 1,
+    )
     this._loadPage(initialPage)
     getSpools().then((s) => (this.spools = s))
     this._unsubscribe = sseClient.subscribe((payload) => {
