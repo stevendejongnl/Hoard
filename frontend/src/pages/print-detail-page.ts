@@ -116,9 +116,6 @@ export class PrintDetailPage extends LitElement {
   @state() loading = true
   @state() error = false
 
-  // Tag state
-  @state() private _tagInput = ''
-
   // Notes state
   @state() private _notesEditing = false
   @state() private _notesDraft = ''
@@ -154,24 +151,6 @@ export class PrintDetailPage extends LitElement {
         <span style="font-size: 18px; font-weight: 600; color: #e0e0e0;">${value}</span>
       </div>
     `
-  }
-
-  // ── Tags ──────────────────────────────────────────────────────────────────
-
-  private async _addTag(e: KeyboardEvent) {
-    if (e.key !== 'Enter' || !this._tagInput.trim() || !this.job) return
-    const tag = this._tagInput.trim()
-    this._tagInput = ''
-    const tags = [...(this.job.tags ?? []), tag]
-    const updated = await updatePrintJob(this.job.job_id, { tags })
-    this.job = { ...this.job, tags: updated.tags }
-  }
-
-  private async _removeTag(tag: string) {
-    if (!this.job) return
-    const tags = (this.job.tags ?? []).filter((t) => t !== tag)
-    const updated = await updatePrintJob(this.job.job_id, { tags })
-    this.job = { ...this.job, tags: updated.tags }
   }
 
   // ── Notes ─────────────────────────────────────────────────────────────────
@@ -298,45 +277,14 @@ export class PrintDetailPage extends LitElement {
             : ''}
         </div>
 
-        <!-- header: filename + date + tags -->
-        <div style="display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-            <span style="font-size: 18px; font-weight: 600; color: #e0e0e0; word-break: break-word;"
-              >${j.filename}</span
-            >
-            <span style="font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; padding-top: 4px;"
-              >${_fmtDate(j.time ?? null)}</span
-            >
-          </div>
-          <!-- tags -->
-          <div style="display: flex; flex-wrap: wrap; gap: 5px; align-items: center;">
-            ${(j.tags ?? []).map(
-              (tag) => html`
-                <span
-                  style="display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: #f59e0b; border: 1px solid #f59e0b44; border-radius: 3px; padding: 1px 5px 1px 7px;"
-                >
-                  ${tag}
-                  <button
-                    style="background: transparent; border: none; color: #f59e0b88; font-size: 11px; line-height: 1; cursor: pointer; padding: 0; display: flex; align-items: center;"
-                    title="remove tag"
-                    @click=${() => this._removeTag(tag)}
-                  >
-                    ×
-                  </button>
-                </span>
-              `,
-            )}
-            <input
-              type="text"
-              placeholder="+ tag"
-              .value=${this._tagInput}
-              style="background: transparent; border: 1px dashed #333; border-radius: 3px; color: #555; font-size: 10px; padding: 1px 6px; outline: none; width: 60px; font-family: var(--font);"
-              @input=${(e: Event) => {
-                this._tagInput = (e.target as HTMLInputElement).value
-              }}
-              @keydown=${this._addTag}
-            />
-          </div>
+        <!-- header: filename + date -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+          <span style="font-size: 18px; font-weight: 600; color: #e0e0e0; word-break: break-word;"
+            >${j.filename}</span
+          >
+          <span style="font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; padding-top: 4px;"
+            >${_fmtDate(j.time ?? null)}</span
+          >
         </div>
 
         <!-- stats -->

@@ -25,7 +25,8 @@ export class HistoryPage extends LitElement {
 
   connectedCallback() {
     super.connectedCallback()
-    this._loadPage(0)
+    const initialPage = Math.max(0, (parseInt(new URLSearchParams(window.location.search).get('page') ?? '1', 10) || 1) - 1)
+    this._loadPage(initialPage)
     getSpools().then((s) => (this.spools = s))
     this._unsubscribe = sseClient.subscribe((payload) => {
       if (payload.type === 'history_updated') {
@@ -47,6 +48,13 @@ export class HistoryPage extends LitElement {
     this.total = history.total
     this.page = p
     this.loading = false
+    const url = new URL(window.location.href)
+    if (p === 0) {
+      url.searchParams.delete('page')
+    } else {
+      url.searchParams.set('page', String(p + 1))
+    }
+    window.history.replaceState({}, '', url.toString())
   }
 
   private _triggerStlUpload(filename: string) {

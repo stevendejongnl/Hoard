@@ -208,7 +208,7 @@ export const refreshProjectPrint = (projectId: number, jobId: string) =>
 export const getPrintJob = (jobId: string) =>
   req<PrintJob & { photos: PrintPhoto[] } & Partial<PrintRecord>>(`/api/prints/${encodeURIComponent(jobId)}`)
 
-export const updatePrintJob = (jobId: string, data: Partial<Pick<PrintJob, 'notes' | 'settings' | 'tags'>>) =>
+export const updatePrintJob = (jobId: string, data: Partial<Pick<PrintJob, 'notes' | 'settings'>>) =>
   req<PrintJob>(`/api/prints/${encodeURIComponent(jobId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },

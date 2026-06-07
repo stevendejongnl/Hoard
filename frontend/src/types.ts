@@ -184,7 +184,6 @@ export interface PrintJob {
   job_id: string
   notes: string | null
   settings: PrintSettings | null
-  tags: string[]
   photos: PrintPhoto[]
   created_at: number
   // merged from PrintRecord when returned by GET /api/prints/:job_id
