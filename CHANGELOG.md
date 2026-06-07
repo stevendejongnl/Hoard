@@ -1,3 +1,9 @@
+## [1.33.1](https://github.com/stevendejongnl/printer/compare/v1.33.0...v1.33.1) (2026-06-07)
+
+### Bug Fixes
+
+* **ui:** remove tags from src — fix history page URL pagination ([1cf8c98](https://github.com/stevendejongnl/printer/commit/1cf8c98497334f6f18e4371673b59e8fd3b2a352))
+
 ## [1.33.0](https://github.com/stevendejongnl/printer/compare/v1.32.0...v1.33.0) (2026-06-07)
 
 ### Features
