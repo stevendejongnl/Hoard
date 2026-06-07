@@ -121,6 +121,7 @@ export class PrintDetailPage extends LitElement {
   @state() private _notesDraft = ''
   @state() private _notesSaved = ''
   @state() private _notesSaving = false
+  @state() private _recalculating = false
 
   connectedCallback() {
     super.connectedCallback()
@@ -151,6 +152,22 @@ export class PrintDetailPage extends LitElement {
         <span style="font-size: 18px; font-weight: 600; color: #e0e0e0;">${value}</span>
       </div>
     `
+  }
+
+  // ── Recalculate ───────────────────────────────────────────────────────────
+
+  private async _recalculate() {
+    if (!this.job || this._recalculating) return
+    this._recalculating = true
+    try {
+      const res = await fetch(`/api/history/${encodeURIComponent(this.job.job_id)}/restore`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        this.job = { ...this.job, ...data }
+      }
+    } finally {
+      this._recalculating = false
+    }
   }
 
   // ── Notes ─────────────────────────────────────────────────────────────────
@@ -295,7 +312,15 @@ export class PrintDetailPage extends LitElement {
         <!-- cost breakdown -->
         ${j.cost_filament != null || j.cost_electricity != null || j.avg_watts != null || j.avg_eur_per_kwh != null
           ? html`
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; position: relative;">
+                <button
+                  style="position: absolute; top: -28px; right: 0; background: transparent; border: none; color: #444; font-size: 11px; cursor: pointer; padding: 2px 4px;"
+                  title="Recalculate costs"
+                  ?disabled=${this._recalculating}
+                  @click=${this._recalculate}
+                >
+                  ${this._recalculating ? '…' : '↻ recalc'}
+                </button>
                 ${[
                   { label: 'filament cost', value: j.cost_filament != null ? '€' + j.cost_filament.toFixed(2) : '—' },
                   {
@@ -316,7 +341,18 @@ export class PrintDetailPage extends LitElement {
                 )}
               </div>
             `
-          : ''}
+          : html`
+              <div style="text-align: right;">
+                <button
+                  style="background: transparent; border: none; color: #444; font-size: 11px; cursor: pointer; padding: 2px 4px;"
+                  title="Recalculate costs"
+                  ?disabled=${this._recalculating}
+                  @click=${this._recalculate}
+                >
+                  ${this._recalculating ? '…' : '↻ recalc'}
+                </button>
+              </div>
+            `}
 
         <!-- gcode meta -->
         ${this._renderGcodeMeta()}
