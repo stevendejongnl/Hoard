@@ -1,3 +1,9 @@
+## [1.33.0](https://github.com/stevendejongnl/printer/compare/v1.32.0...v1.33.0) (2026-06-07)
+
+### Features
+
+* **prints:** remove tags — drop column migration + clean API/DB ([c7849af](https://github.com/stevendejongnl/printer/commit/c7849af274f6af5d18d12987d56b50dae89287c6))
+
 ## [1.32.0](https://github.com/stevendejongnl/printer/compare/v1.31.0...v1.32.0) (2026-06-07)
 
 ### Features
