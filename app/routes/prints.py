@@ -117,7 +117,9 @@ async def get_print_detail(job_id: str) -> dict[str, Any]:
 
     stats = await _get_job_stats(job_id)
     photos = await db.list_print_photos(job_id)
-    return {**stats, **job_row, "photos": photos}
+    proj = await db.get_project_for_job(job_id)
+    project = {"id": proj["id"], "name": proj["name"]} if proj else None
+    return {**stats, **job_row, "photos": photos, "project": project}
 
 
 class PrintUpdate(BaseModel):
