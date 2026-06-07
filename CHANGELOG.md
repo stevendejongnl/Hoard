@@ -1,3 +1,9 @@
+## [1.34.0](https://github.com/stevendejongnl/printer/compare/v1.33.1...v1.34.0) (2026-06-07)
+
+### Features
+
+* **ui:** add recalculate cost button on print detail page ([9a96a34](https://github.com/stevendejongnl/printer/commit/9a96a3438b0138a80126d537525a6a8036ea964b))
+
 ## [1.33.1](https://github.com/stevendejongnl/printer/compare/v1.33.0...v1.33.1) (2026-06-07)
 
 ### Bug Fixes
