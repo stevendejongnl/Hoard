@@ -1,3 +1,9 @@
+## [1.31.0](https://github.com/stevendejongnl/printer/compare/v1.30.1...v1.31.0) (2026-06-07)
+
+### Features
+
+* **gcode-meta:** parse gcode header for slicer info, add old Cura M-code temp support ([044047a](https://github.com/stevendejongnl/printer/commit/044047a474093eee443ffbde831699e8a9fce4d5))
+
 ## [1.30.1](https://github.com/stevendejongnl/printer/compare/v1.30.0...v1.30.1) (2026-06-06)
 
 ### Bug Fixes
