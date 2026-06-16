@@ -67,10 +67,7 @@ async def get_project(project_id: int) -> dict[str, Any]:
             raise HTTPException(404, "Project not found")
         return project
 
-    result = await cache.get_or_set(f"project:{project_id}", _fetch, ttl=300)
-    if result is None:
-        raise HTTPException(404, "Project not found")
-    return result
+    return await cache.get_or_set(f"project:{project_id}", _fetch, ttl=300)
 
 
 @router.patch("/{project_id}")
@@ -162,6 +159,7 @@ async def _enrich_link(project_id: int, link_id: int, url: str) -> None:
     project = await db.get_project(project_id)
     if project and not project.get("cover_url") and og.get("image_url"):
         await db.set_project_cover(project_id, og["image_url"], link_id)
+    await cache.invalidate("projects:list", f"project:{project_id}")
 
 
 async def enrich_existing_links() -> None:
