@@ -151,15 +151,16 @@ async def add_link(project_id: int, body: LinkAdd) -> dict[str, Any]:
 
 
 async def _enrich_link(project_id: int, link_id: int, url: str) -> None:
-    og = await fetch_og(url)
-    if not any(og.values()):
-        return
-    await db.set_link_meta(link_id, _json.dumps(og))
-    # Set project cover from og:image if the project doesn't have one yet
-    project = await db.get_project(project_id)
-    if project and not project.get("cover_url") and og.get("image_url"):
-        await db.set_project_cover(project_id, og["image_url"], link_id)
-    await cache.invalidate("projects:list", f"project:{project_id}")
+    try:
+        og = await fetch_og(url)
+        if not any(og.values()):
+            return
+        await db.set_link_meta(link_id, _json.dumps(og))
+        project = await db.get_project(project_id)
+        if project and not project.get("cover_url") and og.get("image_url"):
+            await db.set_project_cover(project_id, og["image_url"], link_id)
+    finally:
+        await cache.invalidate("projects:list", f"project:{project_id}")
 
 
 async def enrich_existing_links() -> None:
@@ -252,6 +253,7 @@ async def refresh_print_stats(project_id: int, job_id: str) -> dict[str, Any]:
             (duration_s, filament_g, cost_total, project_id, job_id),
         )
         await conn.commit()
+    await cache.invalidate("projects:list", f"project:{project_id}")
     return {"job_id": job_id, "duration_s": duration_s, "filament_g": filament_g, "cost_total": cost_total}
 
 
