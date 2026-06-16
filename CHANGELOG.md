@@ -1,3 +1,13 @@
+## [1.36.0](https://github.com/stevendejongnl/printer/compare/v1.35.0...v1.36.0) (2026-06-16)
+
+### Features
+
+* **k8s:** add Redis deployment and wire REDIS_URL into printer ([2f085c5](https://github.com/stevendejongnl/printer/commit/2f085c5af4167134477f9bea31bedc63bac874e8))
+
+### Bug Fixes
+
+* **cache:** fix 6 correctness bugs found in code review ([370202f](https://github.com/stevendejongnl/printer/commit/370202fdf8283c60a562dcefd807f4ab019e6217))
+
 ## [1.35.0](https://github.com/stevendejongnl/printer/compare/v1.34.3...v1.35.0) (2026-06-16)
 
 ### Features
