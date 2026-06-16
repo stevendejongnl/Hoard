@@ -61,6 +61,7 @@ export class LinkPreviewCard extends LitElement {
   private _onClick = (e: Event) => {
     if (!this._isTouch()) return // desktop: don't intercept, let <a> navigate
     if (!this._hasContent()) return // nothing to show, let <a> navigate
+    if (this.shadowRoot && e.composedPath().includes(this.shadowRoot)) return // click inside popup card
     e.preventDefault()
     e.stopImmediatePropagation()
     this._visible = !this._visible
