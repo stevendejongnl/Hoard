@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     database_path: str = "/data/printer.db"
     static_dir: str = "static"
     uploads_dir: str = "./uploads"
+    redis_url: str = "redis://localhost:6379"
 
     model_config = {"env_file": ".env"}
 
