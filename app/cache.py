@@ -63,8 +63,10 @@ async def invalidate_prefix(prefix: str) -> None:
     if _redis is None:
         return
     try:
-        matched = await _redis.keys(f"{prefix}*")
-        if matched:
-            await _redis.delete(*matched)
+        keys: list[str] = []
+        async for key in _redis.scan_iter(f"{prefix}*"):
+            keys.append(key)
+        if keys:
+            await _redis.delete(*keys)
     except Exception as exc:
         log.warning("cache: invalidate_prefix failed for %s: %s", prefix, exc)

@@ -71,22 +71,29 @@ async def test_invalidate_deletes_keys():
 async def test_invalidate_prefix_deletes_matching_keys():
     from app import cache
 
+    async def mock_scan_iter(pattern):
+        for key in ["history:20:0", "history:50:0"]:
+            yield key
+
     mock_redis = AsyncMock()
-    mock_redis.keys.return_value = [b"history:20:0", b"history:50:0"]
+    mock_redis.scan_iter = mock_scan_iter
 
     with patch.object(cache, "_redis", mock_redis):
         await cache.invalidate_prefix("history:")
 
-    mock_redis.keys.assert_called_once_with("history:*")
-    mock_redis.delete.assert_called_once_with(b"history:20:0", b"history:50:0")
+    mock_redis.delete.assert_called_once_with("history:20:0", "history:50:0")
 
 
 @pytest.mark.asyncio
 async def test_invalidate_prefix_noop_when_no_keys():
     from app import cache
 
+    async def mock_scan_iter(pattern):
+        return
+        yield  # make it an async generator
+
     mock_redis = AsyncMock()
-    mock_redis.keys.return_value = []
+    mock_redis.scan_iter = mock_scan_iter
 
     with patch.object(cache, "_redis", mock_redis):
         await cache.invalidate_prefix("history:")
