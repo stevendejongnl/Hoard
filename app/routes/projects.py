@@ -11,7 +11,7 @@ from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app import db
+from app import cache, db
 from app.config import settings
 from app.enrichment import fetch_og
 from app.influx import influx
@@ -49,20 +49,28 @@ class PrintLink(BaseModel):
 
 @router.get("")
 async def list_projects() -> list[dict[str, Any]]:
-    return await db.list_projects()
+    return await cache.get_or_set("projects:list", db.list_projects, ttl=300)
 
 
 @router.post("", status_code=201)
 async def create_project(body: ProjectCreate) -> dict[str, Any]:
-    return await db.create_project(body.name)
+    result = await db.create_project(body.name)
+    await cache.invalidate("projects:list")
+    return result
 
 
 @router.get("/{project_id}")
 async def get_project(project_id: int) -> dict[str, Any]:
-    project = await db.get_project(project_id)
-    if not project:
+    async def _fetch() -> dict[str, Any]:
+        project = await db.get_project(project_id)
+        if not project:
+            raise HTTPException(404, "Project not found")
+        return project
+
+    result = await cache.get_or_set(f"project:{project_id}", _fetch, ttl=300)
+    if result is None:
         raise HTTPException(404, "Project not found")
-    return project
+    return result
 
 
 @router.patch("/{project_id}")
@@ -71,6 +79,7 @@ async def update_project(project_id: int, body: ProjectUpdate) -> dict[str, Any]
     result = await db.update_project(project_id, data)
     if not result:
         raise HTTPException(404, "Project not found")
+    await cache.invalidate("projects:list", f"project:{project_id}")
     return result
 
 
@@ -86,13 +95,16 @@ async def delete_project(project_id: int) -> None:
             except OSError:
                 pass
     await db.delete_project(project_id)
+    await cache.invalidate("projects:list", f"project:{project_id}")
 
 
 @router.post("/{project_id}/files", status_code=201)
 async def add_file(project_id: int, body: FileAdd) -> dict[str, Any]:
     if not await db.get_project(project_id):
         raise HTTPException(404, "Project not found")
-    return await db.add_project_file(project_id, body.type, body.filename, body.label)
+    result = await db.add_project_file(project_id, body.type, body.filename, body.label)
+    await cache.invalidate("projects:list", f"project:{project_id}")
+    return result
 
 
 @router.post("/{project_id}/files/upload", status_code=201)
@@ -112,7 +124,9 @@ async def upload_file(
         fh.write(contents)
     # Use the file extension as the type (e.g. stl, 3mf, scad, step)
     ext = Path(file.filename or "").suffix.lstrip(".").lower() or "file"
-    return await db.add_project_file(project_id, ext, stored_path, label or file.filename)
+    result = await db.add_project_file(project_id, ext, stored_path, label or file.filename)
+    await cache.invalidate("projects:list", f"project:{project_id}")
+    return result
 
 
 @router.delete("/{project_id}/files/{file_id}", status_code=204)
@@ -126,6 +140,7 @@ async def delete_file(project_id: int, file_id: int) -> None:
         except OSError:
             pass
     await db.delete_project_file(file_id)
+    await cache.invalidate("projects:list", f"project:{project_id}")
 
 
 @router.post("/{project_id}/links", status_code=201)
@@ -134,6 +149,7 @@ async def add_link(project_id: int, body: LinkAdd) -> dict[str, Any]:
         raise HTTPException(404, "Project not found")
     link = await db.add_project_link(project_id, body.url, body.label)
     asyncio.create_task(_enrich_link(project_id, link["id"], body.url))
+    await cache.invalidate("projects:list", f"project:{project_id}")
     return link
 
 
@@ -166,6 +182,7 @@ async def delete_link(project_id: int, link_id: int) -> None:
     if project and project.get("cover_link_id") == link_id:
         await db.set_project_cover(project_id, None, None)
     await db.delete_project_link(link_id)
+    await cache.invalidate("projects:list", f"project:{project_id}")
 
 
 @router.post("/{project_id}/prints", status_code=201)
@@ -196,10 +213,12 @@ async def link_print(project_id: int, body: PrintLink) -> dict[str, Any]:
                     break
     except Exception:
         pass
-    return await db.add_project_print(
+    result = await db.add_project_print(
         project_id, body.project_file_id, body.job_id,
         duration_s, filament_g, cost_total,
     )
+    await cache.invalidate("projects:list", f"project:{project_id}", f"print:{body.job_id}")
+    return result
 
 
 @router.patch("/{project_id}/prints/{job_id}/refresh", status_code=200)
@@ -241,6 +260,7 @@ async def refresh_print_stats(project_id: int, job_id: str) -> dict[str, Any]:
 @router.delete("/{project_id}/prints/{job_id}", status_code=204)
 async def unlink_print(project_id: int, job_id: str) -> None:
     await db.delete_project_print(project_id, job_id)
+    await cache.invalidate("projects:list", f"project:{project_id}", f"print:{job_id}")
 
 
 @router.get("/{project_id}/files/{file_id}/download")
