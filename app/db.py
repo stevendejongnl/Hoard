@@ -11,6 +11,8 @@ async def init_db(path: str) -> None:
     global _db_path
     _db_path = path
     async with aiosqlite.connect(path) as db:
+        await db.execute("PRAGMA journal_mode=WAL")
+        await db.execute("PRAGMA busy_timeout=5000")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS spools (
                 id               INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,8 +154,7 @@ async def init_db(path: str) -> None:
 
 
 def _conn() -> aiosqlite.Connection:
-    conn = aiosqlite.connect(_db_path)
-    return conn
+    return aiosqlite.connect(_db_path, timeout=5)
 
 
 async def get_active_spool() -> dict[str, Any] | None:
