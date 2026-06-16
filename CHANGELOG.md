@@ -1,3 +1,9 @@
+## [1.36.1](https://github.com/stevendejongnl/printer/compare/v1.36.0...v1.36.1) (2026-06-16)
+
+### Bug Fixes
+
+* **db:** enable WAL mode and 5s busy_timeout to fix concurrent lock errors ([4f555c5](https://github.com/stevendejongnl/printer/commit/4f555c5566232d23c4e55b1b3c8fa627a58f5f04))
+
 ## [1.36.0](https://github.com/stevendejongnl/printer/compare/v1.35.0...v1.36.0) (2026-06-16)
 
 ### Features
