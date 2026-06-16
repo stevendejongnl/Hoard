@@ -49,14 +49,15 @@ async def create_spool(body: SpoolCreate) -> dict[str, Any]:
 @router.patch("/{spool_id}")
 async def update_spool(spool_id: int, body: SpoolUpdate) -> dict[str, Any]:
     data = {k: v for k, v in body.model_dump().items() if v is not None}
+    if not data:
+        raise HTTPException(422, "No fields to update")
     result = await db.update_spool(spool_id, data)
     if not result:
         raise HTTPException(404, "Spool not found")
     if "cost_per_gram" in data:
         asyncio.create_task(_recalculate_spool_prints(spool_id))
-    if data:
-        await cache.invalidate("spools:list")
-        asyncio.create_task(cache.invalidate_prefix("history:"))
+    await cache.invalidate("spools:list")
+    await cache.invalidate_prefix("history:")
     return result
 
 
@@ -66,4 +67,4 @@ async def delete_spool(spool_id: int) -> None:
     if not ok:
         raise HTTPException(409, "Spool has linked prints — unlink first")
     await cache.invalidate("spools:list")
-    asyncio.create_task(cache.invalidate_prefix("history:"))
+    await cache.invalidate_prefix("history:")

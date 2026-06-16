@@ -33,7 +33,6 @@ async def handle_history_changed(params: list[Any]) -> None:
         return
     job = event.get("job", {})
     asyncio.create_task(_record_print(job))
-    asyncio.create_task(cache.invalidate_prefix("history:"))
 
 
 async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
@@ -111,6 +110,9 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     except Exception as exc:
         log.error("recorder: influx write failed: %s", exc)
         return
+
+    await cache.invalidate_prefix("history:")
+    await cache.invalidate(f"print:{job_id}")
 
     await db.link_print_spool(job_id, spool_id, filament_g)
     # Keep project_prints stats in sync so projects auto-update without manual refresh
