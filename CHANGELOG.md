@@ -1,3 +1,28 @@
+## [1.35.0](https://github.com/stevendejongnl/printer/compare/v1.34.3...v1.35.0) (2026-06-16)
+
+### Features
+
+* **cache:** add Redis cache module with get_or_set and invalidation ([6137935](https://github.com/stevendejongnl/printer/commit/613793591962d13d9a7bd62b9ddb6b94ff7bdf98))
+* **cache:** cache /api/history with TTL-by-offset strategy ([e6e2d52](https://github.com/stevendejongnl/printer/commit/e6e2d5281c857453f65b749cd826c9a6a7498469))
+* **cache:** cache /api/prints/{job_id} with 1h TTL ([9928dd0](https://github.com/stevendejongnl/printer/commit/9928dd06d71eaf842263f023ed0374569f5f4566))
+* **cache:** cache /api/projects with 5min TTL and mutation invalidation ([5364756](https://github.com/stevendejongnl/printer/commit/5364756c405b67d92ec1b9fda10e91b2401705e5))
+* **cache:** cache /api/spools with 30min TTL and mutation invalidation ([bd8c7c2](https://github.com/stevendejongnl/printer/commit/bd8c7c2c10dfe17b9f92854d11879f8f0cfbdf92))
+* **cache:** init Redis in lifespan, invalidate history on print-end ([5da946e](https://github.com/stevendejongnl/printer/commit/5da946e68c9eff34a0f004372990c08570f8adfd))
+* **config:** add REDIS_URL setting ([ef1f201](https://github.com/stevendejongnl/printer/commit/ef1f2017e3450df29979b5b8087624b5896af3a1))
+
+### Bug Fixes
+
+* **cache:** fire-and-forget history invalidation in WS handler ([d0244e8](https://github.com/stevendejongnl/printer/commit/d0244e86cf10074d4168ccd7d247327e4b892019))
+* **cache:** guard spool invalidation on empty PATCH body ([b454c2f](https://github.com/stevendejongnl/printer/commit/b454c2f8c96007b689438f6a51dfa736817cc62c))
+* **cache:** invalidate project cache after enrich_link cover update ([05cec29](https://github.com/stevendejongnl/printer/commit/05cec2976ba14ed0cf324340b1da0acda7e98e8b))
+* **cache:** skip invalidation on empty PATCH body in update_print ([2c3decd](https://github.com/stevendejongnl/printer/commit/2c3decde0fe7ad3d9395c1185bc157f5c62946c5))
+* **cache:** use SCAN instead of KEYS, fix test mock types ([2ed48c3](https://github.com/stevendejongnl/printer/commit/2ed48c371b52535ce97b71fb3b3b094bd66efab1))
+
+### Documentation
+
+* add Redis caching design spec ([5523c28](https://github.com/stevendejongnl/printer/commit/5523c28fc58d75ab6e50affd512d10f619b232da))
+* add Redis caching implementation plan ([03c3729](https://github.com/stevendejongnl/printer/commit/03c37296c27b75f2aabbfadb222097172208f190))
+
 ## [1.34.3](https://github.com/stevendejongnl/printer/compare/v1.34.2...v1.34.3) (2026-06-07)
 
 ### Bug Fixes
