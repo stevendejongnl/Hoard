@@ -141,7 +141,8 @@ async def update_print(job_id: str, body: PrintUpdate) -> dict[str, Any]:
         else:
             data[k] = v
     result = await db.update_print_job(job_id, data)
-    await cache.invalidate(f"print:{job_id}")
+    if data:
+        await cache.invalidate(f"print:{job_id}")
     return result
 
 
