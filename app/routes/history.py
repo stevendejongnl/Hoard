@@ -6,7 +6,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app import db, ha
+from app import cache, db, ha
 from app.influx import influx
 from app.moonraker import moonraker
 from app.nordpool import backfill_prices
@@ -42,99 +42,91 @@ def _moonraker_to_record(job: dict[str, Any]) -> dict[str, Any]:
 
 @router.get("")
 async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
-    # Always use Moonraker as the source of truth for print records
-    try:
-        # Fetch the page of jobs
-        result = await moonraker.get(
-            "/server/history/list",
-            limit=limit,
-            start=offset,
-            order="desc",
-        )
-        jobs = result.get("jobs", [])
+    ttl = 60 if offset == 0 else 86400
+    cache_key = f"history:{limit}:{offset}"
 
-        # Moonraker's "count" in the list response is the number of records returned,
-        # not the total. Use the totals endpoint to get the real count.
+    async def _fetch() -> dict[str, Any]:
         try:
-            totals = await moonraker.get("/server/history/totals")
-            total = int(totals.get("job_totals", {}).get("total_jobs", 0))
+            result = await moonraker.get(
+                "/server/history/list",
+                limit=limit,
+                start=offset,
+                order="desc",
+            )
+            jobs = result.get("jobs", [])
+            try:
+                totals = await moonraker.get("/server/history/totals")
+                total = int(totals.get("job_totals", {}).get("total_jobs", 0))
+            except Exception:
+                total = offset + len(jobs)
         except Exception:
-            total = offset + len(jobs)
-    except Exception:
-        jobs = []
-        total = 0
+            jobs = []
+            total = 0
 
-    records = [_moonraker_to_record(j) for j in jobs if j.get("status") == "completed"]
+        records = [_moonraker_to_record(j) for j in jobs if j.get("status") == "completed"]
 
-    # Enrich with InfluxDB cost data — match by filename+timestamp so two prints of
-    # the same file each get their own InfluxDB entry, not the most-recent one.
-    # Fetch enough to cover the full history window around this page.
-    influx_all = influx.query_history(limit=max(500, offset + limit + 100))
+        influx_all = influx.query_history(limit=max(500, offset + limit + 100))
 
-    def _influx_minute(iso: str) -> int:
-        """Convert ISO timestamp to minute-level Unix int for proximity matching."""
-        try:
-            dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
-            return int(dt.timestamp()) // 60
-        except Exception:
-            return 0
+        def _influx_minute(iso: str) -> int:
+            try:
+                dt = datetime.fromisoformat(iso.replace("Z", "+00:00"))
+                return int(dt.timestamp()) // 60
+            except Exception:
+                return 0
 
-    # Build (filename, minute) → influx record
-    influx_by_file_minute: dict[tuple[str, int], dict[str, Any]] = {}
-    for r in influx_all:
-        key = (r.get("filename", ""), _influx_minute(r.get("time", "")))
-        influx_by_file_minute[key] = r
+        influx_by_file_minute: dict[tuple[str, int], dict[str, Any]] = {}
+        for r in influx_all:
+            key = (r.get("filename", ""), _influx_minute(r.get("time", "")))
+            influx_by_file_minute[key] = r
 
-    for record in records:
-        filename = record["filename"]
-        job_id = record["job_id"]
+        for record in records:
+            filename = record["filename"]
+            job_id = record["job_id"]
 
-        # Merge InfluxDB cost data — try exact minute, then ±5 min
-        end_ts = next((j.get("end_time", 0) for j in jobs if j.get("job_id") == job_id), 0) or 0
-        record_minute = int(end_ts) // 60
-        cost = influx_by_file_minute.get((filename, record_minute))
-        if not cost:
-            for delta in range(1, 6):
-                cost = influx_by_file_minute.get((filename, record_minute - delta))
-                if cost:
-                    break
-                cost = influx_by_file_minute.get((filename, record_minute + delta))
-                if cost:
-                    break
+            end_ts = next((j.get("end_time", 0) for j in jobs if j.get("job_id") == job_id), 0) or 0
+            record_minute = int(end_ts) // 60
+            cost = influx_by_file_minute.get((filename, record_minute))
+            if not cost:
+                for delta in range(1, 6):
+                    cost = influx_by_file_minute.get((filename, record_minute - delta))
+                    if cost:
+                        break
+                    cost = influx_by_file_minute.get((filename, record_minute + delta))
+                    if cost:
+                        break
 
-        if cost:
-            record["avg_watts"] = cost.get("avg_watts")
-            record["avg_eur_per_kwh"] = cost.get("avg_eur_per_kwh")
-            record["cost_electricity"] = cost.get("cost_electricity")
-            record["cost_filament"] = cost.get("cost_filament")
-            record["cost_total"] = cost.get("cost_total")
-            record["_source"] = "influx"
+            if cost:
+                record["avg_watts"] = cost.get("avg_watts")
+                record["avg_eur_per_kwh"] = cost.get("avg_eur_per_kwh")
+                record["cost_electricity"] = cost.get("cost_electricity")
+                record["cost_filament"] = cost.get("cost_filament")
+                record["cost_total"] = cost.get("cost_total")
+                record["_source"] = "influx"
 
-        # Spool info from SQLite
-        ps = await db.get_print_spool(job_id)
-        if ps:
-            record["spool"] = {
-                "id": ps.get("spool_id"),
-                "brand": ps.get("brand"),
-                "material": ps.get("material"),
-                "color": ps.get("color"),
-                "color_hex": ps.get("color_hex"),
-            }
+            ps = await db.get_print_spool(job_id)
+            if ps:
+                record["spool"] = {
+                    "id": ps.get("spool_id"),
+                    "brand": ps.get("brand"),
+                    "material": ps.get("material"),
+                    "color": ps.get("color"),
+                    "color_hex": ps.get("color_hex"),
+                }
 
-        # Project link from SQLite
-        proj = await db.get_project_for_job(job_id)
-        if proj:
-            record["project"] = {"id": proj["id"], "name": proj["name"]}
+            proj = await db.get_project_for_job(job_id)
+            if proj:
+                record["project"] = {"id": proj["id"], "name": proj["name"]}
 
-    # Enrich all records with has_detail / photo_count in a single batch query
-    job_ids = [r["job_id"] for r in records]
-    detail_counts = await db.get_print_detail_counts(job_ids)
-    for record in records:
-        counts = detail_counts.get(record["job_id"], {"has_detail": False, "photo_count": 0})
-        record["has_detail"] = counts["has_detail"]
-        record["photo_count"] = counts["photo_count"]
+        job_ids = [r["job_id"] for r in records]
+        detail_counts = await db.get_print_detail_counts(job_ids)
+        for record in records:
+            counts = detail_counts.get(record["job_id"], {"has_detail": False, "photo_count": 0})
+            record["has_detail"] = counts["has_detail"]
+            record["photo_count"] = counts["photo_count"]
 
-    return {"records": records, "total": total, "limit": limit, "offset": offset}
+        return {"records": records, "total": total, "limit": limit, "offset": offset}
+
+    return await cache.get_or_set(cache_key, _fetch, ttl=ttl)
 
 
 class SpoolAssign(BaseModel):
@@ -212,6 +204,8 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
     except Exception as exc:
         logging.getLogger(__name__).error("assign_spool cost recalc failed for %s: %s", job_id, exc)
 
+    await cache.invalidate_prefix("history:")
+    await cache.invalidate(f"print:{job_id}")
     return {"job_id": job_id, "spool_id": body.spool_id}
 
 
@@ -303,6 +297,8 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
         job_id=job_id,
     )
 
+    await cache.invalidate_prefix("history:")
+    await cache.invalidate(f"print:{job_id}")
     log = logging.getLogger(__name__)
     log.info("restore: %s cost=€%.4f (%.1fkWh @ €%.4f/kWh)", job_id, cost_total, energy_kwh, avg_price)
     return {
