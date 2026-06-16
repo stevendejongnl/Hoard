@@ -54,8 +54,9 @@ async def update_spool(spool_id: int, body: SpoolUpdate) -> dict[str, Any]:
         raise HTTPException(404, "Spool not found")
     if "cost_per_gram" in data:
         asyncio.create_task(_recalculate_spool_prints(spool_id))
-    await cache.invalidate("spools:list")
-    asyncio.create_task(cache.invalidate_prefix("history:"))
+    if data:
+        await cache.invalidate("spools:list")
+        asyncio.create_task(cache.invalidate_prefix("history:"))
     return result
 
 
