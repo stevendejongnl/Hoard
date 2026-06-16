@@ -1,3 +1,9 @@
+## [1.36.2](https://github.com/stevendejongnl/printer/compare/v1.36.1...v1.36.2) (2026-06-16)
+
+### Bug Fixes
+
+* **link-preview-card:** open link btn on mobile closes popup instead of navigating ([27cc3a6](https://github.com/stevendejongnl/printer/commit/27cc3a641ae931f2aa3c2a86eb2afa1f7bfd0434))
+
 ## [1.36.1](https://github.com/stevendejongnl/printer/compare/v1.36.0...v1.36.1) (2026-06-16)
 
 ### Bug Fixes
