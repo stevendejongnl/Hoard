@@ -28,6 +28,8 @@ spec:
               value: /data/printer.db
             - name: STATIC_DIR
               value: /app/static
+            - name: REDIS_URL
+              value: redis://redis:6379
             - name: MOONRAKER_URL
               valueFrom:
                 secretKeyRef:
