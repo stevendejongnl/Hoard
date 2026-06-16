@@ -11,6 +11,13 @@ services:
     environment:
       DATABASE_PATH: /data/printer.db
       STATIC_DIR: /app/static
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
 
 volumes:
   printer-data:
