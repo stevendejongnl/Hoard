@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import db, ha, recorder, sse
+from app import cache, db, ha, recorder, sse
 from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
@@ -57,6 +57,7 @@ async def _price_recorder_loop() -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.init_db(settings.database_path)
+    await cache.init()
 
     sse.register_ws_handlers()
     recorder.register_ws_handlers()
@@ -82,6 +83,7 @@ async def lifespan(app: FastAPI):
     pi_task.cancel()
     ps_task.cancel()
     influx.close()
+    await cache.close()
 
 
 app = FastAPI(title="printer", lifespan=lifespan)

@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx
 
-from app import db, ha
+from app import cache, db, ha
 from app.config import settings
 from app.gcode_meta import extract_gcode_meta
 from app.influx import influx
@@ -32,8 +32,8 @@ async def handle_history_changed(params: list[Any]) -> None:
     if event.get("action") != "added":
         return
     job = event.get("job", {})
-    # Run in background so WS handler returns immediately
     asyncio.create_task(_record_print(job))
+    await cache.invalidate_prefix("history:")
 
 
 async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
