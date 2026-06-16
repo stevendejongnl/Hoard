@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, UploadFile
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from app import db
+from app import cache, db
 from app.config import settings
 from app.gcode_meta import extract_gcode_meta
 from app.influx import influx
@@ -96,30 +96,32 @@ async def _get_job_stats(job_id: str) -> dict[str, Any]:
 
 @router.get("/api/prints/{job_id}")
 async def get_print_detail(job_id: str) -> dict[str, Any]:
-    job_row = await db.get_or_create_print_job(job_id)
+    async def _fetch() -> dict[str, Any]:
+        job_row = await db.get_or_create_print_job(job_id)
 
-    # Lazy extraction for prints with no metadata or empty metadata (pre-gcode-header-parsing)
-    if not job_row.get("gcode_meta"):
-        filename = ""
-        try:
-            job_data = await moonraker.get("/server/history/job", uid=job_id)
-            filename = job_data.get("job", {}).get("filename", "")
-        except Exception:
-            pass
-        if filename:
+        if not job_row.get("gcode_meta"):
+            filename = ""
             try:
-                gcode_meta = await extract_gcode_meta(filename)
-                if gcode_meta is not None:
-                    await db.update_print_job(job_id, {"gcode_meta": _json.dumps(gcode_meta)})
-                    job_row["gcode_meta"] = gcode_meta
-            except Exception as exc:
-                log.debug("prints: lazy gcode_meta failed for %s: %s", job_id, exc)
+                job_data = await moonraker.get("/server/history/job", uid=job_id)
+                filename = job_data.get("job", {}).get("filename", "")
+            except Exception:
+                pass
+            if filename:
+                try:
+                    gcode_meta = await extract_gcode_meta(filename)
+                    if gcode_meta is not None:
+                        await db.update_print_job(job_id, {"gcode_meta": _json.dumps(gcode_meta)})
+                        job_row["gcode_meta"] = gcode_meta
+                except Exception as exc:
+                    log.debug("prints: lazy gcode_meta failed for %s: %s", job_id, exc)
 
-    stats = await _get_job_stats(job_id)
-    photos = await db.list_print_photos(job_id)
-    proj = await db.get_project_for_job(job_id)
-    project = {"id": proj["id"], "name": proj["name"]} if proj else None
-    return {**stats, **job_row, "photos": photos, "project": project}
+        stats = await _get_job_stats(job_id)
+        photos = await db.list_print_photos(job_id)
+        proj = await db.get_project_for_job(job_id)
+        project = {"id": proj["id"], "name": proj["name"]} if proj else None
+        return {**stats, **job_row, "photos": photos, "project": project}
+
+    return await cache.get_or_set(f"print:{job_id}", _fetch, ttl=3600)
 
 
 class PrintUpdate(BaseModel):
@@ -138,7 +140,9 @@ async def update_print(job_id: str, body: PrintUpdate) -> dict[str, Any]:
             data[k] = _json.dumps(v)
         else:
             data[k] = v
-    return await db.update_print_job(job_id, data)
+    result = await db.update_print_job(job_id, data)
+    await cache.invalidate(f"print:{job_id}")
+    return result
 
 
 @router.get("/api/prints/{job_id}/photos")
@@ -156,7 +160,9 @@ async def upload_photo(job_id: str, file: UploadFile) -> dict[str, Any]:
     content = await file.read()
     dest.write_bytes(content)
 
-    return await db.add_print_photo(job_id, filename, source="upload")
+    result = await db.add_print_photo(job_id, filename, source="upload")
+    await cache.invalidate(f"print:{job_id}")
+    return result
 
 
 @router.delete("/api/prints/{job_id}/photos/{photo_id}")
@@ -175,6 +181,7 @@ async def delete_photo(job_id: str, photo_id: int) -> dict[str, Any]:
         log.warning("prints: failed to delete photo file %s: %s", photo["filename"], exc)
 
     await db.delete_print_photo(photo_id)
+    await cache.invalidate(f"print:{job_id}")
     return {"deleted": photo_id}
 
 
