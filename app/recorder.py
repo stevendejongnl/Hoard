@@ -33,7 +33,7 @@ async def handle_history_changed(params: list[Any]) -> None:
         return
     job = event.get("job", {})
     asyncio.create_task(_record_print(job))
-    await cache.invalidate_prefix("history:")
+    asyncio.create_task(cache.invalidate_prefix("history:"))
 
 
 async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
