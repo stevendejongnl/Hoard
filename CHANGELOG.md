@@ -1,3 +1,9 @@
+## [1.36.3](https://github.com/stevendejongnl/printer/compare/v1.36.2...v1.36.3) (2026-06-16)
+
+### Bug Fixes
+
+* **link-preview-card:** popup intercept blocks open-btn on mobile ([d3e3813](https://github.com/stevendejongnl/printer/commit/d3e3813a57b98888b36f41dc8cee5ec90ae2dabc))
+
 ## [1.36.2](https://github.com/stevendejongnl/printer/compare/v1.36.1...v1.36.2) (2026-06-16)
 
 ### Bug Fixes
