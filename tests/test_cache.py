@@ -1,13 +1,14 @@
 import json
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from app import cache
 
 
 @pytest.mark.asyncio
 async def test_get_or_set_miss_calls_fn_and_stores():
     """On cache miss, fn() is called and result stored in Redis."""
-    from app import cache
-
     mock_redis = AsyncMock()
     mock_redis.get.return_value = None  # cache miss
 
@@ -24,8 +25,6 @@ async def test_get_or_set_miss_calls_fn_and_stores():
 @pytest.mark.asyncio
 async def test_get_or_set_hit_returns_cached():
     """On cache hit, fn() is NOT called."""
-    from app import cache
-
     mock_redis = AsyncMock()
     mock_redis.get.return_value = json.dumps({"data": "cached"})
 
@@ -41,8 +40,6 @@ async def test_get_or_set_hit_returns_cached():
 @pytest.mark.asyncio
 async def test_get_or_set_redis_error_falls_through():
     """If Redis raises, fn() is still called and result returned."""
-    from app import cache
-
     mock_redis = AsyncMock()
     mock_redis.get.side_effect = Exception("connection refused")
 
@@ -57,8 +54,6 @@ async def test_get_or_set_redis_error_falls_through():
 
 @pytest.mark.asyncio
 async def test_invalidate_deletes_keys():
-    from app import cache
-
     mock_redis = AsyncMock()
 
     with patch.object(cache, "_redis", mock_redis):
@@ -69,8 +64,6 @@ async def test_invalidate_deletes_keys():
 
 @pytest.mark.asyncio
 async def test_invalidate_prefix_deletes_matching_keys():
-    from app import cache
-
     async def mock_scan_iter(pattern):
         for key in ["history:20:0", "history:50:0"]:
             yield key
@@ -86,8 +79,6 @@ async def test_invalidate_prefix_deletes_matching_keys():
 
 @pytest.mark.asyncio
 async def test_invalidate_prefix_noop_when_no_keys():
-    from app import cache
-
     async def mock_scan_iter(pattern):
         return
         yield  # make it an async generator
@@ -104,7 +95,5 @@ async def test_invalidate_prefix_noop_when_no_keys():
 @pytest.mark.asyncio
 async def test_invalidate_noop_when_redis_none():
     """invalidate() is safe when Redis is not initialized."""
-    from app import cache
-
     with patch.object(cache, "_redis", None):
         await cache.invalidate("key:1")  # must not raise
