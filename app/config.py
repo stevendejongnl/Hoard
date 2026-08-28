@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     static_dir: str = "static"
     uploads_dir: str = "./uploads"
     redis_url: str = "redis://localhost:6379"
+    vapid_public_key: str = ""
+    vapid_private_key: str = ""
+    vapid_subject: str = "mailto:steven@steven-dejong.nl"
 
     model_config = {"env_file": ".env"}
 

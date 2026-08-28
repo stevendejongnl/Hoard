@@ -70,6 +70,21 @@ spec:
                 secretKeyRef:
                   name: printer-secrets
                   key: INFLUXDB_BUCKET
+            - name: VAPID_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: VAPID_PUBLIC_KEY
+            - name: VAPID_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: VAPID_PRIVATE_KEY
+            - name: VAPID_SUBJECT
+              valueFrom:
+                secretKeyRef:
+                  name: printer-secrets
+                  key: VAPID_SUBJECT
           volumeMounts:
             - name: data
               mountPath: /data
