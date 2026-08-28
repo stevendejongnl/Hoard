@@ -56,7 +56,11 @@ jobs:
         run: uv run mypy app/ --ignore-missing-imports
 
       - name: Install release dependencies
-        run: npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog @semantic-release/exec conventional-changelog-conventionalcommits
+        # conventional-changelog-conventionalcommits pinned to 8.x: unpinned resolves
+        # latest (10.x), which requires conventional-changelog-writer@9+, but
+        # @semantic-release/release-notes-generator bundles writer@^8.0.0 - the
+        # version skew breaks changelog rendering with "Missing helper" errors.
+        run: npm install -g semantic-release @semantic-release/git @semantic-release/github @semantic-release/changelog @semantic-release/exec conventional-changelog-conventionalcommits@8
 
       - name: Dry-run to detect next version
         env:
