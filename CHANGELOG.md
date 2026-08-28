@@ -1,3 +1,13 @@
+## [1.37.0](https://github.com/stevendejongnl/printer/compare/v1.36.3...v1.37.0) (2026-08-28)
+
+### Features
+
+* add installable PWA support with push notifications ([da063b5](https://github.com/stevendejongnl/printer/commit/da063b5c77b66452d49f2c10714a40d4a70513e5))
+
+### Bug Fixes
+
+* redraw PWA icon as an actual 3D printer, pin release-notes-generator dep ([faf1afc](https://github.com/stevendejongnl/printer/commit/faf1afc252d37ec9b494598a054e6cd762eb81b4))
+
 ## [1.36.3](https://github.com/stevendejongnl/printer/compare/v1.36.2...v1.36.3) (2026-06-16)
 
 ### Bug Fixes
