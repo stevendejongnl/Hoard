@@ -2,6 +2,7 @@ import { LitElement, html, css } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import './search-modal'
 import type { SearchModal } from './search-modal'
+import './push-toggle'
 
 @customElement('top-nav')
 export class TopNav extends LitElement {
@@ -154,6 +155,7 @@ export class TopNav extends LitElement {
           <span class="nav-link" @click=${() => window.router.navigate('/history')}>history</span>
           <span class="nav-link" @click=${() => window.router.navigate('/projects')}>projects</span>
           <span class="nav-link" @click=${() => window.router.navigate('/spools')}>spools</span>
+          <push-toggle></push-toggle>
           ${this.printing ? html`<span class="status-badge"><span class="dot">●</span> printing</span>` : ''}
         </div>
       </div>

@@ -143,6 +143,16 @@ async def init_db(path: str) -> None:
             pass  # column already exists
         await db.commit()
 
+        await db.execute("""
+            CREATE TABLE IF NOT EXISTS push_subscriptions (
+                endpoint   TEXT PRIMARY KEY,
+                p256dh     TEXT NOT NULL,
+                auth       TEXT NOT NULL,
+                created_at INTEGER NOT NULL
+            )
+        """)
+        await db.commit()
+
         # Indexes — idempotent, safe to run on every startup
         await db.execute(
             "CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)"
@@ -663,6 +673,30 @@ async def delete_stale_webcam_photos(job_id: str, print_end_time: int, grace_s: 
         )
         await db.commit()
         return cur.rowcount or 0
+
+
+async def add_push_subscription(endpoint: str, p256dh: str, auth: str) -> None:
+    async with _conn() as db:
+        await db.execute(
+            """INSERT INTO push_subscriptions (endpoint, p256dh, auth, created_at)
+               VALUES (?, ?, ?, ?)
+               ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth""",
+            (endpoint, p256dh, auth, int(time.time())),
+        )
+        await db.commit()
+
+
+async def get_push_subscriptions() -> list[dict[str, Any]]:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM push_subscriptions") as cur:
+            return [dict(r) for r in await cur.fetchall()]
+
+
+async def remove_push_subscription(endpoint: str) -> None:
+    async with _conn() as db:
+        await db.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (endpoint,))
+        await db.commit()
 
 
 async def get_print_detail_counts(job_ids: list[str]) -> dict[str, dict[str, Any]]:

@@ -16,6 +16,7 @@ dependencies = [
     "Pillow>=10.0",
     "numpy>=1.26",
     "redis[asyncio]>=5.0",
+    "pywebpush>=2.0",
 ]
 
 [dependency-groups]

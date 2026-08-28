@@ -3,7 +3,7 @@ import json
 import logging
 from typing import Any
 
-from app import ha
+from app import ha, push_client
 from app.moonraker import moonraker
 from app.routes.control import _get_switch_state
 
@@ -197,6 +197,16 @@ async def _handle_status_update(params: list[Any]) -> None:
         if _standby_task:
             _standby_task.cancel()
             _standby_task = None
+
+        if new_state in ("complete", "error", "cancelled") and prev_state in ("printing", "paused") and new_state != prev_state:
+            filename = updated.get("filename") or "Print"
+            if new_state == "complete":
+                title, body = "Print complete", f"{filename} finished printing."
+            elif new_state == "error":
+                title, body = "Print failed", f"{filename} hit an error."
+            else:
+                title, body = "Print cancelled", f"{filename} was cancelled."
+            asyncio.create_task(push_client.notify(title, body, "/"))
 
         await hub.broadcast("printer_state", updated)
 
