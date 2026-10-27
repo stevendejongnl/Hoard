@@ -63,6 +63,11 @@ SCREENS = {
     "spools-phone": ("/spools", PHONE_SIZE),
 }
 
+# screen name -> selector of the element the design shows as chosen, clicked before the screenshot
+SCREEN_CHOICES = {
+    "history-desktop": ".history-row:nth-child(6)",
+}
+
 
 def is_responding(address: str) -> bool:
     try:
@@ -89,12 +94,15 @@ def start_app_server() -> subprocess.Popen:
     return subprocess.Popen(command, cwd=FRONTEND_DIRECTORY, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path) -> None:
+def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path, choice: str | None = None) -> None:
     page.set_viewport_size({"width": size[0], "height": size[1]})
     page.goto(address, wait_until="load")
     page.add_style_tag(content=FREEZE_MOTION_STYLE)
     page.evaluate("document.fonts.ready")
     page.wait_for_timeout(SETTLE_MILLISECONDS)
+    if choice:
+        page.click(choice)
+        page.wait_for_timeout(SETTLE_MILLISECONDS)
     page.screenshot(path=str(target), clip={"x": 0, "y": 0, "width": size[0], "height": size[1]})
 
 
@@ -110,7 +118,7 @@ def measure_difference_share(reference_path: Path, screenshot_path: Path, differ
 def compare_screen(page: Page, name: str, app_address: str) -> float:
     path, size = SCREENS[name]
     screenshot_path = OUTPUT_DIRECTORY / f"{name}.png"
-    capture_screen(page, f"{app_address}{path}", size, screenshot_path)
+    capture_screen(page, f"{app_address}{path}", size, screenshot_path, SCREEN_CHOICES.get(name))
     return measure_difference_share(REFERENCE_DIRECTORY / f"{name}.png", screenshot_path, OUTPUT_DIRECTORY / f"{name}-difference.png")
 
 
