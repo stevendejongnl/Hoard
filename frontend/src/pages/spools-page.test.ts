@@ -230,6 +230,22 @@ describe('edit form', () => {
   })
 })
 
+describe('edit sheet on a phone', () => {
+  it('has no backdrop while the form is closed', async () => {
+    const page = await createSpoolsPage(createCalls())
+    expect(page.querySelector('.sheet-backdrop')).toBeNull()
+  })
+
+  it('dims the list behind the form while it is open and closes when the backdrop is pressed', async () => {
+    const page = await createSpoolsPage(createCalls())
+    await click(page, '.edit-spool-button')
+    expect(page.querySelector('.sheet-backdrop')).not.toBeNull()
+    await click(page, '.sheet-backdrop')
+    expect(page.querySelector('.sheet-backdrop')).toBeNull()
+    expect(page.querySelector('.spools-details')?.classList.contains('open')).toBe(false)
+  })
+})
+
 describe('saving', () => {
   it('updates the selected spool with the edited values', async () => {
     const calls = createCalls()
