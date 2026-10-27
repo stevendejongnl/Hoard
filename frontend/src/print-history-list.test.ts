@@ -4,6 +4,7 @@ import {
   filterPrints,
   formatPrintCost,
   formatPrintDate,
+  formatShortPrintDate,
   formatPrintDuration,
   formatPrintFilament,
   sortPrints,
@@ -36,6 +37,11 @@ const NO_FILTERS: PrintFilters = { fileName: '', spoolId: '', projectId: '', sta
 describe('formatting a print', () => {
   it('writes the date as day, short month and year', () => {
     expect(formatPrintDate('2026-06-04T09:30:00Z')).toBe('4 Jun 2026')
+  })
+
+  it('writes the short date without the year', () => {
+    expect(formatShortPrintDate('2026-06-04T09:30:00Z')).toBe('4 Jun')
+    expect(formatShortPrintDate(null)).toBe('—')
   })
 
   it('writes a missing date as a dash', () => {
