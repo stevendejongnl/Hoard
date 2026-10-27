@@ -107,3 +107,43 @@ bottom-tabs {
     display: none;
   }
 }
+
+/* The strip along the bottom of the desktop layout. */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 26px;
+  padding: 0 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+  font: 400 12px var(--monospace-family);
+  color: var(--muted-text-color);
+}
+
+.status-bar .status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-bar .connection-light {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok-color);
+}
+
+.status-bar .connection-light.disconnected {
+  background: var(--danger-color);
+}
+
+.status-bar-version {
+  margin-left: auto;
+}
+
+@media (max-width: 800px) {
+  status-bar {
+    display: none;
+  }
+}
