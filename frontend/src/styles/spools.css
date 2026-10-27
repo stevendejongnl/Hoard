@@ -148,6 +148,10 @@
   display: none;
 }
 
+.sheet-backdrop {
+  display: none;
+}
+
 /* The middle strip */
 .spools-main {
   min-width: 0;
@@ -462,11 +466,37 @@
     display: none;
   }
 
-  .spools-details.open {
-    display: flex;
+  .sheet-backdrop {
+    display: block;
     position: fixed;
     inset: 0;
     z-index: 20;
+    background: rgba(0, 0, 0, 0.6);
+  }
+
+  .spools-details.open {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 85dvh;
+    z-index: 21;
+    border-left: 0;
+    border-top: 1px solid var(--strong-border-color);
+    border-radius: 8px 8px 0 0;
+    overflow: hidden;
+  }
+
+  .spools-details.open::before {
+    content: '';
+    flex: none;
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    margin: 8px 0 4px;
+    border-radius: 2px;
+    background: var(--strong-border-color);
   }
 
   .spools-details .details-body {

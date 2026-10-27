@@ -413,9 +413,14 @@ export class SpoolsPage extends LitElement {
     </aside>`
   }
 
+  private renderBackdrop(): TemplateResult | typeof nothing {
+    if (!this.isDetailsOpen) return nothing
+    return html`<div class="sheet-backdrop" @click=${this.closeDetails}></div>`
+  }
+
   render(): TemplateResult {
     return html`<div class="spools-layout">
-      ${this.renderFiltersPanel()} ${this.renderMain()} ${this.renderDetails()}
+      ${this.renderFiltersPanel()} ${this.renderMain()} ${this.renderBackdrop()} ${this.renderDetails()}
     </div>`
   }
 }
