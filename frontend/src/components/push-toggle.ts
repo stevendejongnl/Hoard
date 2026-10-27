@@ -20,12 +20,12 @@ export class PushToggle extends LitElement {
     }
     .bell {
       font-size: 14px;
-      color: var(--text-muted);
+      color: var(--muted-text-color);
       cursor: pointer;
       user-select: none;
     }
     .bell:hover {
-      color: var(--text);
+      color: var(--text-color);
     }
     .bell.busy {
       opacity: 0.5;
