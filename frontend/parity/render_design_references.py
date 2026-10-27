@@ -6,7 +6,7 @@ The browser may only reach this machine; Google Fonts requests are answered with
 font files the app uses, so text renders the same in the reference and in the app.
 
 Usage:
-    python3 frontend/parity/render_design_references.py --runtime /path/to/dc-runtime.js
+    python3 -m frontend.parity.render_design_references --runtime /path/to/dc-runtime.js
 """
 
 import argparse
@@ -19,13 +19,18 @@ from pathlib import Path
 
 from playwright.sync_api import Page, Route, sync_playwright
 
+from frontend.parity.browser_settings import (
+    CONTEXT_OPTIONS,
+    DESKTOP_SIZE,
+    FIXED_TIME,
+    FREEZE_MOTION_STYLE,
+    PHONE_SIZE,
+)
+
 PARITY_DIRECTORY = Path(__file__).resolve().parent
 DESIGN_DIRECTORY = PARITY_DIRECTORY / "design"
 REFERENCE_DIRECTORY = PARITY_DIRECTORY / "references"
 FONT_FILES_DIRECTORY = PARITY_DIRECTORY.parent / "node_modules" / "@fontsource"
-
-DESKTOP_SIZE = (1360, 860)
-PHONE_SIZE = (390, 844)
 
 # design file name -> (reference file name, viewport size)
 SCREENS = {
@@ -98,6 +103,7 @@ def answer_request(route: Route, server_address: str, font_stylesheet: str) -> N
 def render_screen(page: Page, server_address: str, design_file: str, size: tuple[int, int], target: Path) -> None:
     page.set_viewport_size({"width": size[0], "height": size[1]})
     page.goto(f"{server_address}/{design_file}", wait_until="networkidle")
+    page.add_style_tag(content=FREEZE_MOTION_STYLE)
     page.evaluate("document.fonts.ready")
     page.wait_for_timeout(300)
     page.screenshot(path=str(target), clip={"x": 0, "y": 0, "width": size[0], "height": size[1]})
@@ -108,7 +114,8 @@ def render_all_screens(server_address: str) -> None:
     font_stylesheet = build_font_stylesheet(server_address)
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch()
-        page = browser.new_page(device_scale_factor=1)
+        page = browser.new_context(**CONTEXT_OPTIONS).new_page()
+        page.clock.set_fixed_time(FIXED_TIME)
         page.route("**/*", lambda route: answer_request(route, server_address, font_stylesheet))
         for design_file, (reference_name, size) in SCREENS.items():
             render_screen(page, server_address, design_file, size, REFERENCE_DIRECTORY / f"{reference_name}.png")

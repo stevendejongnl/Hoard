@@ -10,3 +10,4 @@ frontend/dist/
 .superpowers/
 .playwright-mcp/
 .claude/
+frontend/parity/output/
