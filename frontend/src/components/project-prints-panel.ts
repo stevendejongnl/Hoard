@@ -117,7 +117,7 @@ export class ProjectPrintsPanel extends LitElement {
       href=${path}
       @click=${(click: MouseEvent) => followNavigationLink(click, path, this.navigate)}
     >
-      <span class="thumbnail">${renderIcon('cube', 16)}</span>
+      <span class="thumbnail">${renderIcon('cube', 18, 1.6)}</span>
       ${this.renderPrintLabels(
         record ? findBaseName(record.filename) : print.job_id,
         describePrint(record, print.duration_s, print.cost_total),
