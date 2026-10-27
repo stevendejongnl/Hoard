@@ -1,0 +1,94 @@
+/* The file browser dialog: a table of the files on the printer. */
+
+.files-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.files-dialog {
+  width: min(640px, calc(100vw - 32px));
+  max-height: calc(100vh - 64px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel-color);
+  border: 1px solid var(--strong-border-color);
+  border-radius: 2px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.files-title {
+  background: var(--chrome-color);
+  min-height: 40px;
+}
+
+.files-search-row {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.files-search {
+  box-sizing: border-box;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  font: 400 12px var(--monospace-family);
+  color: var(--text-color);
+}
+
+.files-table {
+  flex: 1;
+  min-height: 160px;
+  overflow-y: auto;
+}
+
+.file-row,
+.file-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 70px 70px 70px;
+}
+
+.file-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.file-figure {
+  font-size: 12px;
+}
+
+.upload-button {
+  cursor: pointer;
+}
+
+.files-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.files-footer .button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
