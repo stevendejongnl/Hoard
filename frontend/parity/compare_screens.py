@@ -61,11 +61,22 @@ SCREENS = {
     "projects-phone": ("/projects", PHONE_SIZE),
     "project-detail-phone": ("/projects/1", PHONE_SIZE),
     "spools-phone": ("/spools", PHONE_SIZE),
+    "print-detail-desktop": ("/prints/job-002", DESKTOP_SIZE),
+    "search-desktop": ("/history", DESKTOP_SIZE),
+    "file-browser-desktop": ("/", DESKTOP_SIZE),
+    "print-ready-desktop": ("/history", DESKTOP_SIZE),
+    "spool-sheet-phone": ("/spools", PHONE_SIZE),
 }
 
-# screen name -> selector of the element the design shows as chosen, clicked before the screenshot
-SCREEN_CHOICES = {
-    "history-desktop": ".history-row:nth-child(6)",
+# screen name -> what a person does before the screenshot: ("click", selector), ("press", key),
+# ("type", text) or ("choose", selector, option value)
+CHOSEN_HISTORY_ROW = ("click", ".history-row:nth-child(6)")
+SCREEN_STEPS = {
+    "history-desktop": [CHOSEN_HISTORY_ROW],
+    "search-desktop": [CHOSEN_HISTORY_ROW, ("press", "/"), ("type", "door")],
+    "file-browser-desktop": [("choose", 'select[aria-label="File"]', "__browse__")],
+    "print-ready-desktop": [CHOSEN_HISTORY_ROW, ("click", "button.print-again-button")],
+    "spool-sheet-phone": [("click", ".spool-row:nth-child(2) .edit-spool-button")],
 }
 
 
@@ -94,14 +105,26 @@ def start_app_server() -> subprocess.Popen:
     return subprocess.Popen(command, cwd=FRONTEND_DIRECTORY, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
-def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path, choice: str | None = None) -> None:
+def perform_step(page: Page, step: tuple) -> None:
+    action = step[0]
+    if action == "click":
+        page.click(step[1])
+    if action == "press":
+        page.keyboard.press(step[1])
+    if action == "type":
+        page.keyboard.type(step[1])
+    if action == "choose":
+        page.select_option(step[1], step[2])
+
+
+def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path, steps: list | None = None) -> None:
     page.set_viewport_size({"width": size[0], "height": size[1]})
     page.goto(address, wait_until="load")
     page.add_style_tag(content=FREEZE_MOTION_STYLE)
     page.evaluate("document.fonts.ready")
     page.wait_for_timeout(SETTLE_MILLISECONDS)
-    if choice:
-        page.click(choice)
+    for step in steps or []:
+        perform_step(page, step)
         page.wait_for_timeout(SETTLE_MILLISECONDS)
     page.screenshot(path=str(target), clip={"x": 0, "y": 0, "width": size[0], "height": size[1]})
 
@@ -118,7 +141,7 @@ def measure_difference_share(reference_path: Path, screenshot_path: Path, differ
 def compare_screen(page: Page, name: str, app_address: str) -> float:
     path, size = SCREENS[name]
     screenshot_path = OUTPUT_DIRECTORY / f"{name}.png"
-    capture_screen(page, f"{app_address}{path}", size, screenshot_path, SCREEN_CHOICES.get(name))
+    capture_screen(page, f"{app_address}{path}", size, screenshot_path, SCREEN_STEPS.get(name))
     return measure_difference_share(REFERENCE_DIRECTORY / f"{name}.png", screenshot_path, OUTPUT_DIRECTORY / f"{name}-difference.png")
 
 

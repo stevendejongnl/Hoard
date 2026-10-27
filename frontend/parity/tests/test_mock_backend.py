@@ -129,6 +129,28 @@ def test_fixture_prediction_is_the_one_of_the_design(fixture_backend):
     assert prediction["cost_total"] == 0.04
 
 
+def test_fixture_files_carry_the_size_time_and_filament_of_the_design(fixture_backend):
+    files = fetch_json(fixture_backend, "/api/files")
+    assert [file["size"] for file in files] == [4194304, 6501171, 1153434]
+    assert files[0]["estimated_time"] == 660 and files[0]["filament_weight_total"] == 3.8
+
+
+def test_fixture_print_job_is_the_helicopter_blade_print(fixture_backend):
+    job = fetch_json(fixture_backend, "/api/prints/job-002")
+    assert job["filename"] == "helicopter-blade.gcode"
+    assert job["notes"] == "First layer needed a higher bed temperature."
+    assert job["project"] == {"id": 3, "name": "Doorhandle"}
+    assert job["gcode_meta"]["nozzle_temp"] == 205
+    assert job["photos"] == []
+
+
+def test_fixture_search_finds_the_doorhandle_prints_and_project(fixture_backend):
+    results = fetch_json(fixture_backend, "/api/search?q=door")
+    assert [item["filename"] for item in results["history"]] == ["Doorhandle/Doorhandle_body.gcode", "Doorhandle_parts.gcode"]
+    assert results["projects"][0]["name"] == "Doorhandle"
+    assert results["spools"] == []
+
+
 def test_fixture_history_pages_follow_limit_and_offset(fixture_backend):
     first_page = fetch_json(fixture_backend, "/api/history?limit=8&offset=0")
     second_page = fetch_json(fixture_backend, "/api/history?limit=8&offset=8")

@@ -44,6 +44,11 @@ SCREENS = {
     "ProjectsMobile.dc.html": ("projects-phone", PHONE_SIZE),
     "ProjectDetailMobile.dc.html": ("project-detail-phone", PHONE_SIZE),
     "SpoolsMobile.dc.html": ("spools-phone", PHONE_SIZE),
+    "PrintDetail.dc.html": ("print-detail-desktop", DESKTOP_SIZE),
+    "Search.dc.html": ("search-desktop", DESKTOP_SIZE),
+    "FileBrowser.dc.html": ("file-browser-desktop", DESKTOP_SIZE),
+    "PrintReady.dc.html": ("print-ready-desktop", DESKTOP_SIZE),
+    "SpoolSheet.dc.html": ("spool-sheet-phone", PHONE_SIZE),
 }
 
 FONT_FACES = [
