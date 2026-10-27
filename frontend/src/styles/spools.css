@@ -1,0 +1,476 @@
+/* The spools page: filters and summary on the left, the table in the middle, the edit form on the right. */
+
+.app-content > spools-page {
+  display: flex;
+}
+
+.spools-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+}
+
+.spools-filters,
+.spools-details {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel-color);
+}
+
+.spools-filters {
+  border-right: 1px solid var(--border-color);
+}
+
+.spools-details {
+  border-left: 1px solid var(--border-color);
+}
+
+.spools-filters-body,
+.details-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.section-body {
+  padding: 8px 0;
+}
+
+.spools-filters-footer,
+.details-footer {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.add-spool-button,
+.save-button {
+  flex: 1;
+}
+
+.details-title {
+  background: var(--chrome-color);
+  min-height: 40px;
+}
+
+.close-details-button {
+  display: none;
+}
+
+/* Value fields that hold an input; the design sizes its fields with border-box */
+.spools-layout .value-field {
+  box-sizing: border-box;
+}
+
+.value-field input {
+  flex: 1;
+  width: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: right;
+}
+
+.value-field.wide-field {
+  min-width: 160px;
+}
+
+.value-field.hex-field {
+  min-width: 110px;
+}
+
+.hex-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hex-swatch {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid var(--muted-text-color);
+}
+
+.notes-body {
+  padding: 8px 12px;
+}
+
+.notes-field {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  height: 64px;
+  padding: 8px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  font: 400 12px var(--font-family);
+  color: var(--text-color);
+  resize: none;
+}
+
+.notes-field::placeholder {
+  color: var(--muted-text-color);
+  opacity: 1;
+}
+
+.form-error {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--danger-color);
+}
+
+/* Filter selects: the native select sits invisibly on top of the drawn field */
+.filter-select {
+  position: relative;
+  min-width: 150px;
+}
+
+.filter-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.phone-text {
+  display: none;
+}
+
+/* The middle strip */
+.spools-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--well-color);
+}
+
+.spools-title-strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.spools-title {
+  font: 600 14px var(--font-family);
+}
+
+.spools-count {
+  font-size: 12px;
+}
+
+.spools-table {
+  flex: 1;
+  overflow: hidden;
+  background: var(--panel-color);
+}
+
+.spool-row,
+.spool-header {
+  grid-template-columns: 36px minmax(160px, 1fr) 70px 90px minmax(140px, 1fr) 90px 70px;
+}
+
+.spool-header {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  min-height: 32px;
+  padding: 0 16px;
+  background: var(--section-header-color);
+  font: 600 12px var(--font-family);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.spool-header .spool-price {
+  text-align: right;
+}
+
+.spool-heading,
+.spool-meta {
+  display: contents;
+}
+
+.spool-row > *,
+.spool-meta > * {
+  grid-row: 1;
+}
+
+.spool-swatch {
+  grid-column: 1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--strong-border-color);
+}
+
+.spool-name {
+  grid-column: 2;
+  font-weight: 600;
+}
+
+.spool-material {
+  grid-column: 3;
+  font-size: 12px;
+}
+
+.spool-color {
+  grid-column: 4;
+}
+
+.spool-remaining {
+  grid-column: 5;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.spool-row .spool-price {
+  grid-column: 6;
+  font-size: 12px;
+  text-align: right;
+}
+
+.spool-tag-cell {
+  grid-column: 7;
+}
+
+.remaining-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--well-color);
+  border-radius: 1px;
+}
+
+.remaining-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.remaining-grams {
+  width: 88px;
+  font-size: 12px;
+  text-align: right;
+}
+
+.in-use-tag {
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--selection-tint);
+  color: #fff;
+  font: 700 11px var(--font-family);
+  letter-spacing: 0.06em;
+}
+
+.edit-spool-button {
+  display: none;
+}
+
+.state-message {
+  padding: 24px 16px;
+  color: var(--muted-text-color);
+  font-size: 13px;
+}
+
+/* Phone: filter chips, one card per spool, an Add spool bar; the form opens over the page. */
+@media (max-width: 800px) {
+  .spools-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .spools-filters {
+    display: contents;
+  }
+
+  .spools-filters-body {
+    display: contents;
+  }
+
+  .summary-section,
+  .filters-section .section-header,
+  .filter-controls .parameter-label,
+  .spools-title-strip,
+  .spool-header {
+    display: none;
+  }
+
+  .filters-section {
+    flex: none;
+    padding: 12px 16px;
+    background: var(--chrome-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .filter-controls {
+    display: flex;
+    gap: 8px;
+    padding: 0 0 2px;
+    overflow-x: auto;
+  }
+
+  .filter-controls .parameter-row {
+    display: contents;
+  }
+
+  .filter-select {
+    flex: none;
+    gap: 6px;
+    min-width: 0;
+    height: auto;
+    min-height: 36px;
+    padding: 0 12px;
+    justify-content: flex-start;
+    font: 600 13px var(--font-family);
+  }
+
+  .desktop-text {
+    display: none;
+  }
+
+  .phone-text {
+    display: inline;
+  }
+
+  .spools-main {
+    order: 2;
+    flex: 1;
+    overflow-y: auto;
+    background: var(--panel-color);
+  }
+
+  .spools-table {
+    flex: none;
+    overflow: visible;
+  }
+
+  .spool-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .spool-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 12px;
+    min-height: 0;
+    padding: 12px 14px;
+    background: var(--panel-color);
+    border: 1px solid var(--border-color);
+    border-radius: 2px;
+    box-shadow: none;
+  }
+
+  .spool-row.selected,
+  .spool-row:hover {
+    background: var(--panel-color);
+    box-shadow: none;
+  }
+
+  .spool-swatch {
+    flex: none;
+    width: 32px;
+    height: 32px;
+  }
+
+  .spool-heading {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .spool-name {
+    font: 600 16px var(--font-family);
+  }
+
+  .spool-meta {
+    display: block;
+    font-size: 12px;
+    color: var(--muted-text-color);
+  }
+
+  .spool-meta > * {
+    font-family: var(--font-family);
+    font-size: 12px;
+  }
+
+  .spool-meta > * + *::before {
+    content: ' · ';
+  }
+
+  .spool-row .spool-price::after {
+    content: ' / g';
+  }
+
+  .spool-tag-cell:empty {
+    display: none;
+  }
+
+  .edit-spool-button {
+    display: inline-flex;
+    width: 44px;
+    min-height: 44px;
+  }
+
+  .spool-remaining {
+    order: 1;
+    flex: 1 0 100%;
+  }
+
+  .remaining-grams {
+    width: auto;
+  }
+
+  .spools-filters-footer {
+    order: 3;
+    padding: 10px 16px;
+  }
+
+  .add-spool-button {
+    min-height: 44px;
+  }
+
+  .spools-details {
+    display: none;
+  }
+
+  .spools-details.open {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 20;
+  }
+
+  .spools-details .details-body {
+    overflow-y: auto;
+  }
+
+  .close-details-button {
+    display: inline-flex;
+    margin-left: auto;
+  }
+}
