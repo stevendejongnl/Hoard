@@ -80,6 +80,10 @@ export class CostPredictorPanel extends LitElement {
     await this.refreshPrediction()
   }
 
+  get currentFilename(): string {
+    return this.filename
+  }
+
   /** Takes a file chosen in the file browser, also one the list did not have yet. */
   async chooseFile(filename: string): Promise<void> {
     if (!this.files.some((file) => file.filename === filename)) {
