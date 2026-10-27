@@ -26,6 +26,10 @@ export function formatPrintDate(isoTime: string | null): string {
   })
 }
 
+export function formatShortPrintDate(isoTime: string | null): string {
+  return formatPrintDate(isoTime).replace(/ \d{4}$/, '')
+}
+
 export function formatPrintDuration(seconds: number): string {
   const hours = Math.floor(seconds / SECONDS_PER_HOUR)
   const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE)

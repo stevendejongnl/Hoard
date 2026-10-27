@@ -9,6 +9,7 @@ import {
   formatPrintDate,
   formatPrintDuration,
   formatPrintFilament,
+  formatShortPrintDate,
   sortPrints,
 } from '../print-history-list'
 import type { PrintFilters, PrintSort } from '../print-history-list'
@@ -393,7 +394,7 @@ export class HistoryPage extends LitElement {
   }
 
   private renderPhoneRow(record: PrintRecord): TemplateResult {
-    const shortDate = formatPrintDate(record.time).replace(/ \d{4}$/, '')
+    const shortDate = formatShortPrintDate(record.time)
     return html`<div class="history-row phone-row" tabindex="0" @click=${() => this.selectPrint(record)}>
       ${this.renderThumbnail(record, 22)}
       <span class="phone-row-text">
