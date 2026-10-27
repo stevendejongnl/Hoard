@@ -9,6 +9,7 @@ Usage (from the repository root):
 """
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -35,14 +36,16 @@ from frontend.parity.image_comparison import (
     is_within_tolerance,
 )
 from frontend.parity.mock_backend import start_mock_backend
+from frontend.parity.ports import read_port
 
 PARITY_DIRECTORY = Path(__file__).resolve().parent
 FRONTEND_DIRECTORY = PARITY_DIRECTORY.parent
 REFERENCE_DIRECTORY = PARITY_DIRECTORY / "references"
 OUTPUT_DIRECTORY = PARITY_DIRECTORY / "output"
 
-BACKEND_PORT = 8766  # the development server proxies /api and /stream here (see vite.config.ts)
-APP_PORT = 5199
+# The development server proxies /api and /stream to the backend port (see vite.config.ts).
+BACKEND_PORT = read_port(os.environ, "PARITY_BACKEND_PORT", 8766)
+APP_PORT = read_port(os.environ, "PARITY_APP_PORT", 5199)
 SERVER_START_TIMEOUT_SECONDS = 60
 SETTLE_MILLISECONDS = 1500
 
@@ -82,7 +85,8 @@ def wait_until_responding(address: str) -> None:
 
 def start_app_server() -> subprocess.Popen:
     command = ["npx", "vite", "--host", "127.0.0.1", "--port", str(APP_PORT), "--strictPort"]
-    return subprocess.Popen(command, cwd=FRONTEND_DIRECTORY, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    environment = {**os.environ, "PARITY_BACKEND_PORT": str(BACKEND_PORT)}
+    return subprocess.Popen(command, cwd=FRONTEND_DIRECTORY, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path) -> None:

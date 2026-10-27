@@ -7,8 +7,8 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:8766',
-      '/stream': { target: 'http://localhost:8766', ws: true },
+      '/api': `http://localhost:${process.env.PARITY_BACKEND_PORT ?? 8766}`,
+      '/stream': { target: `http://localhost:${process.env.PARITY_BACKEND_PORT ?? 8766}`, ws: true },
     },
   },
   test: {
