@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ACCENT_COLOR_STORAGE_KEY, createAccentTheme, isValidAccentColor } from './accent-theme'
+import type { AccentStorage } from './accent-theme'
 import { DEFAULT_ACCENT_COLOR } from './theme'
 
 class InMemoryStorage {
@@ -32,7 +33,7 @@ class UnavailableStorage {
   }
 }
 
-function createTheme(storage = new InMemoryStorage()) {
+function createTheme(storage: AccentStorage = new InMemoryStorage()) {
   const rootElement = document.createElement('div')
   const theme = createAccentTheme({ storage, rootElement })
   return { theme, storage, rootElement }
