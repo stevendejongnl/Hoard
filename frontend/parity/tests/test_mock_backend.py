@@ -85,6 +85,15 @@ def test_fixture_history_has_twelve_of_twenty_records_with_the_design_first_reco
     assert history["records"][0]["duration_s"] == 13080
 
 
+def test_fixture_history_pages_follow_limit_and_offset(fixture_backend):
+    first_page = fetch_json(fixture_backend, "/api/history?limit=8&offset=0")
+    second_page = fetch_json(fixture_backend, "/api/history?limit=8&offset=8")
+    assert first_page["total"] == 20
+    assert len(first_page["records"]) == 8
+    assert len(second_page["records"]) == 4
+    assert second_page["records"][0]["job_id"] == "job-008"
+
+
 def test_fixture_projects_match_the_design(fixture_backend):
     projects = fetch_json(fixture_backend, "/api/projects")
     assert [project["name"] for project in projects] == ["Dactyl Manuform", "Doorhandle", "Lego F1 stand", "Voron 2.4"]
