@@ -139,6 +139,7 @@ def create_project_print(identifier: int, job_index: int, file_identifier: int) 
 
 def create_fixture_project_detail() -> JsonObject:
     detail = create_fixture_projects()[0]
+    detail["notes"] = "[Project notes. Markdown is supported: settings, mods, build log.]"
     detail["files"] = [
         {
             "id": 1,
@@ -158,7 +159,7 @@ def create_fixture_project_detail() -> JsonObject:
             "project_id": 1,
             "url": "https://www.printables.com/model/dactyl-manuform",
             "label": None,
-            "meta": {"title": "Dactyl Manuform keyboard", "description": None, "image_url": None, "print_settings": None},
+            "meta": {"title": "[Link preview title]", "description": None, "image_url": None, "print_settings": None},
         }
     ]
     detail["prints"] = [create_project_print(1, 4, 1), create_project_print(2, 5, 1)]

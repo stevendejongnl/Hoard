@@ -9,8 +9,12 @@ export class LinkPreviewCard extends LitElement {
   private _showTimer = 0
   private _hideTimer = 0
 
+  /** Replaceable so tests, and browsers without media queries, decide what counts as a touch screen. */
+  @property({ attribute: false }) isTouchScreen: () => boolean = () =>
+    window.matchMedia?.('(hover: none)').matches ?? false
+
   private _isTouch() {
-    return window.matchMedia('(hover: none)').matches
+    return this.isTouchScreen()
   }
 
   private _hasContent() {
