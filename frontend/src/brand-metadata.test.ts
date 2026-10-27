@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 function readPublicFile(name: string): string {
-  return readFileSync(new URL(`../public/${name}`, import.meta.url), 'utf8')
+  return readFileSync(resolve(process.cwd(), 'public', name), 'utf8')
 }
 
 describe('brand metadata', () => {
@@ -13,7 +14,7 @@ describe('brand metadata', () => {
   })
 
   it('titles the page Hoard', () => {
-    const page = readFileSync(new URL('../index.html', import.meta.url), 'utf8')
+    const page = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8')
     expect(page).toContain('<title>Hoard</title>')
   })
 
