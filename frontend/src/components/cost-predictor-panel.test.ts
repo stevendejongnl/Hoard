@@ -120,4 +120,27 @@ describe('cost predictor', () => {
     expect(toggle?.getAttribute('aria-expanded')).toBe('false')
     expect(panel.querySelector('[data-field="total"]')).toBeNull()
   })
+
+  it('offers to browse the files and asks the page to open the browser', async () => {
+    const predictions: { filename: string; spoolId: number | null }[] = []
+    const panel = await createPanel(predictions)
+    let purpose = ''
+    panel.addEventListener('open-file-browser', (event) => (purpose = (event as CustomEvent).detail.purpose))
+    const options = [...panel.querySelectorAll('select[aria-label="File"] option')].map((option) =>
+      option.textContent?.trim(),
+    )
+    expect(options.at(-1)).toBe('Browse files…')
+    await choose(panel, 'select[aria-label="File"]', '__browse__')
+    expect(purpose).toBe('predict')
+    expect(predictions.length).toBe(1)
+  })
+
+  it('takes a file chosen in the browser, even one that is not in its list', async () => {
+    const predictions: { filename: string; spoolId: number | null }[] = []
+    const panel = await createPanel(predictions)
+    await panel.chooseFile('uploaded.gcode')
+    await settle(panel)
+    expect(readText(panel, '[data-field="file"]')).toBe('uploaded')
+    expect(predictions.at(-1)).toEqual({ filename: 'uploaded.gcode', spoolId: 2 })
+  })
 })

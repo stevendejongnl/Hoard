@@ -125,6 +125,24 @@ describe('recent prints tab', () => {
   })
 })
 
+describe('without any print', () => {
+  it('offers to print a file and asks the page to open the file browser', async () => {
+    const panel = await createPanel({
+      loadHistory: async () => ({ records: [], total: 0 }),
+      printerState: null,
+    })
+    let purpose = ''
+    panel.addEventListener('open-file-browser', (event) => (purpose = (event as CustomEvent).detail.purpose))
+    panel.querySelector<HTMLElement>('button.print-a-file-button')?.click()
+    expect(purpose).toBe('print')
+  })
+
+  it('does not offer it while there are prints to show', async () => {
+    const panel = await createPanel()
+    expect(panel.querySelector('button.print-a-file-button')).toBeNull()
+  })
+})
+
 describe('spools tab', () => {
   async function openSpools(): Promise<DashboardListsPanel> {
     const panel = await createPanel()
