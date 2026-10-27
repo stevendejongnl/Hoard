@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { existsSync, readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { resolve } from 'node:path'
 
-const frontend = (path: string) => fileURLToPath(new URL(`../${path}`, import.meta.url))
+// vitest's jsdom environment does not give import.meta.url the real file location, so resolve from __dirname
+const frontend = (path: string) => resolve(__dirname, '..', path)
 const read = (path: string) => readFileSync(frontend(path), 'utf-8')
 
 describe('favicon.svg', () => {
