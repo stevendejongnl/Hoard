@@ -103,9 +103,12 @@
   background: var(--panel-color);
 }
 
-.detail-photos,
-.detail-notes {
+.detail-layout .detail-photos {
   padding: 12px;
+}
+
+.detail-notes {
+  padding: 16px;
 }
 
 @media (max-width: 800px) {
@@ -123,4 +126,99 @@
   .detail-main {
     display: block;
   }
+}
+
+/* Photos */
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-tile,
+.add-photo-tile {
+  position: relative;
+  box-sizing: border-box;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+}
+
+.photo-tile {
+  cursor: zoom-in;
+}
+
+.photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.add-photo-tile {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--muted-text-color);
+  cursor: pointer;
+}
+
+.add-photo-tile:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.photo-source {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  font: 400 11px var(--monospace-family);
+  color: var(--secondary-text-color);
+  pointer-events: none;
+}
+
+.delete-photo-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+}
+
+.photo-tile:hover .delete-photo-button,
+.photo-tile:focus-within .delete-photo-button {
+  display: inline-flex;
+}
+
+@media (hover: none) {
+  .delete-photo-button {
+    display: inline-flex;
+  }
+}
+
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  cursor: zoom-out;
+}
+
+.photo-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  pointer-events: none;
 }
