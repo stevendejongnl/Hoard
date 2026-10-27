@@ -139,7 +139,7 @@ def test_fixture_print_job_is_the_helicopter_blade_print(fixture_backend):
     job = fetch_json(fixture_backend, "/api/prints/job-002")
     assert job["filename"] == "helicopter-blade.gcode"
     assert job["notes"] == "First layer needed a higher bed temperature."
-    assert job["project"] == {"id": 3, "name": "Doorhandle"}
+    assert job["project"] == {"id": 2, "name": "Doorhandle"}
     assert job["gcode_meta"]["nozzle_temp"] == 205
     assert job["photos"] == []
 

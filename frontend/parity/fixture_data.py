@@ -4,6 +4,7 @@ The mock backend serves this so every screen of the app can be compared with its
 """
 
 import math
+from datetime import datetime
 from typing import Any
 
 JsonObject = dict[str, Any]
@@ -150,11 +151,65 @@ def create_temperature_history() -> JsonObject:
     return {"samples": [create_temperature_sample(age) for age in ages]}
 
 
-FILE_NAMES = ["helicopter-blade.gcode", "dactyl-manuform-dm-5x6-plate.gcode", "tap_cover_plate.gcode"]
+# filename, size in bytes, estimated seconds, filament grams
+FILE_ROWS = [
+    ("helicopter-blade.gcode", 4194304, 660, 3.8),
+    ("dactyl-manuform-dm-5x6-plate.gcode", 6501171, 10740, 43.3),
+    ("tap_cover_plate.gcode", 1153434, 2820, 10.8),
+]
 
 
 def create_fixture_files() -> list[JsonObject]:
-    return [{"filename": name, "size": 1_000_000, "modified": CREATED_AT_TIMESTAMP} for name in FILE_NAMES]
+    return [
+        {
+            "filename": name,
+            "size": size,
+            "modified": CREATED_AT_TIMESTAMP,
+            "estimated_time": seconds,
+            "filament_weight_total": grams,
+        }
+        for name, size, seconds, grams in FILE_ROWS
+    ]
+
+
+PRINT_JOB_INDEX = 2
+PRINT_JOB_NOTES = "First layer needed a higher bed temperature."
+
+
+def create_fixture_print_job() -> JsonObject:
+    record = create_fixture_history()["records"][PRINT_JOB_INDEX]
+    return {
+        **record,
+        "notes": PRINT_JOB_NOTES,
+        "settings": None,
+        "photos": [],
+        "created_at": CREATED_AT_TIMESTAMP,
+        "cost_filament": 0.03,
+        "cost_electricity": 0.01,
+        "avg_watts": 105,
+        "project": {"id": 2, "name": "Doorhandle"},
+        "gcode_meta": {
+            "layer_height": 0.2,
+            "nozzle_diameter": 0.4,
+            "filament_type": "PLA",
+            "nozzle_temp": 205,
+            "bed_temp": 60,
+        },
+    }
+
+
+def create_fixture_search() -> JsonObject:
+    records = [record for record in create_fixture_history()["records"] if "Doorhandle" in record["filename"]]
+    history = [
+        {
+            "job_id": record["job_id"],
+            "filename": record["filename"],
+            "time": int(datetime.fromisoformat(record["time"]).timestamp()),
+            "duration_s": record["duration_s"],
+        }
+        for record in records
+    ]
+    return {"history": history, "spools": [], "projects": [{"id": 2, "name": "Doorhandle", "print_count": 2}]}
 
 
 def create_fixture_prediction() -> JsonObject:
@@ -282,6 +337,8 @@ def create_fixture_responses() -> dict[str, Any]:
         "/api/history?limit=4&offset=0": create_dashboard_history(),
         "/api/temperatures/history": create_temperature_history(),
         "/api/predict": create_fixture_prediction(),
+        "/api/prints/job-002": create_fixture_print_job(),
+        "/api/search?q=door": create_fixture_search(),
         "/api/projects": create_fixture_projects(),
         "/api/projects/1": create_fixture_project_detail(),
         "/api/webcams": create_fixture_webcams(),
