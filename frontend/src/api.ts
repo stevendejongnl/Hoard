@@ -1,6 +1,7 @@
 import type { GcodeFile, PredictResult, PrintRecord, Spool } from './types'
 import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
+import type { TemperatureSample } from './temperature-chart-geometry'
 
 async function req<T>(path: string, opts?: RequestInit): Promise<T> {
   const r = await fetch(path, opts)
@@ -225,3 +226,7 @@ export const uploadPrintPhoto = (jobId: string, file: File) => {
 
 export const deletePrintPhoto = (jobId: string, photoId: number) =>
   fetch(`/api/prints/${encodeURIComponent(jobId)}/photos/${photoId}`, { method: 'DELETE' })
+
+// Temperatures
+export const getTemperatureHistory = () =>
+  req<{ samples: TemperatureSample[] }>('/api/temperatures/history').then((history) => history.samples)
