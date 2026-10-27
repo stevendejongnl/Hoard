@@ -1,0 +1,356 @@
+/* The projects page, written from Projects.dc.html and ProjectsMobile.dc.html. */
+
+/* Layout shared by the list and the detail page: a side panel with a footer, and a main area with a strip. */
+.projects-layout,
+.project-detail-layout {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+}
+
+.projects-layout {
+  grid-template-columns: 300px minmax(0, 1fr);
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-color);
+  border-right: 1px solid var(--border-color);
+  min-height: 0;
+}
+
+.side-panel-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.side-panel-footer {
+  flex: none;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.side-panel-footer .button {
+  width: 100%;
+}
+
+.section-body {
+  padding: 8px 0;
+}
+
+.page-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--well-color);
+}
+
+.page-strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.page-title {
+  font: 600 14px var(--font-family);
+}
+
+.project-count {
+  font-size: 12px;
+}
+
+.page-body {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background: var(--panel-color);
+}
+
+.projects-layout .value-field {
+  box-sizing: border-box;
+}
+
+.projects-layout .search-section-body {
+  padding: 8px 12px;
+}
+
+.projects-layout .search-field {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
+  height: 30px;
+  color: var(--muted-text-color);
+}
+
+.projects-layout .search-field input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  outline: none;
+}
+
+.projects-layout .search-field input::placeholder {
+  color: var(--muted-text-color);
+}
+
+.projects-layout .search-field input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.projects-layout .sort-field {
+  min-width: 150px;
+}
+
+.projects-layout .sort-select {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  appearance: none;
+  cursor: pointer;
+  outline: none;
+}
+
+.projects-layout .sort-select option {
+  background: var(--well-color);
+}
+
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.project-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.card-thumbnail {
+  aspect-ratio: 16 / 9;
+  background: var(--well-color);
+  display: grid;
+  place-items: center;
+  color: var(--muted-text-color);
+  border-bottom: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-body {
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-name {
+  font: 600 16px var(--font-family);
+}
+
+.card-statistics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.statistic-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.statistic-value {
+  font-size: 12px;
+}
+
+.statistic-value.accented-value {
+  color: var(--accent);
+}
+
+.card-summary,
+.card-cost {
+  display: none;
+}
+
+.projects-empty {
+  padding: 40px;
+  text-align: center;
+}
+
+@media (max-width: 800px) {
+  .projects-layout {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .projects-layout .side-panel {
+    display: contents;
+  }
+
+  .projects-layout .side-panel-body {
+    flex: none;
+    overflow: visible;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--chrome-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .projects-layout .section {
+    border-bottom: 0;
+  }
+
+  .projects-layout .section-header,
+  .projects-layout .totals-section,
+  .projects-layout .parameter-label,
+  .projects-layout .page-strip {
+    display: none;
+  }
+
+  .projects-layout .section-body,
+  .projects-layout .search-section-body {
+    padding: 0;
+  }
+
+  .projects-layout .search-section-body {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .projects-layout .search-field {
+    display: flex;
+    height: auto;
+    border: 0;
+    background: transparent;
+    padding: 0;
+  }
+
+  .projects-layout .search-field svg {
+    position: absolute;
+    left: 12px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .projects-layout .search-field input {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 44px;
+    padding: 0 12px 0 40px;
+    border: 1px solid var(--field-border-color);
+    border-radius: 2px;
+    background: var(--well-color);
+    font: 400 15px var(--font-family);
+  }
+
+  .projects-layout .search-field input:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 1px;
+  }
+
+  .projects-layout .parameter-row {
+    padding: 0 0 2px;
+    min-height: 0;
+    justify-content: flex-start;
+  }
+
+  .projects-layout .sort-field {
+    flex: none;
+    min-width: 0;
+    height: auto;
+    min-height: 36px;
+    padding: 0 12px;
+    gap: 6px;
+    justify-content: flex-start;
+    font: 600 13px var(--font-family);
+  }
+
+  .projects-layout .page-main {
+    flex: 1;
+    order: 1;
+    background: var(--panel-color);
+  }
+
+  .projects-layout .page-body {
+    overflow: visible;
+  }
+
+  .projects-layout .side-panel-footer {
+    order: 2;
+    position: sticky;
+    bottom: 0;
+    padding: 10px 16px;
+  }
+
+  .projects-layout .side-panel-footer .button {
+    min-height: 44px;
+  }
+
+  .project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .card-thumbnail {
+    aspect-ratio: 16 / 10;
+  }
+
+  .card-thumbnail svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .card-body {
+    padding: 10px 12px 12px;
+    gap: 2px;
+  }
+
+  .project-name {
+    font-size: 15px;
+  }
+
+  .card-statistics {
+    display: none;
+  }
+
+  .card-summary {
+    display: block;
+    font-size: 12px;
+  }
+
+  .card-cost {
+    display: block;
+    font-size: 12px;
+    color: var(--accent);
+  }
+}
