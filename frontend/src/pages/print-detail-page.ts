@@ -166,14 +166,11 @@ export class PrintDetailPage extends LitElement {
             <print-photos .jobId=${job.job_id} .photos=${job.photos}></print-photos>
           </div>
         </div>
-        <div class="section">
-          ${this.renderSectionHeader('Notes')}
-          <div class="section-body detail-notes">
-            <markdown-editor
-              value=${job.notes ?? ''}
-              .saveNotes=${(notes: string) => this.saveNotes(job.job_id, notes)}
-            ></markdown-editor>
-          </div>
+        <div class="detail-notes">
+          <markdown-editor
+            value=${job.notes ?? ''}
+            .saveNotes=${(notes: string) => this.saveNotes(job.job_id, notes)}
+          ></markdown-editor>
         </div>
       </div>
     </section>`
