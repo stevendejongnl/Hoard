@@ -5,9 +5,17 @@ import { classMap } from 'lit/directives/class-map.js'
 import { emergencyStop } from '../api'
 import { renderIcon } from '../icons'
 import { hoardMark } from '../logo'
-import { NAVIGATION_ITEMS, findNavigationSection, followNavigationLink } from '../navigation'
-import type { NavigationItem } from '../navigation'
+import {
+  NAVIGATION_ITEMS,
+  describePhoneHeader,
+  findNavigationLabel,
+  findNavigationSection,
+  followNavigationLink,
+} from '../navigation'
+import type { NavigationItem, NavigationPath } from '../navigation'
 import { router } from '../router'
+import './search-modal'
+import type { SearchModal } from './search-modal'
 
 type NavigateFunction = (path: string) => void
 
@@ -29,9 +37,14 @@ export class TopNavigation extends LitElement {
     window.confirm(message)
   @property({ attribute: false }) stopEmergency: () => Promise<unknown> = () => emergencyStop()
   @property({ attribute: false }) reportFailure: (message: string) => void = (message) => window.alert(message)
+  @property({ attribute: false }) openSearch: () => void = () => this.openSearchModal()
 
   createRenderRoot() {
     return this
+  }
+
+  private openSearchModal(): void {
+    this.querySelector<SearchModal>('search-modal')?.open()
   }
 
   private async handleEmergencyStop(): Promise<void> {
@@ -51,10 +64,36 @@ export class TopNavigation extends LitElement {
     followNavigationLink(click, path, this.navigate)
   }
 
+  private renderBackLink(backPath: NavigationPath | null): TemplateResult | typeof nothing {
+    if (!backPath) return nothing
+    return html`<a
+      class="phone-back"
+      href=${backPath}
+      aria-label="Back to ${findNavigationLabel(backPath)}"
+      @click=${(click: MouseEvent) => this.followLink(click, backPath)}
+      >${renderIcon('chevron-left', 20)}</a
+    >`
+  }
+
   private renderBrand(): TemplateResult {
     return html`<a class="brand" href="/" @click=${(click: MouseEvent) => this.followLink(click, '/')}>
-      <span class="brand-mark">${hoardMark(20)}</span>Hoard
+      <span class="brand-mark">${hoardMark(20)}</span><span class="brand-name">Hoard</span>
     </a>`
+  }
+
+  private renderBrandArea(): TemplateResult {
+    const phoneHeader = describePhoneHeader(this.route)
+    return html`<div class="brand-area ${classMap({ 'has-back': phoneHeader.backPath !== null })}">
+      ${this.renderBackLink(phoneHeader.backPath)}${this.renderBrand()}<span class="phone-title"
+        >${phoneHeader.title}</span
+      >
+    </div>`
+  }
+
+  private renderSearchButton(): TemplateResult {
+    return html`<button class="button icon-only search-button" aria-label="Search" @click=${() => this.openSearch()}>
+      ${renderIcon('search')}
+    </button>`
   }
 
   private renderTab(item: NavigationItem, currentSection: string): TemplateResult {
@@ -93,8 +132,11 @@ export class TopNavigation extends LitElement {
 
   render(): TemplateResult {
     return html`<header class="top-navigation">
-      ${this.renderBrand()} ${this.renderTabs()}
-      <div class="top-navigation-actions">${this.renderStateBadge()}${this.renderEmergencyStop()}</div>
+      ${this.renderBrandArea()} ${this.renderTabs()}
+      <div class="top-navigation-actions">
+        ${this.renderStateBadge()}${this.renderSearchButton()}${this.renderEmergencyStop()}
+      </div>
+      <search-modal></search-modal>
     </header>`
   }
 }

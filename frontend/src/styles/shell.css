@@ -176,3 +176,68 @@ printer-app {
     overflow-y: auto;
   }
 }
+
+/* Top bar: the brand area holds the mark and name, plus the phone-only title and back arrow. */
+.top-navigation .brand-area {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+}
+
+.top-navigation .phone-title,
+.top-navigation .phone-back {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .top-navigation {
+    display: flex;
+    gap: 8px;
+    height: 52px;
+    padding: 0 8px 0 16px;
+  }
+
+  .top-navigation .brand-name,
+  .top-navigation .search-button,
+  .top-navigation .emergency-stop .label {
+    display: none;
+  }
+
+  .top-navigation .phone-title {
+    display: inline;
+    margin-left: 10px;
+    font: 700 16px var(--font-family);
+    color: #fff;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-navigation .phone-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: -12px;
+    color: var(--text-color);
+  }
+
+  .top-navigation .has-back .brand {
+    display: none;
+  }
+
+  .top-navigation .has-back .phone-title {
+    margin-left: 0;
+  }
+
+  .top-navigation-actions {
+    margin-left: auto;
+  }
+
+  .top-navigation .button.emergency-stop {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+}
