@@ -133,7 +133,7 @@ describe('the form', () => {
       isValid: true,
       payload: {
         brand: 'Sunlu',
-        material: 'PLA+',
+        material: 'PLA Plus',
         color: 'White',
         color_hex: '#f8fafc',
         initial_weight_g: 1000,
@@ -142,6 +142,10 @@ describe('the form', () => {
         notes: null,
       },
     })
+  })
+
+  it('turns the plus sign back into "Plus" so a shown label saves as stored', () => {
+    expect(parseSpoolForm(validForm)).toMatchObject({ payload: { material: 'PLA Plus' } })
   })
 
   it('accepts an empty colour hex as no colour', () => {
