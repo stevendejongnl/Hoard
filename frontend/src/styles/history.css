@@ -1,0 +1,444 @@
+/* The history page: search and filters on the left, the print list in the middle, the selected print on the right. */
+
+.app-content > history-page {
+  display: flex;
+}
+
+.history-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+}
+
+.history-filters,
+.history-details {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel-color);
+}
+
+.history-filters {
+  border-right: 1px solid var(--border-color);
+}
+
+.history-details {
+  border-left: 1px solid var(--border-color);
+}
+
+.history-filters-body,
+.details-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.history-layout .section-body {
+  padding: 8px 0;
+}
+
+/* The design sizes its fields with border-box */
+.history-layout .value-field {
+  box-sizing: border-box;
+}
+
+.history-filters-footer,
+.history-details .details-footer {
+  flex: none;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.reset-filters-button {
+  width: 100%;
+}
+
+.details-title {
+  background: var(--chrome-color);
+  min-height: 40px;
+}
+
+/* Search */
+.search-field {
+  position: relative;
+  padding: 0 12px;
+}
+
+.search-field input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px 0 30px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  font: 400 12px var(--monospace-family);
+  color: var(--text-color);
+}
+
+.search-field input::placeholder {
+  color: var(--muted-text-color);
+  opacity: 1;
+}
+
+.search-field input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.search-icon {
+  position: absolute;
+  left: 20px;
+  top: 8px;
+  display: flex;
+  color: var(--muted-text-color);
+}
+
+/* Filter selects: the native select sits invisibly on top of the drawn field */
+.history-layout .filter-select {
+  position: relative;
+  min-width: 150px;
+}
+
+.history-layout .filter-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* The middle strip */
+.history-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--well-color);
+}
+
+.history-title-strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 16px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.history-title {
+  font: 600 14px var(--font-family);
+}
+
+.history-count {
+  font-size: 12px;
+}
+
+.history-table {
+  flex: 1;
+  overflow: hidden;
+  background: var(--panel-color);
+}
+
+.history-row,
+.history-header {
+  grid-template-columns: minmax(170px, 1fr) 100px 70px 76px 140px 60px;
+}
+
+.history-header {
+  display: grid;
+}
+
+.print-total {
+  text-align: right;
+}
+
+.print-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.print-file .print-thumbnail {
+  width: 32px;
+  height: 32px;
+}
+
+.print-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.print-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.print-figure {
+  font-size: 12px;
+}
+
+.spool-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.spool-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--muted-text-color);
+}
+
+.assign-spool-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: 600 13px var(--font-family);
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.assign-spool-select,
+.add-to-project-select {
+  box-sizing: border-box;
+  max-width: 100%;
+  height: 28px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  font: 400 12px var(--font-family);
+  color: var(--text-color);
+}
+
+.history-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 44px;
+  padding: 0 16px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.history-footer-count {
+  font-size: 12px;
+}
+
+.state-message {
+  padding: 24px 16px;
+  color: var(--muted-text-color);
+  font-size: 13px;
+}
+
+/* The right panel */
+.selected-heading {
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.selected-heading .print-thumbnail {
+  width: 64px;
+  height: 64px;
+}
+
+.selected-heading-text {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.selected-heading .print-name {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.selected-date {
+  font-size: 12px;
+}
+
+.detail-value {
+  font-size: 13px;
+}
+
+.details-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.details-footer-row {
+  display: flex;
+  gap: 8px;
+}
+
+.details-footer-row > * {
+  flex: 1;
+}
+
+.phone-row {
+  display: none;
+}
+
+/* Phone: a search box and filter chips, then one row per print and a Load more button. */
+@media (max-width: 800px) {
+  .history-layout {
+    display: block;
+    overflow-y: auto;
+    background: var(--panel-color);
+  }
+
+  .history-filters,
+  .history-filters-body,
+  .history-main,
+  .history-table {
+    display: contents;
+  }
+
+  .history-details,
+  .history-filters-footer,
+  .history-title-strip,
+  .history-header,
+  .history-filters .section-header,
+  .filter-controls .parameter-label,
+  .status-filter-row,
+  .summary-section {
+    display: none;
+  }
+
+  .search-section,
+  .filters-section {
+    display: block;
+    padding: 0 16px;
+    background: var(--chrome-color);
+    border: 0;
+  }
+
+  .search-section {
+    padding-top: 12px;
+  }
+
+  .filters-section {
+    padding-top: 10px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .history-layout .section-body {
+    padding: 0;
+  }
+
+  .search-field {
+    padding: 0;
+  }
+
+  .search-field input {
+    min-height: 44px;
+    padding: 0 12px 0 40px;
+    font: 400 15px var(--font-family);
+  }
+
+  .search-icon {
+    left: 12px;
+    top: 13px;
+  }
+
+  .search-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .filter-controls {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+
+  .filter-controls .parameter-row {
+    display: contents;
+  }
+
+  .history-layout .filter-select {
+    flex: none;
+    gap: 6px;
+    min-width: 0;
+    height: auto;
+    min-height: 36px;
+    padding: 0 12px;
+    justify-content: flex-start;
+    font: 600 13px var(--font-family);
+  }
+
+  .history-rows {
+    display: block;
+    background: var(--panel-color);
+  }
+
+  .history-row.phone-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color);
+    box-sizing: border-box;
+  }
+
+  .phone-row .print-thumbnail {
+    width: 44px;
+    height: 44px;
+  }
+
+  .phone-row-text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .phone-row-meta,
+  .phone-row-spool {
+    font-size: 12px;
+  }
+
+  .phone-row .spool-dot {
+    width: 9px;
+    height: 9px;
+  }
+
+  .phone-row .spool-tag {
+    gap: 6px;
+  }
+
+  .phone-row-cost {
+    font-size: 13px;
+  }
+
+  .history-footer {
+    height: auto;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    background: var(--panel-color);
+    border-top: 0;
+  }
+
+  .history-footer .load-more-button {
+    width: 100%;
+    min-height: 44px;
+  }
+}
