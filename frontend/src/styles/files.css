@@ -50,20 +50,20 @@
   overflow-y: auto;
 }
 
-.file-row,
-.file-header {
+.browser-file-row,
+.browser-file-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 70px 70px 70px;
 }
 
-.file-name-cell {
+.browser-browser-file-name-cell {
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
-.file-name {
+.browser-file-name {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -71,7 +71,7 @@
   font-size: 12px;
 }
 
-.file-figure {
+.browser-file-figure {
   font-size: 12px;
 }
 
