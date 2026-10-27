@@ -61,7 +61,11 @@
   display: none;
 }
 
-/* Value fields that hold an input */
+/* Value fields that hold an input; the design sizes its fields with border-box */
+.spools-layout .value-field {
+  box-sizing: border-box;
+}
+
 .value-field input {
   flex: 1;
   width: 0;
@@ -433,6 +437,7 @@
   }
 
   .spool-remaining {
+    order: 1;
     flex: 1 0 100%;
   }
 
