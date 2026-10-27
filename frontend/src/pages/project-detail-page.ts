@@ -1,320 +1,282 @@
-import { LitElement, html } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
-import type { Project } from '../types'
-import { getProject, deleteProject, addProjectLink, deleteProjectLink } from '../api'
-import { router } from '../router'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { addProjectLink, deleteProject, deleteProjectLink, getHistory, getProject } from '../api'
+import '../components/link-preview-card'
 import '../components/markdown-editor'
 import '../components/project-files-section'
-import '../components/link-preview-card'
+import '../components/project-prints-panel'
+import { renderIcon } from '../icons'
+import { followNavigationLink } from '../navigation'
+import { formatCost, formatDuration, formatFilament } from '../project-list'
+import { router } from '../router'
+import type { PrintRecord, Project, ProjectFile, ProjectLink } from '../types'
+import '../styles/projects.css'
+import '../styles/project-detail.css'
 
-const styles = html`<style>
-  .pd-wrap {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .pd-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .pd-stats-secondary {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  @media (max-width: 600px) {
-    .pd-wrap {
-      padding: 16px;
-      gap: 12px;
-    }
-    .pd-stats {
-      grid-template-columns: repeat(2, 1fr);
-    }
-    .pd-stats-secondary {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-</style>`
+type NavigateFunction = (path: string) => void
 
-function _fmtHours(s: number | null): string {
-  if (!s) return '—'
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
-}
+const HISTORY_RECORD_LIMIT = 200
+const LINK_ADDRESS_ELLIPSIS = '/…'
 
-function _linkHost(url: string): string {
+const navigateWithRouter: NavigateFunction = (path) => router.navigate(path as Parameters<typeof router.navigate>[0])
+
+function describeLinkAddress(url: string): string {
   try {
-    return new URL(url).hostname.replace('www.', '')
+    const address = new URL(url)
+    const host = address.hostname.replace(/^www\./, '')
+    return address.pathname === '/' ? host : host + LINK_ADDRESS_ELLIPSIS
   } catch {
     return url
   }
 }
 
-const _SETTING_LABELS: Record<string, string> = {
-  layer_height: 'Layer',
-  walls: 'Walls',
-  infill: 'Infill',
-  nozzle: 'Nozzle',
-  material: 'Material',
-  printer: 'Printer',
-  weight_g: 'Weight',
-  parts: 'Parts',
-}
-function _settingLabel(key: string): string {
-  return _SETTING_LABELS[key] ?? key
+const GRAM_SUFFIX = ' g'
+
+function splitUnit(value: string): [string, string | null] {
+  if (!value.endsWith(GRAM_SUFFIX)) return [value, null]
+  return [value.slice(0, -GRAM_SUFFIX.length), 'g']
 }
 
+interface Total {
+  key: string
+  label: string
+  value: string
+  isAccented?: boolean
+}
+
+function listTotals(project: Project): Total[] {
+  return [
+    { key: 'prints', label: 'Prints', value: String(project.print_count) },
+    { key: 'total-time', label: 'Total time', value: formatDuration(project.total_duration_s) },
+    { key: 'average-time', label: 'Avg time', value: formatDuration(project.avg_duration_s) },
+    { key: 'filament', label: 'Filament', value: formatFilament(project.total_filament_g) },
+    { key: 'total-cost', label: 'Total cost', value: formatCost(project.total_cost), isAccented: true },
+    { key: 'average-cost', label: 'Avg cost', value: formatCost(project.avg_cost) },
+  ]
+}
+
+/** One project: its totals, notes, links and files in the middle, and the prints that belong to it. */
 @customElement('project-detail-page')
 export class ProjectDetailPage extends LitElement {
+  @property({ attribute: false }) readProjectIdentifier: () => number | null = () => router.projectId
+  @property({ attribute: false }) loadProject: (identifier: number) => Promise<Project> = getProject
+  @property({ attribute: false }) loadHistory: () => Promise<PrintRecord[]> = async () =>
+    (await getHistory(HISTORY_RECORD_LIMIT, 0)).records
+  @property({ attribute: false }) deleteProject: (identifier: number) => Promise<unknown> = deleteProject
+  @property({ attribute: false }) addLink: (
+    identifier: number,
+    data: { url: string; label?: string },
+  ) => Promise<ProjectLink> = addProjectLink
+  @property({ attribute: false }) removeLink: (
+    identifier: number,
+    linkIdentifier: number,
+    clearCover: boolean,
+  ) => Promise<unknown> = deleteProjectLink
+  @property({ attribute: false }) confirm: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) askText: (message: string) => string | null = (message) => window.prompt(message)
+  @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
+
+  @state() private project: Project | null = null
+  @state() private isLoading = true
+
   createRenderRoot() {
     return this
   }
 
-  @state() project: Project | null = null
-  @state() loading = true
-  @state() error = false
-
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback()
-    const id = router.projectId
-    if (id) this._load(id)
-    else this.error = true
+    void this.load()
   }
 
-  private async _load(id: number) {
-    this.loading = true
+  private async load(): Promise<void> {
+    const identifier = this.readProjectIdentifier()
+    this.project = identifier === null ? null : await this.tryLoadProject(identifier)
+    this.isLoading = false
+  }
+
+  private async tryLoadProject(identifier: number): Promise<Project | null> {
     try {
-      this.project = await getProject(id)
+      return await this.loadProject(identifier)
     } catch {
-      this.error = true
-    } finally {
-      this.loading = false
+      return null
     }
   }
 
-  private async _delete() {
-    if (!this.project) return
-    if (!confirm(`Delete project "${this.project.name}"? This cannot be undone.`)) return
-    await deleteProject(this.project.id)
-    router.navigate('/projects')
+  private async reload(): Promise<void> {
+    if (this.project) this.project = await this.loadProject(this.project.id)
   }
 
-  private async _addLink() {
+  private async deleteThisProject(): Promise<void> {
     if (!this.project) return
-    const url = prompt('Enter URL:')
-    if (!url?.trim()) return
-    const label = prompt('Label (e.g. "printables", optional):') ?? undefined
-    const link = await addProjectLink(this.project.id, { url: url.trim(), label: label || undefined })
+    if (!this.confirm(`Delete project "${this.project.name}"? This cannot be undone.`)) return
+    await this.deleteProject(this.project.id)
+    this.navigate('/projects')
+  }
+
+  private async addNewLink(): Promise<void> {
+    if (!this.project) return
+    const url = this.askText('Enter URL:')?.trim()
+    if (!url) return
+    const label = this.askText('Label (for example "printables", optional):') ?? undefined
+    const link = await this.addLink(this.project.id, { url, label: label || undefined })
     this.project = { ...this.project, links: [...(this.project.links ?? []), link] }
   }
 
-  private async _removeLink(linkId: number) {
-    if (!this.project) return
-    const isCoverSource = this.project.cover_link_id === linkId
+  private shouldAskAboutCover(project: Project, linkIdentifier: number): boolean {
+    return project.cover_link_id === linkIdentifier && Boolean(project.cover_url)
+  }
 
-    let clearCover = false
-    if (isCoverSource && this.project.cover_url) {
-      clearCover = confirm('This link provided the cover image. Also remove the cover image?')
-    }
-
-    await deleteProjectLink(this.project.id, linkId, clearCover)
-    const updatedLinks = (this.project.links ?? []).filter((l) => l.id !== linkId)
+  private async removeExistingLink(linkIdentifier: number): Promise<void> {
+    const project = this.project
+    if (!project) return
+    const shouldAsk = this.shouldAskAboutCover(project, linkIdentifier)
+    const clearCover = shouldAsk && this.confirm('This link provided the cover image. Also remove the cover image?')
+    await this.removeLink(project.id, linkIdentifier, clearCover)
     this.project = {
-      ...this.project,
-      links: updatedLinks,
-      cover_url: clearCover ? null : this.project.cover_url,
-      cover_link_id: clearCover ? null : this.project.cover_link_id,
+      ...project,
+      links: (project.links ?? []).filter((link) => link.id !== linkIdentifier),
+      cover_url: clearCover ? null : project.cover_url,
+      cover_link_id: clearCover ? null : project.cover_link_id,
     }
   }
 
-  private _stat(label: string, value: string, secondary = false) {
-    return html`
-      <div
-        style="background: #1a1a1a; border: 1px solid #222; border-radius: 6px; padding: ${secondary
-          ? '10px 12px'
-          : '12px'}; display: flex; flex-direction: column; gap: 3px;"
-      >
-        <span style="font-size: 10px; color: #555;">${label}</span>
-        <span
-          style="font-size: ${secondary ? '14px' : '18px'}; font-weight: 600; color: ${secondary ? '#aaa' : '#e0e0e0'};"
-          >${value}</span
-        >
-      </div>
-    `
+  private updateProject(changes: Partial<Project>): void {
+    if (this.project) this.project = { ...this.project, ...changes }
   }
 
-  render() {
-    if (this.loading) return html`<div style="padding: 40px; text-align: center; color: #555;">Loading...</div>`
-    if (this.error || !this.project)
-      return html`<div style="padding: 40px; text-align: center; color: #555;">Project not found.</div>`
+  private handleNotesChanged(event: CustomEvent<{ value: string }>): void {
+    this.updateProject({ notes: event.detail.value })
+  }
 
-    const p = this.project
-    return html`
-      ${styles}
-      <div class="pd-wrap">
-        <!-- header -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-          <div style="display: flex; flex-direction: column; gap: 4px;">
-            <span style="font-size: 10px; color: #555; cursor: pointer;" @click=${() => router.navigate('/projects')}
-              >← projects</span
-            >
-            <span style="font-size: 18px; font-weight: 600; color: #e0e0e0;">${p.name}</span>
-          </div>
-          <button
-            style="background: transparent; border: 1px solid #33181888; color: #ef4444; border-radius: 6px; padding: 6px 12px; font-size: 11px; cursor: pointer;"
-            @click=${this._delete}
+  private handleFilesChanged(event: CustomEvent<ProjectFile[]>): void {
+    this.updateProject({ files: event.detail })
+  }
+
+  private renderTotalRow(total: Total): TemplateResult {
+    const [number, unit] = splitUnit(total.value)
+    return html`<div class="parameter-row">
+      <span class="parameter-label">${total.label}</span>
+      <span class="value-field" data-total=${total.key}
+        >${number}${unit !== null ? html`<span class="value-unit">${unit}</span>` : nothing}</span
+      >
+    </div>`
+  }
+
+  private renderTotalCell(total: Total): TemplateResult {
+    return html`<div class="total-cell">
+      <span class="muted total-label">${total.label}</span>
+      <span class="monospace total-value ${total.isAccented ? 'accented-value' : ''}">${total.value}</span>
+    </div>`
+  }
+
+  private renderHeading(project: Project): TemplateResult {
+    return html`<div class="detail-heading-block">
+      <a
+        class="back-link"
+        href="/projects"
+        @click=${(click: MouseEvent) => followNavigationLink(click, '/projects', this.navigate)}
+        >${renderIcon('chevron-left', 14)}Projects</a
+      >
+      <div class="project-heading">${project.name}</div>
+      ${project.cover_url ? html`<img class="project-cover" src=${project.cover_url} alt="Project cover" />` : nothing}
+      <div class="panel totals-grid">${listTotals(project).map((total) => this.renderTotalCell(total))}</div>
+    </div>`
+  }
+
+  private renderLink(link: ProjectLink): TemplateResult {
+    const image = link.meta?.image_url
+    return html`<link-preview-card .link=${link}>
+      <div class="link-row">
+        <a class="link-main" href=${link.url} target="_blank" rel="noopener">
+          <span class="thumbnail link-thumbnail"
+            >${image ? html`<img src=${image} alt="" />` : renderIcon('cube', 22, 1.6)}</span
           >
-            delete
+          <span class="link-labels">
+            <span class="link-title">${link.meta?.title || link.url}</span>
+            <span class="monospace muted link-address">${describeLinkAddress(link.url)}</span>
+          </span>
+        </a>
+        <button
+          class="button flat icon-only small link-remove"
+          aria-label="Remove link"
+          @click=${() => this.removeExistingLink(link.id)}
+        >
+          ${renderIcon('trash', 14)}
+        </button>
+      </div>
+    </link-preview-card>`
+  }
+
+  private renderLinks(project: Project): TemplateResult {
+    const links = project.links ?? []
+    return html`<section class="panel links-panel" aria-label="Links">
+      <div class="section-header panel-header">
+        Links
+        <span class="panel-actions">
+          <button class="button panel-action add-link-button" @click=${this.addNewLink}>
+            ${renderIcon('plus', 14)}<span class="long-label">Add link</span><span class="short-label">Add</span>
+          </button>
+        </span>
+      </div>
+      <div class="panel-body">
+        ${links.length === 0 ? html`<div class="muted">No links yet</div>` : links.map((link) => this.renderLink(link))}
+      </div>
+    </section>`
+  }
+
+  private renderProject(project: Project): TemplateResult {
+    return html`<div class="project-detail-layout">
+      <aside class="side-panel" aria-label="Parameters">
+        ${this.renderHeading(project)}
+        <div class="side-panel-body">
+          <div class="section">
+            <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Totals</div>
+            <div class="section-body">${listTotals(project).map((total) => this.renderTotalRow(total))}</div>
+          </div>
+        </div>
+        <div class="side-panel-footer">
+          <button class="button danger delete-project-button" @click=${this.deleteThisProject}>
+            ${renderIcon('trash', 14)}Delete project
           </button>
         </div>
-
-        ${p.cover_url
-          ? html`
-              <div style="width: 100%; max-height: 200px; overflow: hidden; border-radius: 8px; background: #1a1a1a;">
-                <img
-                  src="${p.cover_url}"
-                  alt="Project cover"
-                  style="width: 100%; max-height: 200px; object-fit: cover; display: block; border-radius: 8px;"
-                  @error=${(e: Event) => {
-                    ;(e.target as HTMLImageElement).style.display = 'none'
-                  }}
-                />
-              </div>
-            `
-          : ''}
-
-        <!-- stats -->
-        <div class="pd-stats">
-          ${this._stat('prints', String(p.print_count))} ${this._stat('total time', _fmtHours(p.total_duration_s))}
-          ${this._stat('total cost', p.total_cost != null ? '€' + p.total_cost.toFixed(2) : '—')}
-          ${this._stat(
-            'filament',
-            p.total_filament_g != null
-              ? p.total_filament_g >= 1000
-                ? (p.total_filament_g / 1000).toFixed(2) + ' kg'
-                : p.total_filament_g.toFixed(0) + ' g'
-              : '—',
-          )}
+      </aside>
+      <section class="page-main" aria-label="Main">
+        <div class="page-strip"><span class="page-title">Project</span></div>
+        <div class="detail-body">
+          <markdown-editor
+            .value=${project.notes ?? ''}
+            .projectId=${project.id}
+            @notes-changed=${this.handleNotesChanged}
+          ></markdown-editor>
+          ${this.renderLinks(project)}
+          <project-files-section
+            .files=${project.files ?? []}
+            .projectId=${project.id}
+            @files-changed=${this.handleFilesChanged}
+          ></project-files-section>
         </div>
-        ${p.print_count > 1
-          ? html`
-              <div class="pd-stats-secondary">
-                ${this._stat('avg cost', p.avg_cost != null ? '€' + p.avg_cost.toFixed(2) : '—', true)}
-                ${this._stat('avg time', _fmtHours(p.avg_duration_s), true)}
-                ${this._stat('longest', _fmtHours(p.max_duration_s), true)}
-                ${this._stat(
-                  'avg filament',
-                  p.total_filament_g != null && p.print_count > 0
-                    ? (p.total_filament_g / p.print_count).toFixed(0) + ' g'
-                    : '—',
-                  true,
-                )}
-              </div>
-            `
-          : ''}
+      </section>
+      <project-prints-panel
+        .prints=${project.prints ?? []}
+        .files=${project.files ?? []}
+        .projectId=${project.id}
+        .loadHistory=${this.loadHistory}
+        .navigate=${this.navigate}
+        @prints-changed=${this.reload}
+      ></project-prints-panel>
+    </div>`
+  }
 
-        <!-- notes (markdown editor) -->
-        <markdown-editor
-          .value=${p.notes ?? ''}
-          .projectId=${p.id}
-          @notes-changed=${(e: CustomEvent) => {
-            if (this.project) this.project = { ...this.project, notes: e.detail.value }
-          }}
-        ></markdown-editor>
+  render(): TemplateResult {
+    if (this.isLoading) return html`<div class="muted project-loading">Loading…</div>`
+    if (!this.project) return html`<div class="muted project-missing">Project not found</div>`
+    return this.renderProject(this.project)
+  }
+}
 
-        <!-- links -->
-        <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-            <span style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.05em;">Links</span>
-            <button
-              style="background: transparent; border: 1px solid #22d3ee33; color: #22d3ee; border-radius: 4px; padding: 3px 10px; font-size: 10px; cursor: pointer;"
-              @click=${this._addLink}
-            >
-              + add
-            </button>
-          </div>
-          ${(p.links ?? []).length === 0
-            ? html`<div style="font-size: 11px; color: #333;">No links yet.</div>`
-            : (p.links ?? []).map(
-                (l) => html`
-                  <link-preview-card .link=${l} style="display:block;margin-bottom:5px;">
-                    <div
-                      style="background: #141414; border-radius: 5px; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
-                    >
-                      <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                        <span
-                          style="font-size: 9px; background: #141414; color: #555; border: 1px solid #222; border-radius: 3px; padding: 1px 5px; flex-shrink: 0;"
-                          >${l.label || _linkHost(l.url)}</span
-                        >
-                        <a
-                          href="${l.url}"
-                          target="_blank"
-                          rel="noopener"
-                          style="font-size: 11px; color: #22d3ee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none;"
-                          >${l.meta?.title || l.url}</a
-                        >
-                      </div>
-                      <span
-                        style="font-size: 10px; color: #333; cursor: pointer; padding: 2px 6px; flex-shrink: 0;"
-                        @click=${(e: Event) => {
-                          e.stopPropagation()
-                          this._removeLink(l.id)
-                        }}
-                        >✕</span
-                      >
-                    </div>
-                  </link-preview-card>
-                `,
-              )}
-        </div>
-
-        <!-- files -->
-        <project-files-section
-          .project=${p}
-          @project-updated=${(e: CustomEvent) => {
-            this.project = e.detail
-          }}
-          @reload-project=${() => {
-            if (p.id) this._load(p.id)
-          }}
-        ></project-files-section>
-
-        <!-- linked prints -->
-        ${(p.prints ?? []).length > 0
-          ? html`
-              <div style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px;">
-                <span
-                  style="font-size: 10px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 10px;"
-                  >Prints</span
-                >
-                ${(p.prints ?? []).map(
-                  (pr) => html`
-                    <div
-                      style="display: flex; align-items: center; justify-content: space-between; background: #141414; border-radius: 5px; padding: 8px 12px; margin-bottom: 5px; cursor: pointer;"
-                      @click=${() => router.navigate(`/prints/${encodeURIComponent(pr.job_id)}`)}
-                    >
-                      <span
-                        style="font-size: 11px; color: #ccc; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"
-                        >${pr.job_id}</span
-                      >
-                      <span
-                        style="font-size: 11px; color: #22d3ee; white-space: nowrap; margin-left: 12px; flex-shrink: 0;"
-                        >${pr.cost_total != null ? '€' + pr.cost_total.toFixed(2) : '—'}</span
-                      >
-                    </div>
-                  `,
-                )}
-              </div>
-            `
-          : ''}
-      </div>
-    `
+declare global {
+  interface HTMLElementTagNameMap {
+    'project-detail-page': ProjectDetailPage
   }
 }

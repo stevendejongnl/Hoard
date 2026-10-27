@@ -124,11 +124,11 @@ export class ProjectFilesSection extends LitElement {
         Files
         <span class="panel-actions">
           <label class="button panel-action">
-            ${renderIcon('upload', 14)}<span class="long-label">Upload </span>STL
+            ${renderIcon('upload', 14)}<span class="long-label">Upload STL</span><span class="short-label">STL</span>
             <input type="file" accept=${MODEL_FILE_TYPES} hidden @change=${this.handleUpload} />
           </label>
           <button class="button panel-action primary" @click=${this.openPicker}>
-            ${renderIcon('plus', 14)}<span class="long-label">Link </span>G-code
+            ${renderIcon('plus', 14)}<span class="long-label">Link G-code</span><span class="short-label">G-code</span>
           </button>
         </span>
       </div>
