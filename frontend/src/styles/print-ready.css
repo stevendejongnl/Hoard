@@ -1,0 +1,66 @@
+/* The dialog that confirms a print and helps to get the printer ready. */
+
+.ready-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.ready-dialog {
+  width: min(420px, calc(100vw - 32px));
+  overflow: hidden;
+  background: var(--panel-color);
+  border: 1px solid var(--strong-border-color);
+  border-radius: 2px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.ready-title {
+  background: var(--chrome-color);
+  min-height: 40px;
+}
+
+.ready-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 12px;
+}
+
+.ready-label {
+  font-size: 12px;
+}
+
+.ready-file {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.ready-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.ready-check-mark {
+  color: var(--ok-color);
+  display: flex;
+}
+
+.ready-step {
+  font-size: 13px;
+}
+
+.ready-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
