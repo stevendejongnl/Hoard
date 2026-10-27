@@ -28,7 +28,7 @@
 }
 
 .history-filters-body,
-.details-body {
+.history-details-body {
   flex: 1;
   overflow: hidden;
 }
@@ -43,7 +43,7 @@
 }
 
 .history-filters-footer,
-.history-details .details-footer {
+.history-details .history-details-footer {
   flex: none;
   padding: 12px;
   background: var(--chrome-color);
@@ -54,7 +54,7 @@
   width: 100%;
 }
 
-.details-title {
+.history-details-title {
   background: var(--chrome-color);
   min-height: 40px;
 }
@@ -66,6 +66,7 @@
 }
 
 .search-field input {
+  display: block;
   box-sizing: border-box;
   width: 100%;
   height: 30px;
@@ -95,12 +96,12 @@
 }
 
 /* Filter selects: the native select sits invisibly on top of the drawn field */
-.history-layout .filter-select {
+.history-layout .history-filter-select {
   position: relative;
   min-width: 150px;
 }
 
-.history-layout .filter-select select {
+.history-layout .history-filter-select select {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -274,18 +275,18 @@
   font-size: 13px;
 }
 
-.details-footer {
+.history-details-footer {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.details-footer-row {
+.history-details-footer-row {
   display: flex;
   gap: 8px;
 }
 
-.details-footer-row > * {
+.history-details-footer-row > * {
   flex: 1;
 }
 
@@ -313,25 +314,25 @@
   .history-title-strip,
   .history-header,
   .history-filters .section-header,
-  .filter-controls .parameter-label,
+  .history-filter-controls .parameter-label,
   .status-filter-row,
-  .summary-section {
+  .history-summary-section {
     display: none;
   }
 
-  .search-section,
-  .filters-section {
+  .history-search-section,
+  .history-filters-section {
     display: block;
     padding: 0 16px;
     background: var(--chrome-color);
     border: 0;
   }
 
-  .search-section {
+  .history-search-section {
     padding-top: 12px;
   }
 
-  .filters-section {
+  .history-filters-section {
     padding-top: 10px;
     padding-bottom: 14px;
     border-bottom: 1px solid var(--border-color);
@@ -361,17 +362,17 @@
     height: 18px;
   }
 
-  .filter-controls {
+  .history-filter-controls {
     display: flex;
     gap: 8px;
     overflow-x: auto;
   }
 
-  .filter-controls .parameter-row {
+  .history-filter-controls .parameter-row {
     display: contents;
   }
 
-  .history-layout .filter-select {
+  .history-layout .history-filter-select {
     flex: none;
     gap: 6px;
     min-width: 0;
@@ -394,7 +395,6 @@
     min-height: 64px;
     padding: 10px 16px;
     border-bottom: 1px solid var(--border-color);
-    box-sizing: border-box;
   }
 
   .phone-row .print-thumbnail {

@@ -215,7 +215,7 @@ export class HistoryPage extends LitElement {
     options: TemplateResult,
     onChange: (event: Event) => void,
   ): TemplateResult {
-    return html`<label class="value-field select-field filter-select">
+    return html`<label class="value-field select-field history-filter-select">
       <span class="select-text">${shownText}</span>
       ${renderIcon('chevron-down', SELECT_CHEVRON_SIZE, ICON_STROKE_WIDTH)}
       <select aria-label=${label} @change=${onChange}>
@@ -299,20 +299,20 @@ export class HistoryPage extends LitElement {
   private renderFiltersPanel(): TemplateResult {
     return html`<aside class="history-filters" aria-label="Parameters">
       <div class="history-filters-body">
-        <div class="section search-section">
+        <div class="section history-search-section">
           ${this.renderSectionHeader('Search')}
           <div class="section-body">${this.renderSearchField()}</div>
         </div>
-        <div class="section filters-section">
+        <div class="section history-filters-section">
           ${this.renderSectionHeader('Filters')}
-          <div class="section-body filter-controls">
+          <div class="section-body history-filter-controls">
             ${this.renderFilterRow('Spool', this.renderSpoolFilter())}
             ${this.renderFilterRow('Project', this.renderProjectFilter())}
             <div class="status-filter-row">${this.renderFilterRow('Status', this.renderStatusFilter())}</div>
             <div class="sort-filter-row">${this.renderFilterRow('Sort', this.renderSortSelect())}</div>
           </div>
         </div>
-        <div class="section summary-section">
+        <div class="section history-summary-section">
           ${this.renderSectionHeader('Summary')}
           <div class="section-body">
             ${this.renderSummaryRow('Prints', 'prints', this.total)}
@@ -524,11 +524,11 @@ export class HistoryPage extends LitElement {
   }
 
   private renderDetailsActions(record: PrintRecord): TemplateResult {
-    return html`<div class="details-footer">
+    return html`<div class="history-details-footer">
       <button class="button primary print-again-button" @click=${this.printSelectedAgain}>
         ${renderIcon('play', 14)}Print again
       </button>
-      <div class="details-footer-row">
+      <div class="history-details-footer-row">
         <button class="button open-details-button" @click=${this.openSelectedDetails}>Open details</button>
         ${this.isChoosingProject
           ? this.renderProjectChoice(record)
@@ -552,8 +552,8 @@ export class HistoryPage extends LitElement {
   private renderDetails(): TemplateResult {
     const selected = this.findSelectedPrint()
     return html`<aside class="history-details selected-print" aria-label="Details">
-      <div class="section-header details-title">Selected print</div>
-      <div class="details-body">
+      <div class="section-header history-details-title">Selected print</div>
+      <div class="history-details-body">
         ${selected
           ? html`${this.renderSelectedHeading(selected)} ${this.renderJobSection(selected)}
             ${this.renderCostSection(selected)}`
