@@ -207,7 +207,7 @@ printer-app {
     display: inline;
     margin-left: 10px;
     font: 700 16px var(--font-family);
-    color: #fff;
+    color: var(--text-color);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -239,5 +239,10 @@ printer-app {
     width: 44px;
     min-height: 44px;
     padding: 0;
+  }
+
+  .top-navigation .button.emergency-stop svg {
+    width: 18px;
+    height: 18px;
   }
 }
