@@ -147,3 +147,32 @@ bottom-tabs {
     display: none;
   }
 }
+
+/* The frame of the app: top bar, page, status bar, phone tab bar. */
+printer-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-content > * {
+  flex: 1;
+  min-height: 0;
+  display: block;
+}
+
+@media (max-width: 800px) {
+  .app-content {
+    overflow-y: auto;
+  }
+}
