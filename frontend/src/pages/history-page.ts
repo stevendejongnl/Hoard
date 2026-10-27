@@ -369,7 +369,7 @@ export class HistoryPage extends LitElement {
     }
     return html`<span class="spool-tag"
       ><span class="spool-dot" style="background: ${record.spool.color_hex ?? 'transparent'}"></span
-      ><span class="spool-name">${describeSpoolName(record.spool)}</span></span
+      ><span class="history-spool-name">${describeSpoolName(record.spool)}</span></span
     >`
   }
 
@@ -543,7 +543,7 @@ export class HistoryPage extends LitElement {
     return html`<div class="selected-heading">
       ${this.renderThumbnail(record, 30)}
       <span class="selected-heading-text">
-        <span class="print-name monospace">${record.filename}</span>
+        <span class="selected-print-name monospace">${record.filename}</span>
         <span class="muted selected-date">${formatPrintDate(record.time)}</span>
       </span>
     </div>`

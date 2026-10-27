@@ -143,7 +143,7 @@ describe('history list', () => {
   it('shows the spool of a print, or an invitation to assign one', async () => {
     const page = await createHistoryPage(createCalls(), fixtureRecords, 3, { pageSize: 3 })
     const rows = page.querySelectorAll('.history-row')
-    expect(rows[0].querySelector('.spool-name')?.textContent).toBe('Sunlu PLA Plus')
+    expect(rows[0].querySelector('.history-spool-name')?.textContent).toBe('Sunlu PLA Plus')
     expect(rows[2].querySelector('.assign-spool-button')?.textContent?.trim()).toBe('Assign spool')
   })
 
@@ -220,7 +220,7 @@ describe('selected print', () => {
   it('starts with the first print selected', async () => {
     const page = await createHistoryPage(createCalls())
     expect(page.querySelector('.history-row')?.classList.contains('selected')).toBe(true)
-    expect(readText(page, '.selected-print .print-name')).toBe('part-0.gcode')
+    expect(readText(page, '.selected-print .selected-print-name')).toBe('part-0.gcode')
   })
 
   it('shows job and cost details of the selected print', async () => {
@@ -239,7 +239,7 @@ describe('selected print', () => {
   it('selects the print that is clicked', async () => {
     const page = await createHistoryPage(createCalls())
     await click(page, '.history-row:nth-child(2)')
-    expect(readText(page, '.selected-print .print-name')).toBe('part-1.gcode')
+    expect(readText(page, '.selected-print .selected-print-name')).toBe('part-1.gcode')
     expect(page.querySelectorAll('.history-row.selected').length).toBe(1)
   })
 

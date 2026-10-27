@@ -261,7 +261,7 @@
   flex-direction: column;
 }
 
-.selected-heading .print-name {
+.selected-heading .selected-print-name {
   font-size: 12px;
   overflow-wrap: anywhere;
 }
@@ -441,4 +441,8 @@
     width: 100%;
     min-height: 44px;
   }
+}
+
+.history-details .parameter-label strong {
+  color: var(--text-color);
 }
