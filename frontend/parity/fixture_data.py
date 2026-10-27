@@ -3,6 +3,7 @@
 The mock backend serves this so every screen of the app can be compared with its reference image.
 """
 
+import math
 from typing import Any
 
 JsonObject = dict[str, Any]
@@ -93,6 +94,84 @@ def create_fixture_history() -> JsonObject:
     spools = create_fixture_spools()
     records = [create_history_record(index, row, spools) for index, row in enumerate(HISTORY_ROWS)]
     return {"records": records, "total": 20}
+
+
+DASHBOARD_HISTORY_INDEXES = (0, 2, 5, 6)
+
+
+def create_dashboard_history() -> JsonObject:
+    """The four prints the design lists on the dashboard: one per file, the latest first."""
+    records = create_fixture_history()["records"]
+    return {"records": [records[index] for index in DASHBOARD_HISTORY_INDEXES], "total": 20}
+
+
+TEMPERATURE_WINDOW_SECONDS = 600
+TEMPERATURE_INTERVAL_SECONDS = 5
+ROOM_TEMPERATURE = 24
+HEATING_AGE_SECONDS = 415
+HOTEND_TARGET = 205
+BED_TARGET = 60
+HOTEND_RISE_SECONDS = 170
+BED_RISE_SECONDS = 230
+
+
+def calculate_hotend_temperature(age_seconds: int) -> float:
+    seconds_heating = HEATING_AGE_SECONDS - age_seconds
+    if seconds_heating <= 0:
+        return ROOM_TEMPERATURE
+    if seconds_heating < HOTEND_RISE_SECONDS:
+        remaining_share = 1 - seconds_heating / HOTEND_RISE_SECONDS
+        return ROOM_TEMPERATURE + (HOTEND_TARGET - ROOM_TEMPERATURE) * (1 - remaining_share**2)
+    return HOTEND_TARGET + 0.4 * math.sin((seconds_heating - HOTEND_RISE_SECONDS) / 56 * 2 * math.pi)
+
+
+def calculate_bed_temperature(age_seconds: int) -> float:
+    seconds_heating = HEATING_AGE_SECONDS - age_seconds
+    if seconds_heating <= 0:
+        return ROOM_TEMPERATURE
+    if seconds_heating < BED_RISE_SECONDS:
+        return ROOM_TEMPERATURE + (BED_TARGET - ROOM_TEMPERATURE) * seconds_heating / BED_RISE_SECONDS
+    return BED_TARGET + 0.1 * math.sin((seconds_heating - BED_RISE_SECONDS) / 40 * 2 * math.pi)
+
+
+def create_temperature_sample(age_seconds: int) -> JsonObject:
+    is_heating = age_seconds <= HEATING_AGE_SECONDS
+    return {
+        "age_seconds": age_seconds,
+        "hotend_actual": round(calculate_hotend_temperature(age_seconds), 2),
+        "hotend_target": HOTEND_TARGET if is_heating else 0,
+        "bed_actual": round(calculate_bed_temperature(age_seconds), 2),
+        "bed_target": BED_TARGET if is_heating else 0,
+    }
+
+
+def create_temperature_history() -> JsonObject:
+    ages = range(TEMPERATURE_WINDOW_SECONDS, -1, -TEMPERATURE_INTERVAL_SECONDS)
+    return {"samples": [create_temperature_sample(age) for age in ages]}
+
+
+FILE_NAMES = ["helicopter-blade.gcode", "dactyl-manuform-dm-5x6-plate.gcode", "tap_cover_plate.gcode"]
+
+
+def create_fixture_files() -> list[JsonObject]:
+    return [{"filename": name, "size": 1_000_000, "modified": CREATED_AT_TIMESTAMP} for name in FILE_NAMES]
+
+
+def create_fixture_prediction() -> JsonObject:
+    return {
+        "filename": "helicopter-blade.gcode",
+        "quantity": 1,
+        "spool_id": 2,
+        "material": "PLA",
+        "filament_g": 3.8,
+        "estimated_time_s": 660,
+        "layer_count": 60,
+        "avg_watts": 100,
+        "avg_eur_per_kwh": 0.16,
+        "cost_filament": 0.04,
+        "cost_electricity": 0.0,
+        "cost_total": 0.04,
+    }
 
 
 def create_project(
@@ -200,10 +279,13 @@ def create_fixture_responses() -> dict[str, Any]:
         "/api/version": {"version": "dev"},
         "/api/spools": create_fixture_spools(),
         "/api/history": create_fixture_history(),
+        "/api/history?limit=4&offset=0": create_dashboard_history(),
+        "/api/temperatures/history": create_temperature_history(),
+        "/api/predict": create_fixture_prediction(),
         "/api/projects": create_fixture_projects(),
         "/api/projects/1": create_fixture_project_detail(),
         "/api/webcams": create_fixture_webcams(),
-        "/api/files": [],
+        "/api/files": create_fixture_files(),
         "/api/files/metadata": create_fixture_file_metadata(),
         "/api/push/vapid-public-key": {"key": None},
     }
