@@ -76,7 +76,8 @@ describe('applyAccentColor', () => {
     theme.applyAccentColor('#00a3ff')
     expect(rootElement.style.getPropertyValue('--accent')).toBe('#00a3ff')
     expect(rootElement.style.getPropertyValue('--text-on-accent')).toBe('#1a1a1d')
-    expect(rootElement.style.getPropertyValue('--selection-tint')).toBe('rgb(46, 49, 70)')
+    // panel rgb(43, 43, 47) moved 18% towards rgb(0, 163, 255)
+    expect(rootElement.style.getPropertyValue('--selection-tint')).toBe('rgb(35, 65, 84)')
   })
 
   it('uses white text on a dark accent', () => {
