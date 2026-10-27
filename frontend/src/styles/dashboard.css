@@ -217,7 +217,7 @@ camera-panel {
   background: var(--panel-color);
 }
 
-.chart-legend {
+.section-header .chart-legend {
   gap: 14px;
 }
 
@@ -403,7 +403,7 @@ cost-predictor-panel .section-header {
   padding: 0 12px;
 }
 
-.predictor-body {
+.dashboard-layout .predictor-body {
   padding: 8px 0 12px;
 }
 
@@ -434,6 +434,8 @@ cost-predictor-panel .section-header {
 /* Phone: the running print, the temperatures and the camera, one under the other. */
 @media (max-width: 800px) {
   .dashboard-phone {
+    flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
   }
@@ -468,6 +470,10 @@ cost-predictor-panel .section-header {
 
   .summary-finish {
     font-size: 13px;
+  }
+
+  .phone-summary .timeline-bar {
+    flex: none;
   }
 
   .summary-buttons {
