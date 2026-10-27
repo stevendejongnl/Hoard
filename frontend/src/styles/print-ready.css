@@ -5,8 +5,9 @@
   inset: 0;
   z-index: 200;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 200px;
   background: rgba(0, 0, 0, 0.6);
 }
 
