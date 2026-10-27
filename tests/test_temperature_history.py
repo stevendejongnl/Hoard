@@ -23,7 +23,10 @@ class FakeTemperatureStore:
         self.store = store
         self.error = error
 
-    async def __call__(self) -> dict:
+    def __call__(self):
+        return self.fetch
+
+    async def fetch(self) -> dict:
         if self.error:
             raise self.error
         return self.store
