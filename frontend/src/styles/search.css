@@ -1,5 +1,9 @@
 /* The search palette: a centered box over a dimmed page. */
 
+search-modal {
+  display: contents;
+}
+
 .search-overlay {
   display: none;
   position: fixed;
