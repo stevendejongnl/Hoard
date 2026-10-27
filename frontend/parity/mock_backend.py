@@ -11,7 +11,7 @@ import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 STREAM_PATH = "/stream"
 STREAM_POLL_SECONDS = 0.1
@@ -48,9 +48,18 @@ class MockBackendHandler(BaseHTTPRequestHandler):
             self.stream_events()
             return
         if path in self.responses:
-            self.send_json(self.responses[path])
+            self.send_json(self.select_page(self.responses[path], urlparse(self.path).query))
             return
         self.send_error(404, "Not found")
+
+    def select_page(self, value: JsonValue, query: str) -> JsonValue:
+        """A response with `records` is a paged list: answer the requested limit and offset of it."""
+        if not (isinstance(value, dict) and "records" in value):
+            return value
+        arguments = parse_qs(query)
+        offset = int(arguments.get("offset", ["0"])[0])
+        limit = int(arguments.get("limit", [str(len(value["records"]))])[0])
+        return {**value, "records": value["records"][offset : offset + limit]}
 
     def send_json(self, value: JsonValue) -> None:
         body = json.dumps(value).encode()
