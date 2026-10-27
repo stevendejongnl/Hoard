@@ -85,6 +85,50 @@ def test_fixture_history_has_twelve_of_twenty_records_with_the_design_first_reco
     assert history["records"][0]["duration_s"] == 13080
 
 
+def test_a_response_keyed_with_a_query_answers_only_that_query():
+    responses = {"/api/list": {"records": [1, 2, 3]}, "/api/list?limit=1&offset=0": {"records": ["only"]}}
+    server = start_mock_backend(responses, [])
+    try:
+        assert fetch_json(server, "/api/list?limit=1&offset=0") == {"records": ["only"]}
+        assert fetch_json(server, "/api/list?limit=2&offset=0") == {"records": [1, 2]}
+    finally:
+        server.shutdown()
+
+
+def test_fixture_dashboard_history_has_the_four_prints_of_the_design(fixture_backend):
+    history = fetch_json(fixture_backend, "/api/history?limit=4&offset=0")
+    assert [record["filename"] for record in history["records"]] == [
+        "Piedistallo+per+lego+F1+2Posti.gcode",
+        "helicopter-blade.gcode",
+        "dactyl-manuform-dm-5x6-plate.gcode",
+        "tap_cover_plate.gcode",
+    ]
+    assert history["total"] == 20
+
+
+def test_fixture_temperature_history_has_ten_minutes_with_the_heating_of_the_design(fixture_backend):
+    samples = fetch_json(fixture_backend, "/api/temperatures/history")["samples"]
+    assert len(samples) == 121
+    assert samples[0]["age_seconds"] == 600 and samples[-1]["age_seconds"] == 0
+    assert samples[0]["hotend_actual"] == 24 and samples[0]["hotend_target"] == 0
+    assert abs(samples[-1]["hotend_actual"] - 205) < 1 and samples[-1]["hotend_target"] == 205
+    assert abs(samples[-1]["bed_actual"] - 60) < 1 and samples[-1]["bed_target"] == 60
+    heating_start = next(sample for sample in samples if sample["hotend_target"] > 0)
+    assert heating_start["age_seconds"] == 415
+
+
+def test_fixture_files_list_the_helicopter_blade_first(fixture_backend):
+    files = fetch_json(fixture_backend, "/api/files")
+    assert files[0]["filename"] == "helicopter-blade.gcode"
+
+
+def test_fixture_prediction_is_the_one_of_the_design(fixture_backend):
+    prediction = fetch_json(fixture_backend, "/api/predict?filename=helicopter-blade.gcode&quantity=1&spool_id=2")
+    assert prediction["filament_g"] == 3.8
+    assert prediction["estimated_time_s"] == 660
+    assert prediction["cost_total"] == 0.04
+
+
 def test_fixture_history_pages_follow_limit_and_offset(fixture_backend):
     first_page = fetch_json(fixture_backend, "/api/history?limit=8&offset=0")
     second_page = fetch_json(fixture_backend, "/api/history?limit=8&offset=8")
