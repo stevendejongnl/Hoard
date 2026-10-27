@@ -62,3 +62,48 @@
   align-items: center;
   gap: 8px;
 }
+
+/* The phone's tab bar: only shown at phone width, where the top bar tabs are hidden. */
+bottom-tabs {
+  display: none;
+}
+
+.bottom-tabs {
+  display: flex;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-tab {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--muted-text-color);
+  text-decoration: none;
+  font: 600 12px var(--font-family);
+  border-top: 3px solid transparent;
+}
+
+.bottom-tab[aria-current='page'] {
+  color: #fff;
+  border-top-color: var(--accent);
+}
+
+.bottom-tab[aria-current='page'] svg {
+  color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  bottom-tabs {
+    display: block;
+  }
+
+  .top-navigation nav {
+    display: none;
+  }
+}
