@@ -5,8 +5,9 @@
   inset: 0;
   z-index: 200;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: 120px;
   background: rgba(0, 0, 0, 0.6);
 }
 
@@ -76,7 +77,13 @@
 }
 
 .upload-button {
+  min-height: 28px;
   cursor: pointer;
+}
+
+.browser-file-row .thumbnail {
+  width: 32px;
+  height: 32px;
 }
 
 .files-footer {

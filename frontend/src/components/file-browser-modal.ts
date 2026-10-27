@@ -16,6 +16,8 @@ const NO_VALUE = '—'
 @customElement('file-browser-modal')
 export class FileBrowserModal extends LitElement {
   @property({ type: Boolean }) open = false
+  /** the file that is selected when the dialog opens */
+  @property({ type: String }) initialSelection: string | null = null
   @property({ attribute: false }) loadFiles: () => Promise<GcodeFile[]> = getFiles
   @property({ attribute: false }) uploadFile: (file: File) => Promise<unknown> = uploadFile
 
@@ -29,7 +31,10 @@ export class FileBrowserModal extends LitElement {
   }
 
   updated(changed: Map<string, unknown>): void {
-    if (changed.has('open') && this.open) void this.reload()
+    if (changed.has('open') && this.open) {
+      this.selectedName = this.initialSelection
+      void this.reload()
+    }
   }
 
   private async reload(): Promise<void> {
@@ -117,8 +122,8 @@ export class FileBrowserModal extends LitElement {
         <div class="section-header files-title">
           Files
           <span class="actions">
-            <label class="button small upload-button"
-              >${renderIcon('upload', 14)}Upload<input type="file" accept=".gcode,.g" hidden @change=${this.upload}
+            <label class="button upload-button"
+              >Upload<input type="file" accept=".gcode,.g" hidden @change=${this.upload}
             /></label>
           </span>
         </div>

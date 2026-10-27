@@ -46,6 +46,7 @@ export class DashboardPage extends LitElement {
   @state() private estimatedSeconds: number | null = null
   @state() private filamentWeightGrams: number | null = null
   @state() private browserPurpose: BrowserPurpose | null = null
+  @state() private browserSelection: string | null = null
 
   private stopListening: StopFunction | null = null
   private requestedFilename = ''
@@ -68,6 +69,8 @@ export class DashboardPage extends LitElement {
 
   private openBrowser = (event: Event): void => {
     this.browserPurpose = (event as CustomEvent<{ purpose: BrowserPurpose }>).detail.purpose
+    const predictor = this.querySelector<HTMLElement & { currentFilename: string }>('cost-predictor-panel')
+    this.browserSelection = this.browserPurpose === 'predict' ? (predictor?.currentFilename ?? null) : null
   }
 
   private handleFileChosen(event: Event): void {
@@ -179,6 +182,7 @@ export class DashboardPage extends LitElement {
     return html`<print-ready-modal></print-ready-modal>
       <file-browser-modal
         ?open=${this.browserPurpose !== null}
+        .initialSelection=${this.browserSelection}
         @file-selected=${this.handleFileChosen}
         @close=${() => (this.browserPurpose = null)}
       ></file-browser-modal
