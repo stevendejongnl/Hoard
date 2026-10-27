@@ -107,9 +107,18 @@ export class DashboardListsPanel extends LitElement {
     </div>`
   }
 
+  private openFileBrowser(): void {
+    this.dispatchEvent(new CustomEvent('open-file-browser', { detail: { purpose: 'print' }, bubbles: true }))
+  }
+
   private renderRecentPrints(): TemplateResult {
     const hasPrints = this.isPrintActive() || this.records.length > 0
-    if (!hasPrints) return html`<div class="list-message">No prints to show</div>`
+    if (!hasPrints) {
+      return html`<div class="list-message">No prints to show</div>
+        <div class="list-message-action">
+          <button class="button print-a-file-button" @click=${this.openFileBrowser}>Print a file…</button>
+        </div>`
+    }
     return html`${this.renderCurrentPrint()}${this.records.map((record) => this.renderRecord(record))}`
   }
 

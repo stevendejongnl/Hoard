@@ -8,6 +8,7 @@ import { buildSpoolName } from '../spool-list'
 import type { GcodeFile, PredictResult, PrintRecord, Spool } from '../types'
 
 const NO_VALUE = '—'
+const BROWSE_VALUE = '__browse__'
 const RECENT_PRINT_LOOKUP_COUNT = 20
 const CHEVRON_SIZE = 14
 const SELECT_CHEVRON_SIZE = 12
@@ -69,7 +70,22 @@ export class CostPredictorPanel extends LitElement {
   }
 
   private async changeFile(event: Event): Promise<void> {
-    this.filename = (event.target as HTMLSelectElement).value
+    const select = event.target as HTMLSelectElement
+    if (select.value === BROWSE_VALUE) {
+      select.value = this.filename
+      this.dispatchEvent(new CustomEvent('open-file-browser', { detail: { purpose: 'predict' }, bubbles: true }))
+      return
+    }
+    this.filename = select.value
+    await this.refreshPrediction()
+  }
+
+  /** Takes a file chosen in the file browser, also one the list did not have yet. */
+  async chooseFile(filename: string): Promise<void> {
+    if (!this.files.some((file) => file.filename === filename)) {
+      this.files = [...this.files, { filename, size: 0, modified: 0 }]
+    }
+    this.filename = filename
     await this.refreshPrediction()
   }
 
@@ -99,11 +115,12 @@ export class CostPredictorPanel extends LitElement {
 
   private renderFileRow(): TemplateResult {
     const options = html`${this.files.map(
-      (file) =>
-        html`<option value=${file.filename} ?selected=${file.filename === this.filename}>
-          ${removeExtension(file.filename)}
-        </option>`,
-    )}`
+        (file) =>
+          html`<option value=${file.filename} ?selected=${file.filename === this.filename}>
+            ${removeExtension(file.filename)}
+          </option>`,
+      )}
+      <option value=${BROWSE_VALUE}>Browse files…</option>`
     return html`<div class="parameter-row">
       <span class="parameter-label">File</span>${this.renderSelect(
         'File',

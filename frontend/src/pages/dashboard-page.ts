@@ -7,6 +7,7 @@ import type { GcodeFile, PiStats, Power, PrinterState, Temps } from '../types'
 import '../components/camera-panel'
 import '../components/cost-predictor-panel'
 import '../components/dashboard-lists-panel'
+import '../components/file-browser-modal'
 import '../components/phone-print-summary'
 import '../components/phone-temperature-section'
 import '../components/print-ready-modal'
@@ -17,6 +18,7 @@ import '../styles/dashboard.css'
 
 type StopFunction = () => void
 type UpdatePayload = { type: string; data: unknown }
+type BrowserPurpose = 'print' | 'predict'
 
 const PHONE_QUERY = '(max-width: 800px)'
 
@@ -34,6 +36,8 @@ export class DashboardPage extends LitElement {
   @property({ attribute: false }) isPhoneLayout: () => boolean = checkPhoneLayout
   @property({ attribute: false }) now: () => number = () => Date.now()
   @property({ type: String }) timeZone: string | undefined = undefined
+  @property({ attribute: false }) startPrint: (filename: string) => void = (filename) =>
+    document.querySelector<HTMLElement & { tryPrint(name: string): void }>('print-ready-modal')?.tryPrint(filename)
 
   @state() private printerState: PrinterState | null = null
   @state() private temperatures: Temps | null = null
@@ -41,6 +45,7 @@ export class DashboardPage extends LitElement {
   @state() private piStats: PiStats | null = null
   @state() private estimatedSeconds: number | null = null
   @state() private filamentWeightGrams: number | null = null
+  @state() private browserPurpose: BrowserPurpose | null = null
 
   private stopListening: StopFunction | null = null
   private requestedFilename = ''
@@ -52,11 +57,28 @@ export class DashboardPage extends LitElement {
   connectedCallback(): void {
     super.connectedCallback()
     this.stopListening = this.subscribeToUpdates((payload) => this.receive(payload))
+    this.addEventListener('open-file-browser', this.openBrowser)
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback()
     this.stopListening?.()
+    this.removeEventListener('open-file-browser', this.openBrowser)
+  }
+
+  private openBrowser = (event: Event): void => {
+    this.browserPurpose = (event as CustomEvent<{ purpose: BrowserPurpose }>).detail.purpose
+  }
+
+  private handleFileChosen(event: Event): void {
+    const filename = (event as CustomEvent<{ filename: string }>).detail.filename
+    if (this.browserPurpose === 'print') this.startPrint(filename)
+    if (this.browserPurpose === 'predict') {
+      const predictor = this.querySelector<HTMLElement & { chooseFile(name: string): Promise<void> }>(
+        'cost-predictor-panel',
+      )
+      void predictor?.chooseFile(filename)
+    }
   }
 
   private receive(payload: UpdatePayload): void {
@@ -154,9 +176,13 @@ export class DashboardPage extends LitElement {
   }
 
   render(): TemplateResult {
-    return html`<print-ready-modal></print-ready-modal>${this.isPhoneLayout()
-        ? this.renderPhone()
-        : this.renderDesktop()}`
+    return html`<print-ready-modal></print-ready-modal>
+      <file-browser-modal
+        ?open=${this.browserPurpose !== null}
+        @file-selected=${this.handleFileChosen}
+        @close=${() => (this.browserPurpose = null)}
+      ></file-browser-modal
+      >${this.isPhoneLayout() ? this.renderPhone() : this.renderDesktop()}`
   }
 }
 
