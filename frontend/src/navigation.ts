@@ -32,3 +32,26 @@ export function followNavigationLink(click: MouseEvent, path: string, navigate: 
   click.preventDefault()
   navigate(path)
 }
+
+export interface PhoneHeader {
+  title: string
+  /** where the back arrow goes, or null when the page has no back arrow */
+  backPath: NavigationPath | null
+}
+
+const PHONE_TITLES: Record<NavigationSection, string> = {
+  dashboard: 'Hoard',
+  history: 'History',
+  projects: 'Projects',
+  spools: 'Spools',
+}
+
+/** What the phone's top bar shows for a route: the page title, and a way back from a project. */
+export function describePhoneHeader(route: string): PhoneHeader {
+  if (route.startsWith('/projects/')) return { title: 'Project', backPath: '/projects' }
+  return { title: PHONE_TITLES[findNavigationSection(route)], backPath: null }
+}
+
+export function findNavigationLabel(path: NavigationPath): string {
+  return NAVIGATION_ITEMS.find((item) => item.path === path)?.label ?? ''
+}
