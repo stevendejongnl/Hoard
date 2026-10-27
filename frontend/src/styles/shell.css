@@ -319,3 +319,9 @@ status-bar {
   color: var(--danger-color);
   font-size: 12px;
 }
+
+@media (max-width: 800px) {
+  status-bar {
+    display: none;
+  }
+}
