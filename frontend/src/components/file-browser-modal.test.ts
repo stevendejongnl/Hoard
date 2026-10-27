@@ -54,7 +54,7 @@ describe('file browser', () => {
 
   it('lists the files with size, time and filament', async () => {
     const { browser } = await createBrowser()
-    const rows = browser.querySelectorAll('.table-row.file-row')
+    const rows = browser.querySelectorAll('.table-row.browser-file-row')
     expect(rows.length).toBe(2)
     expect(rows[0].textContent).toContain('helicopter-blade.gcode')
     expect(rows[0].textContent).toContain('4.0 MB')
@@ -69,7 +69,7 @@ describe('file browser', () => {
     search.value = 'plate'
     search.dispatchEvent(new Event('input', { bubbles: true }))
     await browser.updateComplete
-    expect(browser.querySelectorAll('.file-row').length).toBe(1)
+    expect(browser.querySelectorAll('.browser-file-row').length).toBe(1)
   })
 
   it('cannot select before a file is chosen', async () => {
@@ -79,11 +79,17 @@ describe('file browser', () => {
 
   it('selects the chosen file and closes', async () => {
     const { browser, calls } = await createBrowser()
-    await click(browser, '.file-row:nth-of-type(2)')
-    expect(browser.querySelectorAll('.file-row.selected').length).toBe(1)
+    await click(browser, '.browser-file-row:nth-of-type(2)')
+    expect(browser.querySelectorAll('.browser-file-row.selected').length).toBe(1)
     await click(browser, 'button.select-file-button')
     expect(calls.selected).toEqual(['plate.gcode'])
     expect(calls.closed).toBe(1)
+  })
+
+  it('starts with the file it was told about selected', async () => {
+    const { browser } = await createBrowser({ initialSelection: 'plate.gcode' })
+    expect(browser.querySelector('.browser-file-row.selected')?.textContent).toContain('plate.gcode')
+    expect(browser.querySelector<HTMLButtonElement>('button.select-file-button')?.disabled).toBe(false)
   })
 
   it('closes with Cancel', async () => {

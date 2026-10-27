@@ -71,20 +71,20 @@ export class FileBrowserModal extends LitElement {
   private renderRow(file: GcodeFile): TemplateResult {
     const isSelected = file.filename === this.selectedName
     return html`<div
-      class="table-row file-row ${isSelected ? 'selected' : ''}"
+      class="table-row browser-file-row ${isSelected ? 'selected' : ''}"
       tabindex="0"
       @click=${() => (this.selectedName = file.filename)}
       @keydown=${(event: KeyboardEvent) => event.key === 'Enter' && (this.selectedName = file.filename)}
     >
-      <span class="file-name-cell"
+      <span class="browser-browser-file-name-cell"
         ><span class="thumbnail">${renderIcon('cube', 16, 1.6)}</span
-        ><span class="monospace file-name">${file.filename}</span></span
+        ><span class="monospace browser-file-name">${file.filename}</span></span
       >
       <span class="muted">${formatFileSize(file.size)}</span>
-      <span class="monospace file-figure"
+      <span class="monospace browser-file-figure"
         >${file.estimated_time ? formatPrintDuration(file.estimated_time) : NO_VALUE}</span
       >
-      <span class="monospace file-figure"
+      <span class="monospace browser-file-figure"
         >${file.filament_weight_total ? formatPrintFilament(file.filament_weight_total) : NO_VALUE}</span
       >
     </div>`
@@ -101,11 +101,11 @@ export class FileBrowserModal extends LitElement {
   }
 
   private renderTable(): TemplateResult {
-    return html`<div class="table-row header file-header">
+    return html`<div class="table-row header browser-file-header">
         <span>File</span><span>Size</span><span>Time</span><span>Filament</span>
       </div>
       ${this.renderMessage() ??
-      html`<div class="file-rows">
+      html`<div class="browser-browser-file-rows">
         ${filterFiles(this.files, this.searchText).map((file) => this.renderRow(file))}
       </div>`}`
   }
