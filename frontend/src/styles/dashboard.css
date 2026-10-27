@@ -1,0 +1,544 @@
+/* The dashboard: parameters on the left, camera, chart and timeline in the middle, lists and the cost predictor on the right. */
+
+.app-content > dashboard-page {
+  display: flex;
+}
+
+.dashboard-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+}
+
+.dashboard-parameters,
+.dashboard-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel-color);
+}
+
+.dashboard-parameters {
+  border-right: 1px solid var(--border-color);
+}
+
+.dashboard-side {
+  border-left: 1px solid var(--border-color);
+}
+
+/* The design sizes its fields with border-box */
+.dashboard-layout .value-field,
+.dashboard-phone .value-field {
+  box-sizing: border-box;
+}
+
+.dashboard-layout .section-body {
+  padding: 8px 0;
+}
+
+/* Parameter panel */
+printer-parameter-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.parameter-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.parameter-footer {
+  flex: none;
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.parameter-footer .button {
+  flex: 1;
+}
+
+.print-file-line {
+  padding: 0 12px 6px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.heater-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heater-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 1px;
+}
+
+.heater-values {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.heater-values .target-field {
+  min-width: 60px;
+}
+
+.status-row {
+  min-height: 22px;
+}
+
+.temperature-status {
+  font-size: 12px;
+}
+
+.power-switch {
+  position: relative;
+  width: 38px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 2px;
+  background: var(--strong-border-color);
+  cursor: pointer;
+}
+
+.power-switch.on {
+  background: var(--accent);
+}
+
+.power-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 1px;
+  background: var(--muted-text-color);
+}
+
+.power-switch.on .power-switch-knob {
+  left: auto;
+  right: 3px;
+  background: var(--text-on-accent);
+}
+
+/* The middle column */
+.dashboard-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--well-color);
+}
+
+camera-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-heading {
+  display: none;
+}
+
+.camera-viewport {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted-text-color);
+  font-size: 13px;
+}
+
+.camera-stream {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.camera-overlay {
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  background: var(--chrome-color);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.camera-details {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok-color);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.camera-buttons {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 2px;
+  background: var(--chrome-color);
+  border: 1px solid var(--border-color);
+}
+
+.chart-block {
+  flex: none;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.chart-header {
+  background: var(--panel-color);
+}
+
+.chart-legend {
+  gap: 14px;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.legend-line {
+  width: 12px;
+  height: 3px;
+}
+
+.legend-line.hotend-color {
+  background: var(--hotend-color);
+}
+
+.legend-line.bed-color {
+  background: var(--bed-color);
+}
+
+.legend-note {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.chart-body {
+  padding: 10px 12px 6px;
+}
+
+.print-timeline {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.timeline-spent,
+.timeline-total {
+  font-size: 12px;
+}
+
+.timeline-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border-color);
+  border-radius: 1px;
+}
+
+.timeline-fill {
+  min-width: 6px;
+  height: 100%;
+  background: var(--accent);
+  border-radius: 1px;
+}
+
+.timeline-progress {
+  min-width: 52px;
+  font-size: 14px;
+  font-weight: 500;
+  text-align: right;
+}
+
+/* The right column */
+dashboard-lists-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-tabs {
+  flex: none;
+  display: flex;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.list-tab {
+  flex: 1;
+  min-height: 40px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--secondary-text-color);
+  font: 600 13px var(--font-family);
+  cursor: pointer;
+}
+
+.list-tab.selected {
+  border-bottom-color: var(--accent);
+  color: #fff;
+}
+
+.list-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.list-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-item-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.list-item-detail {
+  font-size: 12px;
+}
+
+.list-item .print-again-icon {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+}
+
+.spool-swatch-large {
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--strong-border-color);
+}
+
+.dashboard-side .in-use-tag {
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--selection-tint);
+  color: #fff;
+  font: 700 11px var(--font-family);
+  letter-spacing: 0.06em;
+}
+
+.list-message {
+  padding: 24px 16px;
+  color: var(--muted-text-color);
+  font-size: 13px;
+}
+
+cost-predictor-panel {
+  flex: none;
+  display: block;
+  border-top: 1px solid var(--border-color);
+}
+
+.predictor-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.predictor-toggle svg {
+  color: var(--muted-text-color);
+}
+
+cost-predictor-panel .section-header {
+  padding: 0;
+}
+
+.predictor-toggle {
+  min-height: 36px;
+  padding: 0 12px;
+}
+
+.predictor-body {
+  padding: 8px 0 12px;
+}
+
+.predictor-select {
+  position: relative;
+  min-width: 160px;
+}
+
+.predictor-select select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.predictor-total-label {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.predictor-message {
+  padding: 12px;
+  color: var(--muted-text-color);
+  font-size: 13px;
+}
+
+/* Phone: the running print, the temperatures and the camera, one under the other. */
+@media (max-width: 800px) {
+  .dashboard-phone {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .phone-summary {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .summary-file {
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .summary-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .summary-progress {
+    font-size: 32px;
+    font-weight: 500;
+  }
+
+  .summary-progress .muted {
+    font-size: 16px;
+  }
+
+  .summary-finish {
+    font-size: 13px;
+  }
+
+  .summary-buttons {
+    display: flex;
+    gap: 8px;
+  }
+
+  .summary-buttons .button {
+    flex: 1;
+    min-height: 44px;
+  }
+
+  .phone-temperature {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .phone-temperature-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+
+  .section-title {
+    font: 600 13px var(--font-family);
+  }
+
+  .legend {
+    display: inline-flex;
+    gap: 12px;
+  }
+
+  .phone-temperature .legend-item {
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .phone-temperature .legend-line {
+    width: 10px;
+  }
+
+  .phone-temperature .parameter-row {
+    padding: 0;
+  }
+
+  .dashboard-phone camera-panel {
+    flex: none;
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+  }
+
+  .dashboard-phone .camera-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .dashboard-phone .camera-viewport {
+    flex: none;
+    aspect-ratio: 4 / 3;
+    background: var(--well-color);
+    display: grid;
+    place-items: center;
+  }
+
+  .dashboard-phone .camera-overlay,
+  .dashboard-phone .camera-buttons {
+    display: none;
+  }
+}

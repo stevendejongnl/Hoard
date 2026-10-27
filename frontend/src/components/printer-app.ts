@@ -9,7 +9,7 @@ import { sseClient } from '../sse'
 import './bottom-tabs'
 import './status-bar'
 import './top-navigation'
-import '../pages/home-page'
+import '../pages/dashboard-page'
 import '../pages/history-page'
 import '../pages/spools-page'
 import '../pages/projects-page'
@@ -29,7 +29,7 @@ function renderPageForRoute(route: string): TemplateResult {
   if (route === '/projects') return html`<projects-page></projects-page>`
   if (route.startsWith('/projects/')) return html`<project-detail-page></project-detail-page>`
   if (route.startsWith('/prints/')) return html`<print-detail-page></print-detail-page>`
-  return html`<home-page></home-page>`
+  return html`<dashboard-page></dashboard-page>`
 }
 
 /** The frame of the app: top bar, the page for the current route, status bar and the phone tab bar. */

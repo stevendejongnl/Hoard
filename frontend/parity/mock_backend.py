@@ -47,6 +47,9 @@ class MockBackendHandler(BaseHTTPRequestHandler):
         if path == STREAM_PATH:
             self.stream_events()
             return
+        if self.path in self.responses:
+            self.send_json(self.responses[self.path])
+            return
         if path in self.responses:
             self.send_json(self.select_page(self.responses[path], urlparse(self.path).query))
             return
