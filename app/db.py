@@ -28,6 +28,11 @@ async def init_db(path: str) -> None:
                 created_at       INTEGER NOT NULL
             )
         """)
+        async with db.execute("PRAGMA table_info(spools)") as cur:
+            spool_columns = [row[1] for row in await cur.fetchall()]
+        if "tag_id" not in spool_columns:
+            await db.execute("ALTER TABLE spools ADD COLUMN tag_id TEXT")
+        await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_spools_tag_id ON spools(tag_id)")
         await db.execute("""
             CREATE TABLE IF NOT EXISTS print_spools (
                 job_id          TEXT PRIMARY KEY,
@@ -188,16 +193,24 @@ async def create_spool(data: dict[str, Any]) -> dict[str, Any]:
         cur = await db.execute(
             """INSERT INTO spools
                (brand, material, color, color_hex, cost_per_gram,
-                initial_weight_g, current_weight_g, notes, active, created_at)
+                initial_weight_g, current_weight_g, notes, active, tag_id, created_at)
                VALUES (:brand, :material, :color, :color_hex, :cost_per_gram,
-                       :initial_weight_g, :current_weight_g, :notes, :active, :created_at)""",
-            {**data, "active": data.get("active", 0), "created_at": int(time.time())},
+                       :initial_weight_g, :current_weight_g, :notes, :active, :tag_id, :created_at)""",
+            {**data, "active": data.get("active", 0), "tag_id": data.get("tag_id"), "created_at": int(time.time())},
         )
         await db.commit()
         async with db.execute("SELECT * FROM spools WHERE id = ?", (cur.lastrowid,)) as c:
             row = await c.fetchone()
             assert row is not None
             return dict(row)
+
+
+async def find_spool_by_tag(tag_id: str) -> dict[str, Any] | None:
+    async with _conn() as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM spools WHERE tag_id = ?", (tag_id,)) as cur:
+            row = await cur.fetchone()
+            return dict(row) if row else None
 
 
 async def update_spool(spool_id: int, data: dict[str, Any]) -> dict[str, Any] | None:
