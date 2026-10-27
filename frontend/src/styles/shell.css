@@ -246,3 +246,76 @@ printer-app {
     height: 18px;
   }
 }
+
+/* The accent picker opens from the version text, so the status bar looks like the design at rest. */
+status-bar {
+  display: block;
+  position: relative;
+}
+
+.status-bar-version {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.status-bar-version:hover {
+  color: var(--text-color);
+}
+
+.appearance-popover {
+  position: absolute;
+  right: 12px;
+  bottom: 30px;
+  z-index: 20;
+  width: 240px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel-color);
+  border: 1px solid var(--strong-border-color);
+  border-radius: 2px;
+  font: 400 13px var(--font-family);
+  color: var(--text-color);
+}
+
+.appearance-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.appearance-row .accent-color {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  background: var(--well-color);
+  cursor: pointer;
+}
+
+.appearance-row .accent-text {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  background: var(--well-color);
+  color: var(--text-color);
+  font: 400 14px var(--monospace-family);
+}
+
+.appearance-row .appearance-done {
+  margin-left: auto;
+}
+
+.appearance-error {
+  color: var(--danger-color);
+  font-size: 12px;
+}
