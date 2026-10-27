@@ -1,6 +1,6 @@
 {
-  "name": "Printer",
-  "short_name": "Printer",
+  "name": "Hoard",
+  "short_name": "Hoard",
   "description": "3D printer dashboard: live status, webcam, projects, spools, and print history.",
   "start_url": "/",
   "scope": "/",
