@@ -1,6 +1,7 @@
-import { LitElement, html } from 'lit'
+import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
+import { classMap } from 'lit/directives/class-map.js'
 import { emergencyStop } from '../api'
 import { renderIcon } from '../icons'
 import { hoardMark } from '../logo'
@@ -9,6 +10,8 @@ import type { NavigationItem } from '../navigation'
 import { router } from '../router'
 
 type NavigateFunction = (path: string) => void
+
+const BADGE_STATES = ['printing', 'paused', 'error']
 
 const EMERGENCY_STOP_CONFIRMATION = 'Emergency stop? This will halt all motion immediately.'
 const EMERGENCY_STOP_FAILURE = 'Emergency stop failed. Check the printer connection.'
@@ -19,6 +22,8 @@ const navigateWithRouter: NavigateFunction = (path) => router.navigate(path as P
 @customElement('top-navigation')
 export class TopNavigation extends LitElement {
   @property({ type: String }) route = '/'
+  /** the printer state from the stream: printing, paused, error, standby, ... */
+  @property({ type: String }) printerState = ''
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
   @property({ attribute: false }) confirmEmergencyStop: (message: string) => boolean = (message) =>
     window.confirm(message)
@@ -68,6 +73,14 @@ export class TopNavigation extends LitElement {
     return html`<nav aria-label="Primary">${NAVIGATION_ITEMS.map((item) => this.renderTab(item, currentSection))}</nav>`
   }
 
+  private renderStateBadge(): TemplateResult | typeof nothing {
+    if (!BADGE_STATES.includes(this.printerState)) return nothing
+    const variants = { paused: this.printerState === 'paused', error: this.printerState === 'error' }
+    return html`<span class="state-badge ${classMap(variants)}"
+      ><span class="pulsing-dot" aria-hidden="true"></span>${this.printerState}</span
+    >`
+  }
+
   private renderEmergencyStop(): TemplateResult {
     return html`<button
       class="button emergency-stop"
@@ -81,7 +94,7 @@ export class TopNavigation extends LitElement {
   render(): TemplateResult {
     return html`<header class="top-navigation">
       ${this.renderBrand()} ${this.renderTabs()}
-      <div class="top-navigation-actions">${this.renderEmergencyStop()}</div>
+      <div class="top-navigation-actions">${this.renderStateBadge()}${this.renderEmergencyStop()}</div>
     </header>`
   }
 }
