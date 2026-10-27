@@ -126,7 +126,7 @@ export class TopNavigation extends LitElement {
       aria-label="Emergency stop"
       @click=${() => this.handleEmergencyStop()}
     >
-      ${renderIcon('emergency-stop', 18)}<span class="label">Emergency stop</span>
+      ${renderIcon('emergency-stop')}<span class="label">Emergency stop</span>
     </button>`
   }
 
