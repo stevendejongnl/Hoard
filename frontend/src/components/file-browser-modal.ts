@@ -115,39 +115,52 @@ export class FileBrowserModal extends LitElement {
       </div>`}`
   }
 
+  private renderTitle(): TemplateResult {
+    return html`<div class="section-header files-title">
+      Files
+      <span class="actions">
+        <label class="button upload-button"
+          >Upload<input type="file" accept=".gcode,.g" hidden @change=${this.upload}
+        /></label>
+      </span>
+    </div>`
+  }
+
+  private renderSearchRow(): TemplateResult {
+    const changeSearchText = (event: Event) => (this.searchText = (event.target as HTMLInputElement).value)
+    return html`<div class="files-search-row">
+      <input
+        class="files-search"
+        type="search"
+        placeholder="Filter by file name"
+        aria-label="Filter by file name"
+        .value=${this.searchText}
+        @input=${changeSearchText}
+      />
+    </div>`
+  }
+
+  private renderFooter(): TemplateResult {
+    return html`<div class="files-footer">
+      <button class="button cancel-button" @click=${this.close}>Cancel</button>
+      <button
+        class="button primary select-file-button"
+        ?disabled=${this.selectedName === null}
+        @click=${this.confirmSelection}
+      >
+        Select
+      </button>
+    </div>`
+  }
+
   render(): TemplateResult | typeof nothing {
     if (!this.open) return nothing
+    const keepOpen = (event: Event) => event.stopPropagation()
     return html`<div class="files-overlay" @click=${this.close}>
-      <div class="files-dialog" role="dialog" aria-label="Files" @click=${(event: Event) => event.stopPropagation()}>
-        <div class="section-header files-title">
-          Files
-          <span class="actions">
-            <label class="button upload-button"
-              >Upload<input type="file" accept=".gcode,.g" hidden @change=${this.upload}
-            /></label>
-          </span>
-        </div>
-        <div class="files-search-row">
-          <input
-            class="files-search"
-            type="search"
-            placeholder="Filter by file name"
-            aria-label="Filter by file name"
-            .value=${this.searchText}
-            @input=${(event: Event) => (this.searchText = (event.target as HTMLInputElement).value)}
-          />
-        </div>
+      <div class="files-dialog" role="dialog" aria-label="Files" @click=${keepOpen}>
+        ${this.renderTitle()} ${this.renderSearchRow()}
         <div class="files-table">${this.renderTable()}</div>
-        <div class="files-footer">
-          <button class="button cancel-button" @click=${this.close}>Cancel</button>
-          <button
-            class="button primary select-file-button"
-            ?disabled=${this.selectedName === null}
-            @click=${this.confirmSelection}
-          >
-            Select
-          </button>
-        </div>
+        ${this.renderFooter()}
       </div>
     </div>`
   }

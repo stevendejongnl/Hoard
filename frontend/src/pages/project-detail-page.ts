@@ -225,38 +225,45 @@ export class ProjectDetailPage extends LitElement {
     </section>`
   }
 
+  private renderSidePanel(project: Project): TemplateResult {
+    return html`<aside class="side-panel" aria-label="Parameters">
+      ${this.renderHeading(project)}
+      <div class="side-panel-body">
+        <div class="section">
+          <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Totals</div>
+          <div class="section-body">${listTotals(project).map((total) => this.renderTotalRow(total))}</div>
+        </div>
+      </div>
+      <div class="side-panel-footer">
+        <button class="button danger delete-project-button" @click=${this.deleteThisProject}>
+          ${renderIcon('trash', 14)}Delete project
+        </button>
+      </div>
+    </aside>`
+  }
+
+  private renderMain(project: Project): TemplateResult {
+    return html`<section class="page-main" aria-label="Main">
+      <div class="page-strip"><span class="page-title">Project</span></div>
+      <div class="detail-body">
+        <markdown-editor
+          .value=${project.notes ?? ''}
+          .projectId=${project.id}
+          @notes-changed=${this.handleNotesChanged}
+        ></markdown-editor>
+        ${this.renderLinks(project)}
+        <project-files-section
+          .files=${project.files ?? []}
+          .projectId=${project.id}
+          @files-changed=${this.handleFilesChanged}
+        ></project-files-section>
+      </div>
+    </section>`
+  }
+
   private renderProject(project: Project): TemplateResult {
     return html`<div class="project-detail-layout">
-      <aside class="side-panel" aria-label="Parameters">
-        ${this.renderHeading(project)}
-        <div class="side-panel-body">
-          <div class="section">
-            <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Totals</div>
-            <div class="section-body">${listTotals(project).map((total) => this.renderTotalRow(total))}</div>
-          </div>
-        </div>
-        <div class="side-panel-footer">
-          <button class="button danger delete-project-button" @click=${this.deleteThisProject}>
-            ${renderIcon('trash', 14)}Delete project
-          </button>
-        </div>
-      </aside>
-      <section class="page-main" aria-label="Main">
-        <div class="page-strip"><span class="page-title">Project</span></div>
-        <div class="detail-body">
-          <markdown-editor
-            .value=${project.notes ?? ''}
-            .projectId=${project.id}
-            @notes-changed=${this.handleNotesChanged}
-          ></markdown-editor>
-          ${this.renderLinks(project)}
-          <project-files-section
-            .files=${project.files ?? []}
-            .projectId=${project.id}
-            @files-changed=${this.handleFilesChanged}
-          ></project-files-section>
-        </div>
-      </section>
+      ${this.renderSidePanel(project)} ${this.renderMain(project)}
       <project-prints-panel
         .prints=${project.prints ?? []}
         .files=${project.files ?? []}

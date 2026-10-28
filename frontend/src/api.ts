@@ -35,45 +35,6 @@ export const uploadFile = (file: File) => {
   }).finally(() => clearTimeout(timeout))
 }
 
-const CHUNK_SIZE = 50 * 1024 * 1024 // 50 MB — safely under Cloudflare 100 MB limit
-
-export async function uploadFileChunked(
-  file: File,
-  onProgress?: (sent: number, total: number) => void,
-): Promise<{ filename: string }> {
-  const uploadId = `${Date.now()}-${Math.random().toString(36).slice(2)}`
-  const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
-
-  try {
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * CHUNK_SIZE
-      const blob = file.slice(start, start + CHUNK_SIZE)
-
-      const formData = new FormData()
-      formData.append('file', blob, file.name)
-      formData.append('upload_id', uploadId)
-      formData.append('filename', file.name)
-      formData.append('chunk_index', String(chunkIndex))
-      formData.append('total_chunks', String(totalChunks))
-
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), 120_000)
-      try {
-        await fetchJson('/api/files/chunks/upload', { method: 'POST', body: formData, signal: controller.signal })
-      } finally {
-        clearTimeout(timeout)
-      }
-
-      onProgress?.(chunkIndex + 1, totalChunks)
-    }
-    return { filename: file.name }
-  } catch (error) {
-    // Clean up partial upload
-    fetch(`/api/files/chunks/cancel/${uploadId}`, { method: 'DELETE' }).catch(() => {})
-    throw error
-  }
-}
-
 // History
 export const getHistory = (limit = 20, offset = 0) =>
   fetchJson<{ records: PrintRecord[]; total: number }>(`/api/history?limit=${limit}&offset=${offset}`)

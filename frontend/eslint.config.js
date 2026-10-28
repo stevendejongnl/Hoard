@@ -10,9 +10,9 @@ const ABBREVIATIONS = [
 ]
 
 /**
- * Structure rules start at the worst value found in the source when they were added (depth 3, nested callbacks 2,
- * 42 lines), and are lowered one cleanup issue at a time. Naming rules warn, and `npm run lint` fails when the
- * number of warnings grows, so the count only goes down.
+ * Structure rules started at the worst value found in the source (depth 3, nested callbacks 2, 42 lines) and are
+ * lowered as the cleanup goes: now depth 2, nested callbacks 1, 30 lines. Naming rules warn, and `npm run lint`
+ * fails on any warning.
  */
 export default tseslint.config(
   { ignores: ['dist', 'node_modules', 'parity', 'tools'] },
@@ -21,9 +21,9 @@ export default tseslint.config(
   {
     files: ['src/**/*.ts'],
     rules: {
-      'max-depth': ['error', 3],
-      'max-nested-callbacks': ['error', 2],
-      'max-lines-per-function': ['error', { max: 42, skipBlankLines: true, skipComments: true }],
+      'max-depth': ['error', 2],
+      'max-nested-callbacks': ['error', 1],
+      'max-lines-per-function': ['error', { max: 30, skipBlankLines: true, skipComments: true }],
       'id-denylist': ['warn', ...ABBREVIATIONS],
       'id-length': ['warn', { min: 2, properties: 'never', exceptions: ['x', 'y'] }],
       '@typescript-eslint/no-explicit-any': 'error',
