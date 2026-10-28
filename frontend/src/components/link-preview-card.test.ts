@@ -199,3 +199,11 @@ describe('link-preview-card tapping elsewhere', () => {
     expect(outside.listenerCount).toBe(0)
   })
 })
+
+describe('link-preview-card describing the link', () => {
+  it('shows the description of the link without markup', async () => {
+    const meta = { title: 'A model', description: '<p>A <b>sturdy</b> hook</p>' }
+    const card = await mountCard({ ...LINK_WITH_PREVIEW, meta }, false)
+    expect(card.shadowRoot?.querySelector('.description')?.textContent).toBe('A sturdy hook')
+  })
+})
