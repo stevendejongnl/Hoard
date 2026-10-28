@@ -1,3 +1,9 @@
+## [1.39.3](https://github.com/stevendejongnl/Hoard/compare/v1.39.2...v1.39.3) (2026-10-28)
+
+### Bug Fixes
+
+* **k8s:** the data volume is pinned to worker-pve2, where the data is ([09f1046](https://github.com/stevendejongnl/Hoard/commit/09f10464f626f410bd685f3a6a4661c172ae93ef))
+
 ## [1.39.2](https://github.com/stevendejongnl/Hoard/compare/v1.39.1...v1.39.2) (2026-10-28)
 
 ### Bug Fixes
