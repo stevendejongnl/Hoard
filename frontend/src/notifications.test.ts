@@ -24,6 +24,7 @@ function createSubscription(endpoint = 'https://push.example/1'): FakeSubscripti
 
 class FakeEnvironment implements PushEnvironment {
   isSupported = true
+  hasServiceWorker = true
   permission: NotificationPermission = 'granted'
   existingSubscription: FakeSubscription | null = null
   subscribeOptions: PushSubscriptionOptionsInit[] = []
@@ -34,6 +35,10 @@ class FakeEnvironment implements PushEnvironment {
 
   supportsPush(): boolean {
     return this.isSupported
+  }
+
+  supportsServiceWorker(): boolean {
+    return this.hasServiceWorker
   }
 
   requestPermission(): Promise<NotificationPermission> {
@@ -136,15 +141,22 @@ describe('unsubscribing', () => {
 })
 
 describe('the service worker', () => {
-  it('is registered when push can work', () => {
+  it('is registered where service workers work', () => {
     const environment = new FakeEnvironment()
+    createPushClient(environment).registerServiceWorker()
+    expect(environment.registeredWorkers).toEqual(['/sw.js'])
+  })
+
+  it('is registered where push is missing but service workers are there', () => {
+    const environment = new FakeEnvironment()
+    environment.isSupported = false
     createPushClient(environment).registerServiceWorker()
     expect(environment.registeredWorkers).toEqual(['/sw.js'])
   })
 
   it('is not registered where service workers are missing', () => {
     const environment = new FakeEnvironment()
-    environment.isSupported = false
+    environment.hasServiceWorker = false
     createPushClient(environment).registerServiceWorker()
     expect(environment.registeredWorkers).toEqual([])
   })
