@@ -19,6 +19,17 @@ import type { Project } from '../types'
 import '../styles/projects.css'
 
 type NavigateFunction = (path: string) => void
+type LoadState = 'loading' | 'ready' | 'error'
+
+interface TotalsText {
+  projectCount: string
+  printCount: string
+  filament: TemplateResult | string
+  cost: string
+}
+
+const NO_VALUE = '—'
+const NO_TOTALS: TotalsText = { projectCount: NO_VALUE, printCount: NO_VALUE, filament: NO_VALUE, cost: NO_VALUE }
 
 const navigateWithRouter: NavigateFunction = (path) => router.navigate(path as Parameters<typeof router.navigate>[0])
 
@@ -38,6 +49,7 @@ export class ProjectsPage extends LitElement {
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
 
   @state() private projects: Project[] = []
+  @state() private loadState: LoadState = 'loading'
   @state() private query = ''
   @state() private order: ProjectSortOrder = 'recent'
 
@@ -51,7 +63,12 @@ export class ProjectsPage extends LitElement {
   }
 
   private async reload(): Promise<void> {
-    this.projects = await this.loadProjects()
+    try {
+      this.projects = await this.loadProjects()
+      this.loadState = 'ready'
+    } catch {
+      this.loadState = 'error'
+    }
   }
 
   private async handleNewProject(): Promise<void> {
@@ -120,18 +137,24 @@ export class ProjectsPage extends LitElement {
   }
 
   private renderTotalsSection(): TemplateResult {
+    if (this.loadState !== 'ready') return this.renderTotalsSectionOf(NO_TOTALS)
     const totals = calculateProjectTotals(this.projects)
+    return this.renderTotalsSectionOf({
+      projectCount: String(totals.projectCount),
+      printCount: String(totals.printCount),
+      filament: html`${totals.filamentGrams.toFixed(1)}<span class="value-unit">g</span>`,
+      cost: formatCost(totals.cost),
+    })
+  }
+
+  private renderTotalsSectionOf(totals: TotalsText): TemplateResult {
     return html`<div class="section totals-section">
       <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Totals</div>
       <div class="section-body">
-        ${this.renderTotalRow('Projects', 'projects', String(totals.projectCount))}
-        ${this.renderTotalRow('Prints', 'prints', String(totals.printCount))}
-        ${this.renderTotalRow(
-          'Filament',
-          'filament',
-          html`${totals.filamentGrams.toFixed(1)}<span class="value-unit">g</span>`,
-        )}
-        ${this.renderTotalRow('Cost', 'cost', formatCost(totals.cost))}
+        ${this.renderTotalRow('Projects', 'projects', totals.projectCount)}
+        ${this.renderTotalRow('Prints', 'prints', totals.printCount)}
+        ${this.renderTotalRow('Filament', 'filament', totals.filament)}
+        ${this.renderTotalRow('Cost', 'cost', totals.cost)}
       </div>
     </div>`
   }
@@ -180,8 +203,14 @@ export class ProjectsPage extends LitElement {
     </a>`
   }
 
+  private renderMessage(message: string): TemplateResult {
+    return html`<div class="projects-empty muted">${message}</div>`
+  }
+
   private renderCards(visibleProjects: Project[]): TemplateResult | typeof nothing {
-    if (visibleProjects.length === 0) return html`<div class="projects-empty muted">No projects found</div>`
+    if (this.loadState === 'loading') return this.renderMessage('Loading projects…')
+    if (this.loadState === 'error') return this.renderMessage('Could not load the projects')
+    if (visibleProjects.length === 0) return this.renderMessage('No projects found')
     return html`<div class="project-grid">${visibleProjects.map((project) => this.renderCard(project))}</div>`
   }
 
@@ -197,7 +226,9 @@ export class ProjectsPage extends LitElement {
       <section class="page-main" aria-label="Main">
         <div class="page-strip">
           <span class="page-title">Projects</span>
-          <span class="monospace muted project-count">${this.projects.length}</span>
+          <span class="monospace muted project-count"
+            >${this.loadState === 'ready' ? this.projects.length : NO_VALUE}</span
+          >
         </div>
         <div class="page-body">${this.renderCards(visibleProjects)}</div>
       </section>
