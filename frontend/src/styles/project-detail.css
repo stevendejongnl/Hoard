@@ -433,6 +433,7 @@ project-prints-panel {
   }
 
   .panel-action {
+    box-sizing: border-box;
     min-height: 36px;
   }
 
