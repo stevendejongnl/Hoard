@@ -192,3 +192,50 @@ describe('projects-page', () => {
     expect(environment.visitedPaths).toEqual([])
   })
 })
+
+describe('projects-page before the projects have arrived', () => {
+  function mountWithoutWaiting(loadProjects: () => Promise<Project[]>): ProjectsPage {
+    const page = document.createElement('projects-page') as ProjectsPage
+    page.loadProjects = loadProjects
+    document.body.appendChild(page)
+    mountedPages.push(page)
+    return page
+  }
+
+  function readMessage(page: ProjectsPage): string {
+    return page.querySelector('.projects-empty')?.textContent?.trim() ?? ''
+  }
+
+  it('says it is loading, and does not claim that there are no projects', async () => {
+    const page = mountWithoutWaiting(() => new Promise(() => {}))
+    await page.updateComplete
+    expect(readMessage(page)).toBe('Loading projects…')
+  })
+
+  it('shows dashes for the totals and the count until the projects have arrived', async () => {
+    const page = mountWithoutWaiting(() => new Promise(() => {}))
+    await page.updateComplete
+    expect(readTotal(page, 'projects')).toBe('—')
+    expect(readTotal(page, 'prints')).toBe('—')
+    expect(page.querySelector('.project-count')?.textContent?.trim()).toBe('—')
+  })
+
+  it('says the projects could not be loaded when the request fails', async () => {
+    const page = mountWithoutWaiting(() => Promise.reject(new Error('502')))
+    await vi.waitFor(() => expect(readMessage(page)).toBe('Could not load the projects'))
+  })
+
+  it('says there are no projects only after an empty answer', async () => {
+    const page = mountWithoutWaiting(async () => [])
+    await vi.waitFor(() => expect(readMessage(page)).toBe('No projects found'))
+  })
+
+  it('replaces the loading message with the cards when the answer arrives', async () => {
+    let arrive: (projects: Project[]) => void = () => {}
+    const page = mountWithoutWaiting(() => new Promise((resolve) => (arrive = resolve)))
+    await page.updateComplete
+    arrive(PROJECTS)
+    await vi.waitFor(() => expect(readCardNames(page)).toEqual(['Dactyl Manuform', 'Doorhandle', 'Voron 2.4']))
+    expect(readMessage(page)).toBe('')
+  })
+})
