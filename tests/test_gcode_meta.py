@@ -164,3 +164,37 @@ def test_map_moonraker_meta_empty_list_skipped():
     result = map_moonraker_meta({"filament_type": [], "nozzle_diameter": []})
     assert "filament_type" not in result
     assert "nozzle_diameter" not in result
+
+
+def test_parse_gcode_header_first_occurrence_wins_for_comment_fields():
+    gcode = b";TIME:100\n;TIME:200\n;Layer height: 0.2\n;layer height: 0.3\n;MAXZ:10.5\n;MAXZ:20\n"
+    assert parse_gcode_header(gcode) == {"estimated_time_s": 100, "layer_height": 0.2, "object_height": 10.5}
+
+
+def test_parse_gcode_header_reads_slicer_and_first_layer_height():
+    gcode = b";Generated with Cura_SteamEngine 5.12.0\n;MINZ:0.3\n;Filament used: 1m\n"
+    assert parse_gcode_header(gcode) == {
+        "slicer": "Cura_SteamEngine",
+        "slicer_version": "5.12.0",
+        "first_layer_height": 0.3,
+        "filament_weight_g": round(1000 * _MM_TO_GRAMS, 2),
+    }
+
+
+def test_parse_gcode_header_start_print_without_temperatures_adds_nothing():
+    assert parse_gcode_header(b"START_PRINT\nstart_print bed_temp=65.5 extruder_temp=210\n") == {
+        "bed_temp": 65,
+        "nozzle_temp": 210,
+    }
+
+
+def test_parse_gcode_header_ignores_zero_m_code_temperatures_and_unknown_lines():
+    assert parse_gcode_header(b"M104 S0\nM140 S0\nG28\n  M109 S215  \nM190 S60\n") == {
+        "nozzle_temp": 215,
+        "bed_temp": 60,
+    }
+
+
+def test_parse_gcode_header_only_reads_the_first_64_kilobytes():
+    gcode = b";" + b"x" * 65536 + b"\n;TIME:5\n"
+    assert parse_gcode_header(gcode) == {}

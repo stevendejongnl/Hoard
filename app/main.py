@@ -53,6 +53,30 @@ async def _price_recorder_loop() -> None:
             log.warning("price recorder error: %s", exc)
 
 
+def _start_background_tasks() -> list[asyncio.Task]:
+    """Start the long-running tasks and return the ones that must be cancelled on shutdown."""
+    cancellable_tasks = [
+        asyncio.create_task(moonraker.connect_ws()),
+        asyncio.create_task(sse._poll_ha()),
+        asyncio.create_task(sse._poll_pi_stats()),
+        asyncio.create_task(sse._poll_printer_state()),
+    ]
+    # Full backfill on startup, then quick reconcile every 5 minutes
+    asyncio.create_task(recorder.startup_reconcile())
+    asyncio.create_task(recorder.periodic_reconcile())
+    asyncio.create_task(enrich_existing_links())
+    asyncio.create_task(_price_recorder_loop())
+    return cancellable_tasks
+
+
+async def _stop_background_tasks(cancellable_tasks: list[asyncio.Task]) -> None:
+    moonraker.stop()
+    for task in cancellable_tasks:
+        task.cancel()
+    influx.close()
+    await cache.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await db.init_db(settings.database_path)
@@ -60,28 +84,11 @@ async def lifespan(app: FastAPI):
 
     sse.register_ws_handlers()
     recorder.register_ws_handlers()
-
-    ws_task = asyncio.create_task(moonraker.connect_ws())
-    ha_task = asyncio.create_task(sse._poll_ha())
-    pi_task = asyncio.create_task(sse._poll_pi_stats())
-    ps_task = asyncio.create_task(sse._poll_printer_state())
-
-    # Full backfill on startup, then quick reconcile every 5 minutes
-    asyncio.create_task(recorder.startup_reconcile())
-    asyncio.create_task(recorder.periodic_reconcile())
-    asyncio.create_task(enrich_existing_links())
-    asyncio.create_task(_price_recorder_loop())
+    cancellable_tasks = _start_background_tasks()
 
     log.info("Hoard started, db=%s", settings.database_path)
     yield
-
-    moonraker.stop()
-    ws_task.cancel()
-    ha_task.cancel()
-    pi_task.cancel()
-    ps_task.cancel()
-    influx.close()
-    await cache.close()
+    await _stop_background_tasks(cancellable_tasks)
 
 
 app = FastAPI(title="Hoard", lifespan=lifespan)
@@ -122,25 +129,21 @@ async def version():
     return {"version": _APP_VERSION}
 
 
+async def _event_stream(request: Request, queue: asyncio.Queue[str]):
+    try:
+        while not await request.is_disconnected():
+            try:
+                yield await asyncio.wait_for(queue.get(), timeout=15.0)
+            except TimeoutError:
+                yield ": ping\n\n"
+    finally:
+        hub.unsubscribe(queue)
+
+
 @app.get("/stream")
 async def stream(request: Request):
-    q = hub.subscribe()
-
-    async def generate():
-        try:
-            while True:
-                if await request.is_disconnected():
-                    break
-                try:
-                    msg = await asyncio.wait_for(q.get(), timeout=15.0)
-                    yield msg
-                except TimeoutError:
-                    yield ": ping\n\n"
-        finally:
-            hub.unsubscribe(q)
-
     return StreamingResponse(
-        generate(),
+        _event_stream(request, hub.subscribe()),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
