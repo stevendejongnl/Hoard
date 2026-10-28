@@ -18,7 +18,7 @@ repos:
       - id: frontend-prettier
         name: Prettier (frontend)
         language: system
-        entry: bash -c 'cd frontend && npm run format && git add -u frontend/src/'
+        entry: bash -c 'cd frontend && npm run format && git add -u src/'
         pass_filenames: false
         files: ^frontend/src/.*\.ts$
 

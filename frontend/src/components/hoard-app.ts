@@ -33,8 +33,8 @@ function renderPageForRoute(route: string): TemplateResult {
 }
 
 /** The frame of the app: top bar, the page for the current route, status bar and the phone tab bar. */
-@customElement('printer-app')
-export class PrinterApp extends LitElement {
+@customElement('hoard-app')
+export class HoardApp extends LitElement {
   @property({ attribute: false }) subscribeToPayloads: (
     handler: (payload: ServerSentEventPayload) => void,
   ) => StopFunction = (handler) => sseClient.subscribe(handler)
@@ -87,6 +87,6 @@ export class PrinterApp extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    'printer-app': PrinterApp
+    'hoard-app': HoardApp
   }
 }

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { html } from 'lit'
-import './printer-app'
-import type { PrinterApp } from './printer-app'
+import './hoard-app'
+import type { HoardApp } from './hoard-app'
 import type { ServerSentEventPayload } from '../server-sent-events-client'
 
 class FakeEnvironment {
@@ -55,8 +55,8 @@ class FakeEnvironment {
   }
 }
 
-async function createPrinterApp(environment: FakeEnvironment): Promise<PrinterApp> {
-  const element = document.createElement('printer-app') as PrinterApp
+async function createHoardApp(environment: FakeEnvironment): Promise<HoardApp> {
+  const element = document.createElement('hoard-app') as HoardApp
   element.subscribeToPayloads = environment.subscribeToPayloads
   element.subscribeToRoute = environment.subscribeToRoute
   element.readCurrentRoute = environment.readCurrentRoute
@@ -73,7 +73,7 @@ afterEach(() => {
 
 describe('printer app layout', () => {
   it('puts the top bar, the page, the status bar and the phone tabs together', async () => {
-    const element = await createPrinterApp(new FakeEnvironment())
+    const element = await createHoardApp(new FakeEnvironment())
     expect(element.querySelector('top-navigation')).not.toBeNull()
     expect(element.querySelector('main.app-content .page')).not.toBeNull()
     expect(element.querySelector('status-bar')).not.toBeNull()
@@ -83,21 +83,21 @@ describe('printer app layout', () => {
   it('shows the page for the current route', async () => {
     const environment = new FakeEnvironment()
     environment.route = '/history'
-    const element = await createPrinterApp(environment)
+    const element = await createHoardApp(environment)
     expect(element.querySelector('.page')?.textContent).toBe('page for /history')
   })
 
   it('gives the route to both navigations', async () => {
     const environment = new FakeEnvironment()
     environment.route = '/spools'
-    const element = await createPrinterApp(environment)
+    const element = await createHoardApp(environment)
     expect(element.querySelector('top-navigation')?.getAttribute('route')).toBe('/spools')
     expect(element.querySelector('bottom-tabs')?.getAttribute('route')).toBe('/spools')
   })
 
   it('shows the new page when the route changes', async () => {
     const environment = new FakeEnvironment()
-    const element = await createPrinterApp(environment)
+    const element = await createHoardApp(environment)
     environment.navigateTo('/projects')
     await element.updateComplete
     expect(element.querySelector('.page')?.textContent).toBe('page for /projects')
@@ -108,7 +108,7 @@ describe('printer app layout', () => {
 describe('printer app printer state', () => {
   it('gives the printer state from the stream to the top bar and the status bar', async () => {
     const environment = new FakeEnvironment()
-    const element = await createPrinterApp(environment)
+    const element = await createHoardApp(environment)
     environment.receivePrinterState('printing', 42)
     await element.updateComplete
     expect(element.querySelector('top-navigation')?.getAttribute('printerstate')).toBe('printing')
@@ -117,7 +117,7 @@ describe('printer app printer state', () => {
 
   it('puts the print progress in the document title', async () => {
     const environment = new FakeEnvironment()
-    await createPrinterApp(environment)
+    await createHoardApp(environment)
     environment.receivePrinterState('standby')
     expect(environment.documentTitle).toBe('Hoard')
   })
@@ -126,7 +126,7 @@ describe('printer app printer state', () => {
 describe('printer app cleanup', () => {
   it('stops listening to the stream and the route when removed', async () => {
     const environment = new FakeEnvironment()
-    const element = await createPrinterApp(environment)
+    const element = await createHoardApp(environment)
     element.remove()
     expect(environment.isStreamUnsubscribed).toBe(true)
     expect(environment.isRouteUnsubscribed).toBe(true)

@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
     await cache.close()
 
 
-app = FastAPI(title="printer", lifespan=lifespan)
+app = FastAPI(title="Hoard", lifespan=lifespan)
 
 app.include_router(control.router)
 app.include_router(chunks.router)
