@@ -4,6 +4,7 @@ import {
   buildSpoolName,
   calculateRemainingPercent,
   createFormFromSpool,
+  describeCostPerGram,
   filterSpools,
   formatCostPerGram,
   formatMaterialLabel,
@@ -99,9 +100,14 @@ describe('the form', () => {
       colorHex: '#F8FAFC',
       initialWeight: '1000',
       currentWeight: '840',
-      costPerGram: '0.010',
+      totalPrice: '10',
       notes: 'dry',
     })
+  })
+
+  it('shows the total price as the cost per gram times the initial weight, without float noise', () => {
+    const form = createFormFromSpool(createSpool({ cost_per_gram: 0.01507, initial_weight_g: 1000 }))
+    expect(form.totalPrice).toBe('15.07')
   })
 
   it('is empty without a spool', () => {
@@ -112,7 +118,7 @@ describe('the form', () => {
       colorHex: '',
       initialWeight: '1000',
       currentWeight: '1000',
-      costPerGram: '',
+      totalPrice: '',
       notes: '',
     })
   })
@@ -124,7 +130,7 @@ describe('the form', () => {
     colorHex: 'f8fafc',
     initialWeight: '1000',
     currentWeight: '840',
-    costPerGram: '0.010',
+    totalPrice: '10',
     notes: '',
   }
 
@@ -144,6 +150,28 @@ describe('the form', () => {
     })
   })
 
+  it('calculates the cost per gram from the total price and the initial weight', () => {
+    const result = parseSpoolForm({ ...validForm, totalPrice: '15.07', initialWeight: '1000' })
+    expect(result).toMatchObject({ isValid: true, payload: { cost_per_gram: 0.01507 } })
+  })
+
+  it('keeps the total price and recalculates the cost per gram when the weight changes', () => {
+    const result = parseSpoolForm({ ...validForm, totalPrice: '15.07', initialWeight: '500' })
+    expect(result).toMatchObject({ isValid: true, payload: { cost_per_gram: 0.03014 } })
+  })
+
+  it('describes the calculated cost per gram for the form', () => {
+    expect(describeCostPerGram({ ...validForm, totalPrice: '15.07', initialWeight: '1000' })).toBe(
+      '= 0.01507 € per gram',
+    )
+  })
+
+  it('describes nothing while the price or the weight is not a usable number', () => {
+    expect(describeCostPerGram({ ...validForm, totalPrice: '' })).toBe('')
+    expect(describeCostPerGram({ ...validForm, totalPrice: '15.07', initialWeight: '0' })).toBe('')
+    expect(describeCostPerGram({ ...validForm, totalPrice: 'x' })).toBe('')
+  })
+
   it('turns the plus sign back into "Plus" so a shown label saves as stored', () => {
     expect(parseSpoolForm(validForm)).toMatchObject({ payload: { material: 'PLA Plus' } })
   })
@@ -159,7 +187,8 @@ describe('the form', () => {
     ['initial weight', { initialWeight: 'abc' }, 'Initial weight must be a number above zero'],
     ['initial weight zero', { initialWeight: '0' }, 'Initial weight must be a number above zero'],
     ['current weight', { currentWeight: '-1' }, 'Current weight must be a number of zero or more'],
-    ['cost per gram', { costPerGram: 'x' }, 'Cost per gram must be a number of zero or more'],
+    ['total price', { totalPrice: 'x' }, 'Total price must be a number of zero or more'],
+    ['negative total price', { totalPrice: '-1' }, 'Total price must be a number of zero or more'],
   ])('rejects a wrong %s', (_name, change, message) => {
     expect(parseSpoolForm({ ...validForm, ...change })).toEqual({ isValid: false, message })
   })
