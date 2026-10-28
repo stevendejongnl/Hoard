@@ -1,3 +1,13 @@
+## [1.39.0](https://github.com/stevendejongnl/Hoard/compare/v1.38.0...v1.39.0) (2026-10-28)
+
+### Features
+
+* **parity:** a script takes the README screenshots from the sample data ([05c8c20](https://github.com/stevendejongnl/Hoard/commit/05c8c20a70b3e96973087a1eeeb9a34a279e5f0e))
+
+### Documentation
+
+* README with screenshots, license, and a clean tree ([414bf3a](https://github.com/stevendejongnl/Hoard/commit/414bf3a879ab48ef6fee3405031c6b4d2cc998f7))
+
 ## [1.38.0](https://github.com/stevendejongnl/Hoard/compare/v1.37.0...v1.38.0) (2026-10-28)
 
 ### Features
