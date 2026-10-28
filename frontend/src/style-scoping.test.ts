@@ -62,3 +62,9 @@ describe('icons measured from the design boards', () => {
     expect(readStyles('history')).toMatch(/\.search-icon \{\n  position: absolute;\n  left: 21px;/)
   })
 })
+
+describe('the top bar bell', () => {
+  it('takes no room while it is hidden', () => {
+    expect(readStyles('shell')).toContain('push-toggle {\n  display: contents;')
+  })
+})

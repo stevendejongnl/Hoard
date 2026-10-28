@@ -69,3 +69,15 @@ describe('top navigation tabs', () => {
     expect(current?.textContent?.trim()).toBe('Spools')
   })
 })
+
+describe('top bar bell', () => {
+  it('sits before the emergency stop, inside the actions', async () => {
+    const bar = document.createElement('top-navigation')
+    document.body.appendChild(bar)
+    await bar.updateComplete
+    const actions = bar.querySelector('.top-navigation-actions')!
+    const children = [...actions.children].map((child) => child.tagName.toLowerCase())
+    expect(children.indexOf('push-toggle')).toBeGreaterThan(-1)
+    expect(children.indexOf('push-toggle')).toBeLessThan(children.indexOf('button', children.indexOf('push-toggle')))
+  })
+})
