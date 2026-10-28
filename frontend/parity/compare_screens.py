@@ -37,6 +37,7 @@ from frontend.parity.image_comparison import (
 )
 from frontend.parity.mock_backend import start_mock_backend
 from frontend.parity.ports import read_port
+from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 
 PARITY_DIRECTORY = Path(__file__).resolve().parent
 FRONTEND_DIRECTORY = PARITY_DIRECTORY.parent
@@ -66,6 +67,8 @@ SCREENS = {
     "file-browser-desktop": ("/", DESKTOP_SIZE),
     "print-ready-desktop": ("/history", DESKTOP_SIZE),
     "spool-sheet-phone": ("/spools", PHONE_SIZE),
+    "top-bar-desktop": ("/", DESKTOP_SIZE),
+    "top-bar-phone": ("/", PHONE_SIZE),
 }
 
 # screen name -> what a person does before the screenshot: ("click", selector), ("press", key),
@@ -117,7 +120,27 @@ def perform_step(page: Page, step: tuple) -> None:
         page.select_option(step[1], step[2])
 
 
-def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path, steps: list | None = None) -> None:
+def fulfil_with(body: object):
+    return lambda route: route.fulfill(json=body)
+
+
+def serve_responses(page: Page, served_responses: dict[str, object]) -> list[str]:
+    patterns = [f"**{endpoint}" for endpoint in served_responses]
+    for pattern, body in zip(patterns, served_responses.values()):
+        page.route(pattern, fulfil_with(body))
+    return patterns
+
+
+def capture_screen(
+    page: Page,
+    address: str,
+    size: tuple[int, int],
+    target: Path,
+    steps: list | None = None,
+    box: tuple[int, int, int, int] | None = None,
+    served_responses: dict[str, object] | None = None,
+) -> None:
+    patterns = serve_responses(page, served_responses or {})
     page.set_viewport_size({"width": size[0], "height": size[1]})
     page.mouse.move(0, 0)
     page.goto(address, wait_until="load")
@@ -127,7 +150,10 @@ def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path
     for step in steps or []:
         perform_step(page, step)
         page.wait_for_timeout(SETTLE_MILLISECONDS)
-    page.screenshot(path=str(target), clip={"x": 0, "y": 0, "width": size[0], "height": size[1]})
+    x, y, width, height = box or (0, 0, size[0], size[1])
+    page.screenshot(path=str(target), clip={"x": x, "y": y, "width": width, "height": height})
+    for pattern in patterns:
+        page.unroute(pattern)
 
 
 def measure_difference_share(reference_path: Path, screenshot_path: Path, difference_path: Path) -> float:
@@ -142,7 +168,10 @@ def measure_difference_share(reference_path: Path, screenshot_path: Path, differ
 def compare_screen(page: Page, name: str, app_address: str) -> float:
     path, size = SCREENS[name]
     screenshot_path = OUTPUT_DIRECTORY / f"{name}.png"
-    capture_screen(page, f"{app_address}{path}", size, screenshot_path, SCREEN_STEPS.get(name))
+    crop = TOP_BAR_CROPS.get(name)
+    box = crop.app_box if crop else None
+    served = crop.served_responses if crop else None
+    capture_screen(page, f"{app_address}{path}", size, screenshot_path, SCREEN_STEPS.get(name), box, served)
     return measure_difference_share(REFERENCE_DIRECTORY / f"{name}.png", screenshot_path, OUTPUT_DIRECTORY / f"{name}-difference.png")
 
 

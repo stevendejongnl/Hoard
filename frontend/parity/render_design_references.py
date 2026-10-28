@@ -19,6 +19,7 @@ from pathlib import Path
 
 from playwright.sync_api import Page, Route, sync_playwright
 
+from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 from frontend.parity.browser_settings import (
     CONTEXT_OPTIONS,
     DESKTOP_SIZE,
@@ -105,13 +106,21 @@ def answer_request(route: Route, server_address: str, font_stylesheet: str) -> N
     route.abort()
 
 
-def render_screen(page: Page, server_address: str, design_file: str, size: tuple[int, int], target: Path) -> None:
+def render_screen(
+    page: Page,
+    server_address: str,
+    design_file: str,
+    size: tuple[int, int],
+    target: Path,
+    box: tuple[int, int, int, int] | None = None,
+) -> None:
     page.set_viewport_size({"width": size[0], "height": size[1]})
     page.goto(f"{server_address}/{design_file}", wait_until="networkidle")
     page.add_style_tag(content=FREEZE_MOTION_STYLE)
     page.evaluate("document.fonts.ready")
     page.wait_for_timeout(300)
-    page.screenshot(path=str(target), clip={"x": 0, "y": 0, "width": size[0], "height": size[1]})
+    x, y, width, height = box or (0, 0, size[0], size[1])
+    page.screenshot(path=str(target), clip={"x": x, "y": y, "width": width, "height": height})
 
 
 def render_all_screens(server_address: str) -> None:
@@ -124,6 +133,10 @@ def render_all_screens(server_address: str) -> None:
         page.route("**/*", lambda route: answer_request(route, server_address, font_stylesheet))
         for design_file, (reference_name, size) in SCREENS.items():
             render_screen(page, server_address, design_file, size, REFERENCE_DIRECTORY / f"{reference_name}.png")
+            print("rendered", reference_name)
+        for reference_name, crop in TOP_BAR_CROPS.items():
+            target = REFERENCE_DIRECTORY / f"{reference_name}.png"
+            render_screen(page, server_address, crop.board_file, crop.board_size, target, crop.board_box)
             print("rendered", reference_name)
         browser.close()
 
