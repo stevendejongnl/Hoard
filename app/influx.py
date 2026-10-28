@@ -22,6 +22,10 @@ def run_in_thread[**Parameters, Result](
     return run
 
 
+def _format_flux_time(moment: datetime) -> str:
+    return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 class InfluxClient:
     def __init__(self) -> None:
         self._client = InfluxDBClient(
@@ -86,6 +90,31 @@ class InfluxClient:
         safe = filename.replace("\\", "\\\\").replace('"', '\\"')
         predicate = f'_measurement="print_job" AND filename="{safe}"'
         delete_api.delete(start, stop, predicate, bucket=self._bucket, org=self._org)
+
+    @staticmethod
+    def _read_row(record: Any) -> dict[str, Any]:
+        row = dict(record.values)
+        row["time"] = record.get_time().isoformat().replace("+00:00", "Z")
+        for tag in ("filename", "spool_id", "material"):
+            if tag not in row:
+                row[tag] = record.values.get(tag)
+        return row
+
+    @run_in_thread
+    def query_history_between(self, start: datetime, stop: datetime) -> list[dict[str, Any]]:
+        """The print records between two moments, newest first. Only these records are pivoted, so it stays fast."""
+        flux = f"""
+from(bucket: "{self._bucket}")
+  |> range(start: {_format_flux_time(start)}, stop: {_format_flux_time(stop)})
+  |> filter(fn: (r) => r._measurement == "print_job")
+  |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+  |> sort(columns: ["_time"], desc: true)
+"""
+        try:
+            tables = self._client.query_api().query(flux, org=self._org)
+        except Exception:
+            return []
+        return [self._read_row(record) for table in tables for record in table.records]
 
     @run_in_thread
     def query_history(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:

@@ -39,6 +39,26 @@ def _moonraker_to_record(job: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+COST_WINDOW_MARGIN = timedelta(minutes=6)
+
+
+def find_cost_window(jobs: list[dict[str, Any]]) -> tuple[datetime, datetime] | None:
+    """The period in which the cost records of these jobs lie: from the first to the last end time, plus a margin."""
+    end_times = [job["end_time"] for job in jobs if job.get("status") == "completed" and job.get("end_time")]
+    if not end_times:
+        return None
+    first = datetime.fromtimestamp(min(end_times), UTC)
+    last = datetime.fromtimestamp(max(end_times), UTC)
+    return first - COST_WINDOW_MARGIN, last + COST_WINDOW_MARGIN
+
+
+async def _fetch_costs(jobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    window = find_cost_window(jobs)
+    if window is None:
+        return []
+    return await influx.query_history_between(*window)
+
+
 async def _fetch_jobs(limit: int, offset: int) -> list[dict[str, Any]]:
     try:
         result = await moonraker.get("/server/history/list", limit=limit, start=offset, order="desc")
@@ -66,7 +86,7 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
 
         records = [_moonraker_to_record(j) for j in jobs if j.get("status") == "completed"]
 
-        influx_all = await influx.query_history(limit=max(500, offset + limit + 100))
+        influx_all = await _fetch_costs(jobs)
 
         def _influx_minute(iso: str) -> int:
             try:
