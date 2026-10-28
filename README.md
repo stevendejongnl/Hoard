@@ -4,7 +4,7 @@ A self-hosted dashboard for a Klipper 3D printer, for the person who keeps every
 
 It shows the printer live, records what each print cost (filament and electricity), keeps the history, and groups prints, files, links and notes into projects. It is built for one printer and one household, and it is opinionated; see [What it expects](#what-it-expects).
 
-The [wiki](https://github.com/stevendejongnl/Hoard/wiki) has the guides: installing, configuring, how it works, and developing.
+The [wiki](https://github.com/stevendejongnl/Hoard/wiki) has the guides: installing, configuring, how it works, developing, and using Hoard from an MCP client.
 
 | Dashboard | History |
 |---|---|
