@@ -36,3 +36,9 @@ describe('empty units of the spool fields', () => {
     expect(styles).toContain('.spools-layout .value-unit:empty {\n    display: inline;')
   })
 })
+
+describe('the spool of the selected print', () => {
+  it('is laid out as one flex line, as the design draws it', () => {
+    expect(readStyles('history')).toContain('.detail-value {\n  display: inline-flex;\n  align-items: center;')
+  })
+})
