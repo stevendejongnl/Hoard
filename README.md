@@ -39,15 +39,20 @@ Hoard talks to what is already in the house:
 | Service | Used for | Setting |
 |---|---|---|
 | Moonraker (Klipper) | printer state, files, camera, temperature history, control | `MOONRAKER_URL`, `MOONRAKER_WS` |
-| Home Assistant | printer power draw and the power switch | `HA_URL`, `HA_TOKEN` |
+| Home Assistant | printer power draw, electricity price, energy and the power switch | `HA_URL`, `HA_TOKEN`, and the entity names below |
 | InfluxDB | stores power, electricity prices and print costs | `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET` |
 | Redis | caches the lists | `REDIS_URL` |
 
-Some of this is specific to the author's setup and is not configurable yet:
+The Home Assistant entities are settings, so you map them to the names of your own setup:
 
-- The Home Assistant entities are `sensor.3d_printer_power`, `sensor.electricity_price_all_in` and `switch.3d_printer`.
-- Electricity prices come from Nord Pool for the Netherlands (NL bidding zone), with the all-in price formula in `app/nordpool.py`.
-- The filament weight is derived from the length with a 1.75 mm filament density of PLA.
+| Setting | Default | What it is |
+|---|---|---|
+| `HA_POWER_SENSOR` | `sensor.3d_printer_power` | the power the printer draws (W) |
+| `HA_PRICE_SENSOR` | `sensor.electricity_price_all_in` | the price per kWh, all in |
+| `HA_POWER_SWITCH` | `switch.3d_printer` | the switch that powers the printer |
+| `HA_ENERGY_SENSORS` | `sensor.3d_printer_energy` | energy in kWh, comma separated, oldest first (keep the sensors of a plug you replaced) |
+
+The price is read from the price sensor and written to InfluxDB every half hour, so the cost of a print is worked out with the price of its own hours. The filament weight is derived from the length with the density of PLA for 1.75 mm filament.
 
 ## Run it
 

@@ -1,6 +1,6 @@
 import logging
 import math
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -9,7 +9,6 @@ from pydantic import BaseModel
 from app import cache, db, ha
 from app.influx import influx
 from app.moonraker import moonraker
-from app.nordpool import backfill_prices
 
 router = APIRouter(prefix="/api/history", tags=["history"])
 
@@ -309,20 +308,3 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
         "cost_filament": cost_filament,
         "cost_total": cost_total,
     }
-
-
-class PriceBackfillRequest(BaseModel):
-    start_date: str = "2021-12-01"
-    end_date: str | None = None
-
-
-@router.post("/prices/backfill")
-async def backfill_electricity_prices(body: PriceBackfillRequest) -> dict[str, Any]:
-    """Fetch Nord Pool NL historical prices and write to InfluxDB.
-
-    Defaults to Dec 2021 → today. Runs synchronously so the client can see progress.
-    """
-    start = date.fromisoformat(body.start_date)
-    end = date.fromisoformat(body.end_date) if body.end_date else date.today()
-    written = await backfill_prices(start, end)
-    return {"written": written, "start": str(start), "end": str(end)}

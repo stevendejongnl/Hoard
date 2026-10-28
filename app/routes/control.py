@@ -6,8 +6,6 @@ from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/control", tags=["control"])
 
-_POWER_SWITCH = "switch.3d_printer"
-
 
 def _ha_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {settings.ha_token}"}
@@ -27,7 +25,7 @@ async def _ha_service(domain: str, service: str, entity_id: str) -> None:
 async def _get_switch_state() -> str:
     async with httpx.AsyncClient() as client:
         r = await client.get(
-            f"{settings.ha_url}/api/states/{_POWER_SWITCH}",
+            f"{settings.ha_url}/api/states/{settings.ha_power_switch}",
             headers=_ha_headers(),
             timeout=10,
         )
@@ -47,7 +45,7 @@ async def power_state() -> dict:
 @router.post("/power/on")
 async def power_on() -> dict:
     try:
-        await _ha_service("switch", "turn_on", _POWER_SWITCH)
+        await _ha_service("switch", "turn_on", settings.ha_power_switch)
         return {"state": "on"}
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
@@ -56,7 +54,7 @@ async def power_on() -> dict:
 @router.post("/power/off")
 async def power_off() -> dict:
     try:
-        await _ha_service("switch", "turn_off", _POWER_SWITCH)
+        await _ha_service("switch", "turn_off", settings.ha_power_switch)
         return {"state": "off"}
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
