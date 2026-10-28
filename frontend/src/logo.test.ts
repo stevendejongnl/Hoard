@@ -3,11 +3,11 @@ import { html, render } from 'lit'
 import type { TemplateResult } from 'lit'
 import { hoardMark, markVariant } from './logo'
 
-function mount(tpl: TemplateResult): HTMLElement {
-  const el = document.createElement('div')
-  render(tpl, el)
-  document.body.appendChild(el)
-  return el
+function mount(template: TemplateResult): HTMLElement {
+  const container = document.createElement('div')
+  render(template, container)
+  document.body.appendChild(container)
+  return container
 }
 
 describe('markVariant', () => {
@@ -51,8 +51,10 @@ describe('hoardMark', () => {
     for (const size of [16, 64]) {
       const svg = mount(hoardMark(size)).querySelector('svg') as SVGElement
       const allowed = ['currentColor', 'none', '#fff', '#000']
-      const bad = [...svg.querySelectorAll('*')].filter((n) =>
-        ['fill', 'stroke'].some((a) => n.hasAttribute(a) && !allowed.includes(n.getAttribute(a) as string)),
+      const bad = [...svg.querySelectorAll('*')].filter((node) =>
+        ['fill', 'stroke'].some(
+          (attribute) => node.hasAttribute(attribute) && !allowed.includes(node.getAttribute(attribute) as string),
+        ),
       )
       expect(bad).toHaveLength(0)
     }
@@ -70,10 +72,10 @@ describe('hoardMark', () => {
   })
 
   it('gives every full mark its own mask id so two marks never share layer lines', () => {
-    const el = mount(html`${hoardMark(48)}${hoardMark(48)}`)
-    const svgs = [...el.querySelectorAll('svg')]
+    const container = mount(html`${hoardMark(48)}${hoardMark(48)}`)
+    const svgs = [...container.querySelectorAll('svg')]
     expect(svgs).toHaveLength(2)
-    const ids = svgs.map((s) => s.querySelector('mask')?.id)
+    const ids = svgs.map((svgElement) => svgElement.querySelector('mask')?.id)
     expect(ids[0]).toBeTruthy()
     expect(ids[0]).not.toBe(ids[1])
     for (const svg of svgs) {

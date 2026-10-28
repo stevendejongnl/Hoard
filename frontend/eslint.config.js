@@ -25,7 +25,7 @@ export default tseslint.config(
       'max-nested-callbacks': ['error', 2],
       'max-lines-per-function': ['error', { max: 42, skipBlankLines: true, skipComments: true }],
       'id-denylist': ['warn', ...ABBREVIATIONS],
-      'id-length': ['warn', { min: 2, properties: 'never' }],
+      'id-length': ['warn', { min: 2, properties: 'never', exceptions: ['x', 'y'] }],
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },
