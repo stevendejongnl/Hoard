@@ -24,3 +24,15 @@ def test_an_explicit_uploads_folder_is_kept(monkeypatch) -> None:
     monkeypatch.delenv("UPLOADS_DIR", raising=False)
     settings = Settings(_env_file=None, database_path="/data/hoard.db", uploads_dir="/srv/files")
     assert settings.uploads_dir == "/srv/files"
+
+
+def test_secrets_never_show_when_the_settings_are_printed() -> None:
+    settings = Settings(
+        _env_file=None,
+        ha_token="ha-secret-value",
+        influxdb_token="influx-secret-value",
+        vapid_private_key="vapid-secret-value",
+    )
+    printed = repr(settings) + str(settings)
+    for secret in ("ha-secret-value", "influx-secret-value", "vapid-secret-value"):
+        assert secret not in printed
