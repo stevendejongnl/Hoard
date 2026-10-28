@@ -3,7 +3,6 @@
 The mock backend serves this so every screen of the app can be compared with its reference image.
 """
 
-import math
 from datetime import datetime
 from typing import Any
 
@@ -108,40 +107,53 @@ def create_dashboard_history() -> JsonObject:
 
 TEMPERATURE_WINDOW_SECONDS = 600
 TEMPERATURE_INTERVAL_SECONDS = 5
-ROOM_TEMPERATURE = 24
 HEATING_AGE_SECONDS = 415
 HOTEND_TARGET = 205
 BED_TARGET = 60
-HOTEND_RISE_SECONDS = 170
-BED_RISE_SECONDS = 230
 
+# Read from the temperature chart of the design, oldest first, one every five seconds
+HOTEND_SERIES = (
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0,
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0,
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0,
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 34.5, 44.7,
+    54.5, 64.0, 73.3, 82.2, 90.8, 99.2, 107.2, 114.8, 122.2, 129.2,
+    136.0, 142.3, 148.4, 154.2, 159.7, 164.8, 169.8, 174.4, 178.6, 182.5,
+    186.1, 189.4, 192.3, 195.0, 197.3, 199.4, 201.1, 202.5, 203.6, 204.4,
+    204.8, 205.5, 205.3, 205.2, 204.8, 204.7, 204.5, 204.5, 204.7, 205.0,
+    205.2, 205.3, 205.5, 205.3, 205.2, 205.0, 204.7, 204.5, 204.5, 204.7,
+    204.8, 205.2, 205.3, 205.5, 205.5, 205.3, 205.0, 204.8, 204.7, 204.5,
+    204.7, 204.8, 205.0, 205.3, 205.5, 205.5, 205.3, 205.2, 204.8, 204.7,
+    204.5, 204.5, 204.7, 205.0, 205.2, 205.5, 205.5, 205.3, 205.2, 205.0,
+    204.7,
+)
 
-def calculate_hotend_temperature(age_seconds: int) -> float:
-    seconds_heating = HEATING_AGE_SECONDS - age_seconds
-    if seconds_heating <= 0:
-        return ROOM_TEMPERATURE
-    if seconds_heating < HOTEND_RISE_SECONDS:
-        remaining_share = 1 - seconds_heating / HOTEND_RISE_SECONDS
-        return ROOM_TEMPERATURE + (HOTEND_TARGET - ROOM_TEMPERATURE) * (1 - remaining_share**2)
-    return HOTEND_TARGET + 0.4 * math.sin((seconds_heating - HOTEND_RISE_SECONDS) / 56 * 2 * math.pi)
-
-
-def calculate_bed_temperature(age_seconds: int) -> float:
-    seconds_heating = HEATING_AGE_SECONDS - age_seconds
-    if seconds_heating <= 0:
-        return ROOM_TEMPERATURE
-    if seconds_heating < BED_RISE_SECONDS:
-        return ROOM_TEMPERATURE + (BED_TARGET - ROOM_TEMPERATURE) * seconds_heating / BED_RISE_SECONDS
-    return BED_TARGET + 0.1 * math.sin((seconds_heating - BED_RISE_SECONDS) / 40 * 2 * math.pi)
+# Read from the temperature chart of the design, oldest first, one every five seconds
+BED_SERIES = (
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0,
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0,
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0,
+    24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.0, 24.8, 25.6,
+    26.4, 27.2, 28.0, 28.8, 29.5, 30.3, 31.1, 31.9, 32.7, 33.4,
+    34.2, 35.0, 35.8, 36.6, 37.3, 38.1, 38.9, 39.7, 40.5, 41.2,
+    42.0, 42.8, 43.6, 44.4, 45.2, 46.0, 46.7, 47.5, 48.3, 49.0,
+    49.8, 50.6, 51.4, 52.2, 53.0, 53.8, 54.5, 55.3, 56.1, 56.9,
+    57.7, 58.4, 59.2, 60.0, 60.0, 59.8, 59.8, 60.0, 60.0, 60.2,
+    60.2, 60.2, 60.0, 60.0, 59.8, 59.8, 60.0, 60.0, 60.2, 60.2,
+    60.2, 60.0, 60.0, 59.8, 59.8, 60.0, 60.0, 60.2, 60.2, 60.0,
+    60.0, 59.8, 59.8, 59.8, 60.0, 60.0, 60.2, 60.2, 60.0, 60.0,
+    59.8,
+)
 
 
 def create_temperature_sample(age_seconds: int) -> JsonObject:
+    index = (TEMPERATURE_WINDOW_SECONDS - age_seconds) // TEMPERATURE_INTERVAL_SECONDS
     is_heating = age_seconds <= HEATING_AGE_SECONDS
     return {
         "age_seconds": age_seconds,
-        "hotend_actual": round(calculate_hotend_temperature(age_seconds), 2),
+        "hotend_actual": HOTEND_SERIES[index],
         "hotend_target": HOTEND_TARGET if is_heating else 0,
-        "bed_actual": round(calculate_bed_temperature(age_seconds), 2),
+        "bed_actual": BED_SERIES[index],
         "bed_target": BED_TARGET if is_heating else 0,
     }
 

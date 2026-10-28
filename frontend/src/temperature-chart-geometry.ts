@@ -44,8 +44,20 @@ const TIME_STEP_SECONDS = 120
 const SECONDS_PER_MINUTE = 60
 const LINE_DECIMALS = 1
 
+function isExactlyBetweenTenths(value: number): boolean {
+  return Number.isInteger(value * 20) && !Number.isInteger(value * 10)
+}
+
+/** Writes a coordinate with one decimal; an exact tie goes to the even tenth, as the design's numbers do. */
+function formatCoordinate(value: number): string {
+  if (!isExactlyBetweenTenths(value)) return value.toFixed(LINE_DECIMALS)
+  const lowerTenth = Math.floor(value * 10)
+  const evenTenth = lowerTenth % 2 === 0 ? lowerTenth : lowerTenth + 1
+  return (evenTenth / 10).toFixed(LINE_DECIMALS)
+}
+
 function formatPoint(x: number, y: number): string {
-  return `${x.toFixed(LINE_DECIMALS)},${y.toFixed(LINE_DECIMALS)}`
+  return `${formatCoordinate(x)},${formatCoordinate(y)}`
 }
 
 function createScale(layout: TemperatureChartLayout) {
