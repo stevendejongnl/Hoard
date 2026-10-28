@@ -1,3 +1,9 @@
+## [1.39.2](https://github.com/stevendejongnl/Hoard/compare/v1.39.1...v1.39.2) (2026-10-28)
+
+### Bug Fixes
+
+* **config:** uploaded project files go next to the database, so they survive a restart ([e6776aa](https://github.com/stevendejongnl/Hoard/commit/e6776aaada1fa42289551566d569b806a57191c0))
+
 ## [1.39.1](https://github.com/stevendejongnl/Hoard/compare/v1.39.0...v1.39.1) (2026-10-28)
 
 ### Code Refactoring
