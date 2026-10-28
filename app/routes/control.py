@@ -1,8 +1,12 @@
+import asyncio
+
 import httpx
 from fastapi import APIRouter, HTTPException
 
+from app import ha
 from app.config import settings
 from app.moonraker import moonraker
+from app.switches import SwitchDefinition, configured_switches, find_switch
 
 router = APIRouter(prefix="/api/control", tags=["control"])
 
@@ -31,6 +35,45 @@ async def _get_switch_state() -> str:
         )
         r.raise_for_status()
         return r.json()["state"]  # "on" or "off"
+
+
+async def read_switch_state(entity_id: str) -> str:
+    try:
+        return (await ha.get_state(entity_id))["state"]
+    except Exception:
+        return "unknown"
+
+
+def describe_switch(definition: SwitchDefinition, state: str) -> dict:
+    return {"key": definition.key, "label": definition.label, "entity_id": definition.entity_id, "state": state}
+
+
+@router.get("/switches")
+async def list_switches() -> list[dict]:
+    definitions = configured_switches()
+    states = await asyncio.gather(*(read_switch_state(definition.entity_id) for definition in definitions))
+    return [describe_switch(definition, state) for definition, state in zip(definitions, states, strict=True)]
+
+
+async def switch_to(key: str, service: str, state: str) -> dict:
+    definition = find_switch(key)
+    if definition is None:
+        raise HTTPException(404, "Switch not found")
+    try:
+        await _ha_service("homeassistant", service, definition.entity_id)
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+    return {"state": state}
+
+
+@router.post("/switches/{key}/on")
+async def switch_on(key: str) -> dict:
+    return await switch_to(key, "turn_on", "on")
+
+
+@router.post("/switches/{key}/off")
+async def switch_off(key: str) -> dict:
+    return await switch_to(key, "turn_off", "off")
 
 
 @router.get("/power")
