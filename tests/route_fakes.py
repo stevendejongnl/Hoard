@@ -5,10 +5,7 @@ from typing import Any
 
 import httpx
 
-from app import ha
-from app.influx import influx as real_influx
 from app.main import app
-from app.moonraker import moonraker as real_moonraker
 from app.routes.dependencies import provide_home_assistant, provide_influx, provide_moonraker
 
 
@@ -126,7 +123,6 @@ PROVIDERS = {
     "influx": provide_influx,
     "home_assistant": provide_home_assistant,
 }
-REAL_COLLABORATORS = {"moonraker": real_moonraker, "influx": real_influx, "home_assistant": ha}
 
 
 def provide(fake):
@@ -137,6 +133,13 @@ def override_provider(monkeypatch, provider, value) -> None:
     monkeypatch.setitem(app.dependency_overrides, provider, provide(value))
 
 
+def install_fakes(monkeypatch, **fakes) -> None:
+    """Hand the fakes to the app in place of the real collaborators."""
+    for name, fake in fakes.items():
+        if fake is not None:
+            override_provider(monkeypatch, PROVIDERS[name], fake)
+
+
 def recording_client_factory(requests: list[httpx.Request], state: str = "on"):
     """A factory of HTTP clients that record every request and answer 200 with a Home Assistant state."""
 
@@ -144,7 +147,7 @@ def recording_client_factory(requests: list[httpx.Request], state: str = "on"):
         requests.append(request)
         return httpx.Response(200, json={"state": state})
 
-    return lambda: httpx.AsyncClient(transport=httpx.MockTransport(respond))
+    return lambda **options: httpx.AsyncClient(transport=httpx.MockTransport(respond), **options)
 
 
 def printer_files_client_factory(files: dict[str, tuple[bytes, str]]):
@@ -156,15 +159,4 @@ def printer_files_client_factory(files: dict[str, tuple[bytes, str]]):
             return httpx.Response(404)
         return httpx.Response(200, content=found[0], headers={"content-type": found[1]})
 
-    return lambda: httpx.AsyncClient(transport=httpx.MockTransport(respond))
-
-
-def install_fakes(monkeypatch, **fakes) -> None:
-    """Hand the fakes to the app in place of the real collaborators."""
-    for name, fake in fakes.items():
-        if fake is None:
-            continue
-        monkeypatch.setitem(app.dependency_overrides, PROVIDERS[name], provide(fake))
-        for attribute in dir(type(fake)):
-            if not attribute.startswith("_"):
-                monkeypatch.setattr(REAL_COLLABORATORS[name], attribute, getattr(fake, attribute))
+    return lambda **options: httpx.AsyncClient(transport=httpx.MockTransport(respond), **options)

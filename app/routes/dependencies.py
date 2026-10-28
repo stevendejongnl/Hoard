@@ -46,7 +46,7 @@ def provide_thumbnail_cache() -> ThumbnailCache:
     return thumbnail_cache
 
 
-def provide_http_client_factory() -> Callable[[], httpx.AsyncClient]:
+def provide_http_client_factory() -> Callable[..., httpx.AsyncClient]:
     return httpx.AsyncClient
 
 
@@ -57,4 +57,4 @@ Database = Annotated[ModuleType, Depends(provide_database)]
 Cache = Annotated[ModuleType, Depends(provide_cache)]
 GcodeMetaReader = Annotated[Callable[[str], Awaitable[dict[str, Any]]], Depends(provide_gcode_meta_reader)]
 ThumbnailStore = Annotated[ThumbnailCache, Depends(provide_thumbnail_cache)]
-HttpClientFactory = Annotated[Callable[[], httpx.AsyncClient], Depends(provide_http_client_factory)]
+HttpClientFactory = Annotated[Callable[..., httpx.AsyncClient], Depends(provide_http_client_factory)]

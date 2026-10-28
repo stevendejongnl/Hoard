@@ -1,16 +1,31 @@
-from contextlib import aclosing
+from collections.abc import AsyncIterator, Iterator
+from contextlib import aclosing, contextmanager
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 
 from app.mjpeg_relay import RELAY_CONTENT_TYPE, relay_latest_frames
-from app.moonraker import moonraker
+from app.moonraker import MoonrakerClient
+from app.routes.dependencies import HttpClientFactory, Moonraker
 
 router = APIRouter(prefix="/api/webcams", tags=["webcams"])
 
 
-async def _resolved_cams() -> list[dict]:
+@contextmanager
+def _translate_webcam_errors() -> Iterator[None]:
+    """An index outside the list is a 404, a printer or a camera that fails is a 502."""
+    try:
+        yield
+    except IndexError:
+        raise HTTPException(404, "Webcam not found")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+
+async def _resolved_cams(moonraker: MoonrakerClient) -> list[dict]:
     data = await moonraker.get("/server/webcams/list")
     cams = data.get("webcams", [])
     base = moonraker._client_base()
@@ -22,78 +37,55 @@ async def _resolved_cams() -> list[dict]:
     return cams
 
 
+async def _find_webcam_url(moonraker: MoonrakerClient, index: int, field: str, missing_message: str) -> str:
+    url = (await _resolved_cams(moonraker))[index].get(field, "")
+    if not url:
+        raise HTTPException(404, missing_message)
+    return url
+
+
+def _proxy_paths(index: int) -> dict[str, str]:
+    """Same-origin paths in place of the direct Moonraker URLs; the browser then never meets mixed content."""
+    return {"snapshot_url": f"/api/webcams/{index}/snapshot", "stream_url": f"/api/webcams/{index}/stream"}
+
+
 @router.get("")
-async def list_webcams():
-    try:
-        cams = await _resolved_cams()
-        # Replace direct Moonraker URLs with proxied paths — the browser then only
-        # ever loads same-origin HTTPS URLs, avoiding mixed-content blocks.
-        result = []
-        for i, cam in enumerate(cams):
-            result.append(
-                {
-                    **cam,
-                    "snapshot_url": f"/api/webcams/{i}/snapshot",
-                    "stream_url": f"/api/webcams/{i}/stream",
-                }
-            )
-        return result
-    except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+async def list_webcams(moonraker: Moonraker):
+    with _translate_webcam_errors():
+        cams = await _resolved_cams(moonraker)
+        return [{**cam, **_proxy_paths(index)} for index, cam in enumerate(cams)]
 
 
 @router.get("/{index}/snapshot")
-async def proxy_snapshot(index: int):
-    try:
-        cams = await _resolved_cams()
-        cam = cams[index]
-        url = cam.get("snapshot_url", "")
-        if not url:
-            raise HTTPException(404, "No snapshot URL configured for this webcam")
-        async with httpx.AsyncClient() as client:
-            r = await client.get(url, timeout=10)
+async def proxy_snapshot(index: int, moonraker: Moonraker, create_client: HttpClientFactory):
+    with _translate_webcam_errors():
+        url = await _find_webcam_url(moonraker, index, "snapshot_url", "No snapshot URL configured for this webcam")
+        async with create_client() as client:
+            response = await client.get(url, timeout=10)
         return Response(
-            content=r.content,
-            media_type=r.headers.get("content-type", "image/jpeg"),
+            content=response.content,
+            media_type=response.headers.get("content-type", "image/jpeg"),
             headers={"Cache-Control": "no-store"},
         )
-    except IndexError:
-        raise HTTPException(404, "Webcam not found")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+
+
+async def _relay_stream(client: httpx.AsyncClient, upstream: httpx.Response, request: Request) -> AsyncIterator[bytes]:
+    try:
+        # Whole frames, newest first: a slow client drops frames instead of seeing half of one.
+        async with aclosing(relay_latest_frames(upstream.aiter_bytes(4096))) as parts:
+            async for part in parts:
+                if await request.is_disconnected():
+                    break
+                yield part
+    finally:
+        await upstream.aclose()
+        await client.aclose()
 
 
 @router.get("/{index}/stream")
-async def proxy_stream(index: int, request: Request):
-    try:
-        cams = await _resolved_cams()
-        cam = cams[index]
-        url = cam.get("stream_url", "")
-        if not url:
-            raise HTTPException(404, "No stream URL configured for this webcam")
-
-        client = httpx.AsyncClient(timeout=httpx.Timeout(None))
-        req = client.build_request("GET", url)
-        r = await client.send(req, stream=True)
-
-        async def generate():
-            try:
-                # Whole frames, newest first: a slow client drops frames instead of seeing half of one.
-                async with aclosing(relay_latest_frames(r.aiter_bytes(4096))) as parts:
-                    async for part in parts:
-                        if await request.is_disconnected():
-                            break
-                        yield part
-            finally:
-                await r.aclose()
-                await client.aclose()
-
-        return StreamingResponse(generate(), media_type=RELAY_CONTENT_TYPE)
-    except IndexError:
-        raise HTTPException(404, "Webcam not found")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+async def proxy_stream(index: int, request: Request, moonraker: Moonraker, create_client: HttpClientFactory):
+    with _translate_webcam_errors():
+        url = await _find_webcam_url(moonraker, index, "stream_url", "No stream URL configured for this webcam")
+        client = create_client(timeout=httpx.Timeout(None))
+        upstream = await client.send(client.build_request("GET", url), stream=True)
+        return StreamingResponse(_relay_stream(client, upstream, request), media_type=RELAY_CONTENT_TYPE)
