@@ -1,3 +1,9 @@
+## [1.39.1](https://github.com/stevendejongnl/Hoard/compare/v1.39.0...v1.39.1) (2026-10-28)
+
+### Code Refactoring
+
+* rename the app internals from printer to Hoard ([5077e6c](https://github.com/stevendejongnl/Hoard/commit/5077e6c2df4e843d80c7ecd1859171dfaa8e91e1))
+
 ## [1.39.0](https://github.com/stevendejongnl/Hoard/compare/v1.38.0...v1.39.0) (2026-10-28)
 
 ### Features
