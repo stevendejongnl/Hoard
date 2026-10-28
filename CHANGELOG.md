@@ -1,3 +1,14 @@
+## [1.45.1](https://github.com/stevendejongnl/Hoard/compare/v1.45.0...v1.45.1) (2026-10-28)
+
+### Bug Fixes
+
+* **history:** an unreachable printer is answered with 502 and shown as such ([17004f9](https://github.com/stevendejongnl/Hoard/commit/17004f9e69aa95d1a368119952521e0303f008ba))
+* **phone:** small buttons and links get an invisible hit area of 44 px ([cefdee7](https://github.com/stevendejongnl/Hoard/commit/cefdee7eb20eaf5cf3fab64db097f214b31c78e2))
+
+### Documentation
+
+* the parity README lists the tap target check ([926ae86](https://github.com/stevendejongnl/Hoard/commit/926ae86ded70edc4831118c60d77cf46ddcb8a42))
+
 ## [1.45.0](https://github.com/stevendejongnl/Hoard/compare/v1.44.0...v1.45.0) (2026-10-28)
 
 ### Features
