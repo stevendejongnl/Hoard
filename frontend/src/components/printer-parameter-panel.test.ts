@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import type { PiStats, Power, PrinterState, Temps } from '../types'
+import type { HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
 import './printer-parameter-panel'
 import type { PrinterParameterPanel } from './printer-parameter-panel'
 
@@ -168,5 +168,150 @@ describe('print buttons', () => {
     const panel = await createPanel(calls, {}, false)
     await press(panel, 'button.cancel-button')
     expect(calls.cancelled).toBe(0)
+  })
+})
+
+describe('extra switches', () => {
+  const powerStrip = { key: 'power-strip', label: 'Power strip', entity_id: 'switch.feed_plug', state: 'on' }
+  const raspberryPi = { key: 'raspberry-pi', label: 'Raspberry Pi', entity_id: 'switch.pi_outlet', state: 'off' }
+  const switches: HomeAssistantSwitch[] = [powerStrip, raspberryPi]
+
+  interface SwitchChange {
+    key: string
+    turnOn: boolean
+  }
+
+  async function createPanelWithSwitches(
+    calls: Calls,
+    options: {
+      switches?: HomeAssistantSwitch[]
+      isConfirmed?: boolean
+      properties?: Partial<PrinterParameterPanel>
+    } = {},
+  ): Promise<{ panel: PrinterParameterPanel; changes: SwitchChange[] }> {
+    const changes: SwitchChange[] = []
+    const panel = await createPanel(
+      calls,
+      {
+        loadSwitches: async () => options.switches ?? switches,
+        changeSwitch: async (key, turnOn) => void changes.push({ key, turnOn }),
+        ...options.properties,
+      },
+      options.isConfirmed ?? true,
+    )
+    await settle(panel)
+    return { panel, changes }
+  }
+
+  async function settle(panel: PrinterParameterPanel): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await panel.updateComplete
+  }
+
+  function findSwitch(panel: PrinterParameterPanel, key: string): HTMLButtonElement {
+    return panel.querySelector<HTMLButtonElement>(`button[data-switch="${key}"]`)!
+  }
+
+  it('shows a toggle for every configured switch, with its label and state', async () => {
+    const { panel } = await createPanelWithSwitches(createCalls())
+    expect(panel.querySelectorAll('button[data-switch]')).toHaveLength(2)
+    expect(findSwitch(panel, 'power-strip').getAttribute('aria-label')).toBe('Power strip')
+    expect(findSwitch(panel, 'power-strip').getAttribute('aria-checked')).toBe('true')
+    expect(findSwitch(panel, 'raspberry-pi').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('shows no extra rows when no switch is configured', async () => {
+    const { panel } = await createPanelWithSwitches(createCalls(), { switches: [] })
+    expect(panel.querySelectorAll('button[data-switch]')).toHaveLength(0)
+  })
+
+  it('shows no extra rows when the switches cannot be loaded', async () => {
+    const panel = await createPanel(createCalls(), {
+      loadSwitches: async () => {
+        throw new Error('offline')
+      },
+    })
+    await settle(panel)
+    expect(panel.querySelectorAll('button[data-switch]')).toHaveLength(0)
+  })
+
+  it('turns a switch on without asking', async () => {
+    const calls = createCalls()
+    const { panel, changes } = await createPanelWithSwitches(calls)
+    findSwitch(panel, 'raspberry-pi').click()
+    await settle(panel)
+    expect(calls.confirmations).toEqual([])
+    expect(changes).toEqual([{ key: 'raspberry-pi', turnOn: true }])
+    expect(findSwitch(panel, 'raspberry-pi').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('asks before it turns a switch off', async () => {
+    const calls = createCalls()
+    const { panel, changes } = await createPanelWithSwitches(calls, {
+      properties: { printerState: { ...printingState, state: 'standby' } },
+    })
+    findSwitch(panel, 'power-strip').click()
+    await settle(panel)
+    expect(calls.confirmations).toEqual(['Switch off Power strip?'])
+    expect(changes).toEqual([{ key: 'power-strip', turnOn: false }])
+    expect(findSwitch(panel, 'power-strip').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('warns that a print is running when a switch is turned off during one', async () => {
+    const calls = createCalls()
+    const { panel } = await createPanelWithSwitches(calls)
+    findSwitch(panel, 'power-strip').click()
+    await settle(panel)
+    expect(calls.confirmations).toEqual(['A print is running. Switch off Power strip?'])
+  })
+
+  it('leaves the switch on when the question is not confirmed', async () => {
+    const { panel, changes } = await createPanelWithSwitches(createCalls(), { isConfirmed: false })
+    findSwitch(panel, 'power-strip').click()
+    await settle(panel)
+    expect(changes).toEqual([])
+    expect(findSwitch(panel, 'power-strip').getAttribute('aria-checked')).toBe('true')
+  })
+
+  it('keeps the state it showed when changing the switch fails', async () => {
+    const { panel } = await createPanelWithSwitches(createCalls(), {
+      properties: {
+        changeSwitch: async () => {
+          throw new Error('offline')
+        },
+      },
+    })
+    findSwitch(panel, 'raspberry-pi').click()
+    await settle(panel)
+    expect(findSwitch(panel, 'raspberry-pi').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('disables a switch that Home Assistant cannot reach', async () => {
+    const { panel } = await createPanelWithSwitches(createCalls(), {
+      switches: [{ ...raspberryPi, state: 'unavailable' }],
+    })
+    expect(findSwitch(panel, 'raspberry-pi').disabled).toBe(true)
+  })
+
+  it('reads the states again when the power changes, at most every ten seconds', async () => {
+    let currentTime = new Date('2026-10-27T14:56:00Z').getTime()
+    let loads = 0
+    const { panel } = await createPanelWithSwitches(createCalls(), {
+      properties: {
+        now: () => currentTime,
+        loadSwitches: async () => {
+          loads += 1
+          return switches
+        },
+      },
+    })
+    expect(loads).toBe(1)
+    panel.power = { ...power, watts: 110 }
+    await settle(panel)
+    expect(loads).toBe(1)
+    currentTime += 11_000
+    panel.power = { ...power, watts: 111 }
+    await settle(panel)
+    expect(loads).toBe(2)
   })
 })
