@@ -238,6 +238,12 @@ project-files-section {
   font-size: 12px;
 }
 
+/* Leaves room for the remove button, which sits over the right edge of the row. */
+.file-print {
+  flex: none;
+  margin-right: 18px;
+}
+
 /* The prints of the project, in the right panel. */
 project-prints-panel {
   display: flex;
