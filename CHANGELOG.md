@@ -1,3 +1,9 @@
+## [1.40.0](https://github.com/stevendejongnl/Hoard/compare/v1.39.4...v1.40.0) (2026-10-28)
+
+### Features
+
+* **config:** the Home Assistant entities are settings, and the Nord Pool backfill is gone ([50ce78d](https://github.com/stevendejongnl/Hoard/commit/50ce78d976a1f61a62dbe97d923fa7f57b049172))
+
 ## [1.39.4](https://github.com/stevendejongnl/Hoard/compare/v1.39.3...v1.39.4) (2026-10-28)
 
 ### Bug Fixes
