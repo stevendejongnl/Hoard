@@ -11,7 +11,7 @@ from typing import Annotated, Any
 import httpx
 from fastapi import Depends
 
-from app import cache, db, ha
+from app import cache, db, home_assistant
 from app.gcode_meta import extract_gcode_meta
 from app.influx import InfluxClient, influx
 from app.moonraker import MoonrakerClient, moonraker
@@ -27,7 +27,7 @@ def provide_influx() -> InfluxClient:
 
 
 def provide_home_assistant() -> ModuleType:
-    return ha
+    return home_assistant
 
 
 def provide_database() -> ModuleType:

@@ -2,7 +2,7 @@ import json
 
 import httpx
 
-from app import ha
+from app import home_assistant
 from app.config import Settings, settings
 from app.routes.dependencies import provide_http_client_factory
 from app.switches import SwitchDefinition, create_switch_key, parse_switch_definitions
@@ -61,7 +61,7 @@ async def test_the_list_shows_every_switch_with_its_state(client, monkeypatch) -
         return {"state": states[entity_id]}
 
     configure(monkeypatch, f"{POWER_STRIP},{PI}")
-    monkeypatch.setattr(ha, "get_state", fake_state)
+    monkeypatch.setattr(home_assistant, "get_state", fake_state)
     response = await client.get("/api/control/switches")
     assert response.status_code == 200
     assert response.json() == [
@@ -75,7 +75,7 @@ async def test_a_switch_that_home_assistant_cannot_read_is_unknown(client, monke
         raise RuntimeError("offline")
 
     configure(monkeypatch, PI)
-    monkeypatch.setattr(ha, "get_state", failing_state)
+    monkeypatch.setattr(home_assistant, "get_state", failing_state)
     response = await client.get("/api/control/switches")
     assert [item["state"] for item in response.json()] == ["unknown"]
 

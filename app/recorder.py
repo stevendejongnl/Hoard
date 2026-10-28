@@ -8,12 +8,12 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from app import cache, db, ha
+from app import cache, db, home_assistant
 from app.config import settings
 from app.gcode_meta import extract_gcode_meta
 from app.influx import influx
 from app.moonraker import moonraker
-from app.sse import hub
+from app.server_sent_events import hub
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ class PrintRecorder:
         moonraker_client: Any = moonraker,
         influx_client: Any = influx,
         event_hub: Any = hub,
-        home_assistant: Any = ha,
+        home_assistant: Any = home_assistant,
         database: Any = db,
         cache_store: Any = cache,
         gcode_meta_extractor: Callable[[str], Awaitable[dict | None]] = extract_gcode_meta,

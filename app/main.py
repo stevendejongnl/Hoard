@@ -9,7 +9,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import cache, db, ha, recorder, sse
+from app import cache, db, home_assistant, recorder, server_sent_events
 from app.config import settings
 from app.influx import influx
 from app.mcp.api_request import InProcessApi
@@ -33,7 +33,7 @@ from app.routes import (
     webcams,
 )
 from app.routes.projects import enrich_existing_links
-from app.sse import hub
+from app.server_sent_events import hub
 
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 
@@ -48,7 +48,7 @@ async def _price_recorder_loop() -> None:
     while True:
         await asyncio.sleep(1800)
         try:
-            await ha.record_current_price()
+            await home_assistant.record_current_price()
         except Exception as exc:
             log.warning("price recorder error: %s", exc)
 
@@ -57,9 +57,9 @@ def _start_background_tasks() -> list[asyncio.Task]:
     """Start the long-running tasks and return the ones that must be cancelled on shutdown."""
     cancellable_tasks = [
         asyncio.create_task(moonraker.connect_ws()),
-        asyncio.create_task(sse._poll_ha()),
-        asyncio.create_task(sse._poll_pi_stats()),
-        asyncio.create_task(sse._poll_printer_state()),
+        asyncio.create_task(server_sent_events._poll_ha()),
+        asyncio.create_task(server_sent_events._poll_pi_stats()),
+        asyncio.create_task(server_sent_events._poll_printer_state()),
     ]
     # Full backfill on startup, then quick reconcile every 5 minutes
     asyncio.create_task(recorder.startup_reconcile())
@@ -82,7 +82,7 @@ async def lifespan(app: FastAPI):
     await db.init_db(settings.database_path)
     await cache.init()
 
-    sse.register_ws_handlers()
+    server_sent_events.register_ws_handlers()
     recorder.register_ws_handlers()
     cancellable_tasks = _start_background_tasks()
 

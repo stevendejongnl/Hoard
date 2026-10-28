@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any
 
-from app import sse
+from app import server_sent_events
 
 
 class OnePassSleep:
@@ -55,7 +55,9 @@ class FakeMoonraker:
 async def run_pi_stats(moonraker: FakeMoonraker) -> list[tuple[str, dict[str, Any]]]:
     recording_hub = RecordingHub()
     try:
-        await sse._poll_pi_stats(30, moonraker_client=moonraker, event_hub=recording_hub, sleep=OnePassSleep(0))
+        await server_sent_events._poll_pi_stats(
+            30, moonraker_client=moonraker, event_hub=recording_hub, sleep=OnePassSleep(0)
+        )
     except asyncio.CancelledError:
         pass
     return recording_hub.broadcasts
@@ -108,7 +110,7 @@ class FakeHomeAssistant:
 async def run_power_poll(read_switch_state: Any) -> list[tuple[str, dict[str, Any]]]:
     recording_hub = RecordingHub()
     try:
-        await sse._poll_ha(
+        await server_sent_events._poll_ha(
             30,
             home_assistant=FakeHomeAssistant(),
             event_hub=recording_hub,
@@ -139,7 +141,7 @@ async def test_the_printer_state_fallback_hands_the_status_to_the_status_handler
     moonraker = FakeMoonraker({}, {}, status={"print_stats": {"state": "printing"}})
     sleep = OnePassSleep(1)
     try:
-        await sse._poll_printer_state(10, moonraker_client=moonraker, sleep=sleep)
+        await server_sent_events._poll_printer_state(10, moonraker_client=moonraker, sleep=sleep)
     except asyncio.CancelledError:
         pass
     assert sleep.seconds == [10, 10]

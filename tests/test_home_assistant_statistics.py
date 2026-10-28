@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Any
 
-from app import ha
+from app import home_assistant
 from app.config import settings
 
 START = datetime(2026, 1, 1, 12, 0, tzinfo=UTC)
@@ -46,7 +46,9 @@ class FakeConnection:
 
 def ask_statistics(connection: FakeConnection, monkeypatch) -> Any:
     app_settings = SimpleNamespace(ha_url="https://home.example", ha_token="secret-token")
-    return ha._ws_statistics_during_period(["sensor.energy"], START, END, connect=connection, app_settings=app_settings)
+    return home_assistant._ws_statistics_during_period(
+        ["sensor.energy"], START, END, connect=connection, app_settings=app_settings
+    )
 
 
 SUCCESS = [
@@ -105,8 +107,8 @@ def energy_from(monkeypatch, statistics: dict[str, Any], sensors: str = "sensor.
         return statistics
 
     monkeypatch.setattr(settings, "ha_energy_sensors", sensors)
-    monkeypatch.setattr(ha, "_ws_statistics_during_period", fake_statistics)
-    return ha.energy_used_kwh(START, END)
+    monkeypatch.setattr(home_assistant, "_ws_statistics_during_period", fake_statistics)
+    return home_assistant.energy_used_kwh(START, END)
 
 
 async def test_the_energy_is_the_sum_at_the_end_minus_the_sum_before_the_start(monkeypatch) -> None:
