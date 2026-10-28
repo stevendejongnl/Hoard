@@ -55,8 +55,6 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/hoard:latest
             ${{ env.REGISTRY }}/${{ env.OWNER }}/hoard:${{ env.VERSION }}
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/printer:latest
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/printer:${{ env.VERSION }}
           build-args: APP_VERSION=${{ env.VERSION }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -67,24 +65,13 @@ jobs:
     runs-on: [self-hosted, k8s]
     steps:
       - name: Restart deployment
-        # The app is called hoard everywhere. Until the cluster has moved over, the old objects (namespace and
-        # deployment printer, which pull the image tagged printer) are restarted instead; remove the second
-        # target and the printer tags above after the move.
         run: |
           RESTART_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
           TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
           CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-          for target in hoard/hoard printer/printer; do
-            namespace=${target%/*}
-            name=${target#*/}
-            status=$(curl -s -o /dev/null -w '%{http_code}' -X PATCH \
-              -H "Authorization: Bearer $TOKEN" \
-              -H "Content-Type: application/strategic-merge-patch+json" \
-              --cacert "$CA" \
-              "https://kubernetes.default.svc/apis/apps/v1/namespaces/$namespace/deployments/$name" \
-              -d "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$RESTART_AT\"}}}}}")
-            echo "$target: HTTP $status"
-            if [ "$status" = "200" ]; then exit 0; fi
-          done
-          echo "No deployment was restarted"
-          exit 1
+          curl -sf -X PATCH \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/strategic-merge-patch+json" \
+            --cacert "$CA" \
+            "https://kubernetes.default.svc/apis/apps/v1/namespaces/hoard/deployments/hoard" \
+            -d "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"kubectl.kubernetes.io/restartedAt\":\"$RESTART_AT\"}}}}}"
