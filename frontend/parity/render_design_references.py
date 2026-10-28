@@ -19,7 +19,6 @@ from pathlib import Path
 
 from playwright.sync_api import Page, Route, sync_playwright
 
-from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 from frontend.parity.browser_settings import (
     CONTEXT_OPTIONS,
     DESKTOP_SIZE,
@@ -27,6 +26,7 @@ from frontend.parity.browser_settings import (
     FREEZE_MOTION_STYLE,
     PHONE_SIZE,
 )
+from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 
 PARITY_DIRECTORY = Path(__file__).resolve().parent
 DESIGN_DIRECTORY = PARITY_DIRECTORY / "design"
