@@ -26,7 +26,7 @@ The screenshots are taken from the app filled with sample data (`python3 -m fron
 - **Print history with costs.** Each print gets its filament cost (from the spool you assign) and its electricity cost (the power the printer drew, at the price of that hour). Prices and costs can be recalculated.
 - **Cost predictor.** Pick a G-code file and a spool and see the filament, the time and the cost before you print. The print-ready step confirms the file and helps you recover from a powered-off printer or a firmware error.
 - **Spools.** Brand, material, colour, weight and price per gram, what is left, and which spool is in use. A spool can be linked to an NFC tag and found again by scanning it (Web NFC: Chrome on Android). A tag that holds an [OpenPrintTag](https://github.com/OpenPrintTag/openprinttag-specification) (Prusament) or an [OpenSpool](https://github.com/spuder/OpenSpool) record fills in a new spool.
-- **Projects.** A project holds notes (Markdown), links with a preview, files (STL and G-code, with thumbnails) and the prints made for it, with their totals.
+- **Projects.** A project holds notes (Markdown), links with a preview, files (STL and G-code, with thumbnails; a G-code file can be printed from the project, after a confirmation) and the prints made for it, with their totals.
 - **Print detail.** The job, the cost breakdown, and photos of the result.
 - **Search.** A command palette over prints, projects and spools (`/`).
 - **Notifications.** Web push when a print finishes or fails.
