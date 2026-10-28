@@ -70,3 +70,10 @@ describe('temperature chart lines', () => {
     expect(empty.bedTargetLine).toBe('')
   })
 })
+
+describe('temperature chart rounding', () => {
+  it('rounds the x of a point on a half pixel up, as the design does', () => {
+    const chart = buildTemperatureChart([sample(575, 24), sample(0, 24)], layout)
+    expect(chart.hotendLine.split(' ')[0].split(',')[0]).toBe('61.8')
+  })
+})
