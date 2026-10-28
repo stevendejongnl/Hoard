@@ -3,9 +3,27 @@ import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
 
+const BAD_GATEWAY_STATUS = 502
+const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
+
+/** A request that the server answered with an error status. */
+export class HttpError extends Error {
+  readonly status: number
+
+  constructor(status: number, statusText: string) {
+    super(`${status} ${statusText}`)
+    this.status = status
+  }
+}
+
+/** The text for a load that failed: the server answers 502 when the printer cannot be reached. */
+export function describeLoadFailure(error: unknown, fallback: string): string {
+  return error instanceof HttpError && error.status === BAD_GATEWAY_STATUS ? PRINTER_UNREACHABLE_MESSAGE : fallback
+}
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options)
-  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
+  if (!response.ok) throw new HttpError(response.status, response.statusText)
   return response.json() as Promise<T>
 }
 

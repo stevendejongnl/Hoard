@@ -39,28 +39,30 @@ def _moonraker_to_record(job: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+async def _fetch_jobs(limit: int, offset: int) -> list[dict[str, Any]]:
+    try:
+        result = await moonraker.get("/server/history/list", limit=limit, start=offset, order="desc")
+    except Exception as exc:
+        raise HTTPException(502, "The printer cannot be reached") from exc
+    return result.get("jobs", [])
+
+
+async def _fetch_total(offset: int, jobs: list[dict[str, Any]]) -> int:
+    try:
+        totals = await moonraker.get("/server/history/totals")
+        return int(totals.get("job_totals", {}).get("total_jobs", 0))
+    except Exception:
+        return offset + len(jobs)
+
+
 @router.get("")
 async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
     ttl = 60 if offset == 0 else 86400
     cache_key = f"history:{limit}:{offset}"
 
     async def _fetch() -> dict[str, Any]:
-        try:
-            result = await moonraker.get(
-                "/server/history/list",
-                limit=limit,
-                start=offset,
-                order="desc",
-            )
-            jobs = result.get("jobs", [])
-            try:
-                totals = await moonraker.get("/server/history/totals")
-                total = int(totals.get("job_totals", {}).get("total_jobs", 0))
-            except Exception:
-                total = offset + len(jobs)
-        except Exception:
-            jobs = []
-            total = 0
+        jobs = await _fetch_jobs(limit, offset)
+        total = await _fetch_total(offset, jobs)
 
         records = [_moonraker_to_record(j) for j in jobs if j.get("status") == "completed"]
 

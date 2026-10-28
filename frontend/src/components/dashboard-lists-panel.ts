@@ -1,7 +1,7 @@
 import { LitElement, html } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
-import { getHistory, getSpools } from '../api'
+import { describeLoadFailure, getHistory, getSpools } from '../api'
 import { renderIcon } from '../icons'
 import { formatPrintCost, formatPrintDuration, formatPrintFilament, formatShortPrintDate } from '../print-history-list'
 import { router } from '../router'
@@ -38,6 +38,7 @@ export class DashboardListsPanel extends LitElement {
   @state() private records: PrintRecord[] = []
   @state() private spools: Spool[] = []
   @state() private recordsState: LoadState = 'loading'
+  @state() private recordsFailureMessage = ''
   @state() private spoolsState: LoadState = 'loading'
 
   createRenderRoot() {
@@ -57,7 +58,8 @@ export class DashboardListsPanel extends LitElement {
     try {
       this.records = (await this.loadHistory(RECENT_PRINT_COUNT, 0)).records
       this.recordsState = 'ready'
-    } catch {
+    } catch (error) {
+      this.recordsFailureMessage = describeLoadFailure(error, 'Could not load the prints')
       this.recordsState = 'error'
     }
   }
@@ -137,7 +139,7 @@ export class DashboardListsPanel extends LitElement {
   private renderRecentPrints(): TemplateResult {
     const hasPrints = this.isPrintActive() || this.records.length > 0
     if (!hasPrints && this.recordsState === 'loading') return this.renderListMessage('Loading prints…')
-    if (!hasPrints && this.recordsState === 'error') return this.renderPrintAction('Could not load the prints')
+    if (!hasPrints && this.recordsState === 'error') return this.renderPrintAction(this.recordsFailureMessage)
     if (!hasPrints) return this.renderPrintAction('No prints to show')
     return html`${this.renderCurrentPrint()}${this.records.map((record) => this.renderRecord(record))}`
   }
