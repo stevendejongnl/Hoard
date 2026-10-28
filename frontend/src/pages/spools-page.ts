@@ -5,10 +5,12 @@ import type { Spool } from '../types'
 import {
   createSpool as createSpoolRequest,
   deleteSpool as deleteSpoolRequest,
+  getSpoolByTag,
   getSpools,
   updateSpool as updateSpoolRequest,
 } from '../api'
 import { renderIcon } from '../icons'
+import { createBrowserReaderFactory, readNextTag } from '../nfc-reader'
 import {
   buildSpoolName,
   calculateRemainingPercent,
@@ -27,6 +29,11 @@ import '../styles/spools.css'
 type LoadState = 'loading' | 'ready' | 'error'
 type DeleteResponse = { ok: boolean; status: number }
 
+function createDefaultTagReader(): (() => Promise<string>) | null {
+  const factory = createBrowserReaderFactory(window)
+  return factory === null ? null : () => readNextTag(factory)
+}
+
 const HAS_LINKED_PRINTS_STATUS = 409
 const SECTION_CHEVRON_SIZE = 14
 const SELECT_CHEVRON_SIZE = 12
@@ -41,6 +48,11 @@ export class SpoolsPage extends LitElement {
   @property({ attribute: false }) deleteSpool: (id: number) => Promise<DeleteResponse> = deleteSpoolRequest
   @property({ attribute: false }) confirmAction: (message: string) => boolean = (message) => window.confirm(message)
 
+  /** Reads the id of the next NFC tag, or is null where the browser cannot read tags. */
+  @property({ attribute: false }) readTag: (() => Promise<string>) | null = createDefaultTagReader()
+  @property({ attribute: false }) findSpoolByTag: (tagId: string) => Promise<Spool | null> = getSpoolByTag
+
+  @state() private scanMessage = ''
   @state() private spools: Spool[] = []
   @state() private loadState: LoadState = 'loading'
   @state() private materialFilter = ''
@@ -157,6 +169,37 @@ export class SpoolsPage extends LitElement {
     this.isDetailsOpen = false
   }
 
+  private async scanTag(): Promise<void> {
+    if (this.readTag === null) return
+    this.scanMessage = 'Hold a tag to the back of the phone…'
+    try {
+      const spool = await this.findSpoolByTag(await this.readTag())
+      this.scanMessage = spool ? '' : 'This tag is not linked to a spool'
+      if (spool) this.selectSpool(this.spools.find((known) => known.id === spool.id) ?? spool)
+    } catch {
+      this.scanMessage = 'Could not read the tag'
+    }
+  }
+
+  private async changeSelectedSpoolTag(readTagId: () => Promise<string>): Promise<void> {
+    const selected = this.findSelectedSpool()
+    if (!selected) return
+    try {
+      await this.updateSpool(selected.id, { tag_id: await readTagId() })
+      await this.reload()
+    } catch {
+      this.formError = 'Could not change the tag of the spool'
+    }
+  }
+
+  private linkTag(): Promise<void> {
+    return this.changeSelectedSpoolTag(() => this.readTag!())
+  }
+
+  private unlinkTag(): Promise<void> {
+    return this.changeSelectedSpoolTag(async () => '')
+  }
+
   private findVisibleSpools(): Spool[] {
     return filterSpools(this.spools, this.materialFilter, this.showFilter)
   }
@@ -238,11 +281,19 @@ export class SpoolsPage extends LitElement {
         </div>
       </div>
       <div class="spools-filters-footer">
+        ${this.renderScanButton()}
         <button class="button primary add-spool-button" @click=${this.startNewSpool}>
           ${renderIcon('plus', SECTION_CHEVRON_SIZE)}Add spool
         </button>
       </div>
     </aside>`
+  }
+
+  private renderScanButton(): TemplateResult | typeof nothing {
+    if (this.readTag === null) return nothing
+    return html`<button class="button scan-tag-button" @click=${this.scanTag}>
+      ${renderIcon('nfc', SECTION_CHEVRON_SIZE)}Scan tag
+    </button>`
   }
 
   private renderSpoolRow(spool: Spool): TemplateResult {
@@ -309,6 +360,7 @@ export class SpoolsPage extends LitElement {
       <div class="spools-title-strip">
         <span class="spools-title">Spools</span>
         <span class="spools-count monospace muted">${this.findVisibleSpools().length}</span>
+        ${this.scanMessage === '' ? nothing : html`<span class="scan-message muted">${this.scanMessage}</span>`}
       </div>
       ${this.renderTable()}
     </section>`
@@ -378,9 +430,17 @@ export class SpoolsPage extends LitElement {
     `
   }
 
+  private renderTagButton(selected: Spool | null): TemplateResult | typeof nothing {
+    if (this.readTag === null || !selected) return nothing
+    return selected.tag_id
+      ? html`<button class="button unlink-tag-button" @click=${this.unlinkTag}>Unlink tag</button>`
+      : html`<button class="button link-tag-button" @click=${this.linkTag}>Link tag</button>`
+  }
+
   private renderDetailsFooter(selected: Spool | null): TemplateResult {
     return html`<div class="details-footer">
       <button class="button primary save-button" @click=${this.saveSpool}>Save</button>
+      ${this.renderTagButton(selected)}
       ${selected && !selected.active
         ? html`<button class="button set-in-use-button" @click=${this.setSelectedSpoolInUse}>Set in use</button>`
         : nothing}

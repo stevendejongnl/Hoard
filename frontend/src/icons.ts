@@ -22,6 +22,7 @@ const ICON_SHAPES = {
   spools: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',
   cube: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  nfc: '<path d="M6 8.3a8 8 0 0 1 0 7.4M10 6a12 12 0 0 1 0 12M14 3.7a16 16 0 0 1 0 16.6"/>',
   trash: '<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>',
   edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   upload: '<path d="M12 16V4M6 10l6-6 6 6M4 20h16"/>',

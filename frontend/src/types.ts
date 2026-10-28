@@ -43,6 +43,7 @@ export interface Spool {
   notes: string | null
   active: number
   created_at: number
+  tag_id?: string | null
 }
 
 export interface PrintRecord {

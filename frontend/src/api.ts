@@ -103,6 +103,12 @@ export const updateSpool = (id: number, data: Partial<Spool>) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+export async function getSpoolByTag(tagId: string): Promise<Spool | null> {
+  const response = await fetch(`/api/spools/by-tag/${encodeURIComponent(tagId)}`)
+  if (response.status === 404) return null
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
+  return response.json()
+}
 export const deleteSpool = (id: number) => fetch(`/api/spools/${id}`, { method: 'DELETE' })
 
 // Webcams
