@@ -4,7 +4,7 @@ import logging
 from collections.abc import Awaitable, Callable
 from typing import Any
 
-from app import ha, push_client
+from app import home_assistant, push_client
 from app.moonraker import moonraker
 from app.routes.control import _get_switch_state
 
@@ -87,7 +87,7 @@ def _handlers_for_status_update():
 
 async def _poll_ha(
     interval: int = 30,
-    home_assistant: Any = ha,
+    home_assistant: Any = home_assistant,
     event_hub: Any = hub,
     read_switch_state: Callable[[], Awaitable[str]] = _get_switch_state,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,

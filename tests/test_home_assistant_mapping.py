@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 
 import httpx
 
-from app import ha
+from app import home_assistant
 from app.config import Settings, settings
 from app.routes import control
 from tests.route_fakes import recording_client_factory
@@ -49,7 +49,7 @@ def test_the_names_come_from_the_environment(monkeypatch) -> None:
 
 def test_the_energy_sensors_are_a_comma_separated_list_oldest_first(monkeypatch) -> None:
     configure(monkeypatch, ha_energy_sensors=" sensor.old_plug , sensor.new_plug ,, ")
-    assert ha.energy_sensor_ids() == ["sensor.old_plug", "sensor.new_plug"]
+    assert home_assistant.energy_sensor_ids() == ["sensor.old_plug", "sensor.new_plug"]
 
 
 async def test_the_current_power_is_read_from_the_configured_sensor(monkeypatch) -> None:
@@ -60,8 +60,8 @@ async def test_the_current_power_is_read_from_the_configured_sensor(monkeypatch)
         return {"state": "112.5"}
 
     configure(monkeypatch, ha_power_sensor="sensor.plug_power")
-    monkeypatch.setattr(ha, "get_state", fake_state)
-    assert await ha.get_current_power() == 112.5
+    monkeypatch.setattr(home_assistant, "get_state", fake_state)
+    assert await home_assistant.get_current_power() == 112.5
     assert asked == ["sensor.plug_power"]
 
 
@@ -73,8 +73,8 @@ async def test_the_current_price_is_read_from_the_configured_sensor(monkeypatch)
         return {"state": "0.27"}
 
     configure(monkeypatch, ha_price_sensor="sensor.tariff")
-    monkeypatch.setattr(ha, "get_state", fake_state)
-    assert await ha.get_current_price() == 0.27
+    monkeypatch.setattr(home_assistant, "get_state", fake_state)
+    assert await home_assistant.get_current_price() == 0.27
     assert asked == ["sensor.tariff"]
 
 
@@ -86,8 +86,8 @@ async def test_the_power_history_is_read_from_the_configured_sensor(monkeypatch)
         return []
 
     configure(monkeypatch, ha_power_sensor="sensor.plug_power")
-    monkeypatch.setattr(ha, "get_history", fake_history)
-    await ha.avg_power_over(datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2, tzinfo=UTC))
+    monkeypatch.setattr(home_assistant, "get_history", fake_history)
+    await home_assistant.avg_power_over(datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2, tzinfo=UTC))
     assert asked == ["sensor.plug_power"]
 
 
@@ -99,9 +99,9 @@ async def test_the_price_history_is_read_from_the_configured_sensor_when_influx_
         return []
 
     configure(monkeypatch, ha_price_sensor="sensor.tariff")
-    monkeypatch.setattr(ha, "get_history", fake_history)
-    monkeypatch.setattr(ha, "influx", FakeInflux(average_price=None))
-    await ha.avg_price_over(datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2, tzinfo=UTC))
+    monkeypatch.setattr(home_assistant, "get_history", fake_history)
+    monkeypatch.setattr(home_assistant, "influx", FakeInflux(average_price=None))
+    await home_assistant.avg_price_over(datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2, tzinfo=UTC))
     assert asked == ["sensor.tariff"]
 
 
@@ -113,8 +113,10 @@ async def test_the_energy_statistics_ask_for_the_configured_sensors(monkeypatch)
         return {}
 
     configure(monkeypatch, ha_energy_sensors="sensor.old_plug,sensor.new_plug")
-    monkeypatch.setattr(ha, "_ws_statistics_during_period", fake_statistics)
-    assert await ha.energy_used_kwh(datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2, tzinfo=UTC)) is None
+    monkeypatch.setattr(home_assistant, "_ws_statistics_during_period", fake_statistics)
+    assert (
+        await home_assistant.energy_used_kwh(datetime(2026, 1, 1, tzinfo=UTC), datetime(2026, 1, 2, tzinfo=UTC)) is None
+    )
     assert asked == [["sensor.old_plug", "sensor.new_plug"]]
 
 
@@ -136,9 +138,9 @@ async def test_the_current_price_is_recorded_in_influx_when_it_is_known(monkeypa
     async def fake_price() -> float:
         return 0.21
 
-    monkeypatch.setattr(ha, "influx", fake_influx)
-    monkeypatch.setattr(ha, "get_current_price", fake_price)
-    await ha.record_current_price()
+    monkeypatch.setattr(home_assistant, "influx", fake_influx)
+    monkeypatch.setattr(home_assistant, "get_current_price", fake_price)
+    await home_assistant.record_current_price()
     assert [price for _moment, price in fake_influx.written] == [0.21]
 
 
@@ -148,9 +150,9 @@ async def test_nothing_is_recorded_when_the_price_is_unknown(monkeypatch) -> Non
     async def no_price() -> float:
         return 0.0
 
-    monkeypatch.setattr(ha, "influx", fake_influx)
-    monkeypatch.setattr(ha, "get_current_price", no_price)
-    await ha.record_current_price()
+    monkeypatch.setattr(home_assistant, "influx", fake_influx)
+    monkeypatch.setattr(home_assistant, "get_current_price", no_price)
+    await home_assistant.record_current_price()
     assert fake_influx.written == []
 
 

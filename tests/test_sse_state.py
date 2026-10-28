@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from app import sse
+from app import server_sent_events
 
 
 class FakeHub:
@@ -60,7 +60,7 @@ class World:
 
 
 def build_handler(world: World):
-    tracker = sse.PrinterStateTracker(
+    tracker = server_sent_events.PrinterStateTracker(
         event_hub=world.hub,
         notifier=world.notifier,
         sleep=world.sleep,

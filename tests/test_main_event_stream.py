@@ -1,7 +1,7 @@
 import asyncio
 
 from app.main import _event_stream
-from app.sse import hub
+from app.server_sent_events import hub
 
 
 class FakeRequest:
