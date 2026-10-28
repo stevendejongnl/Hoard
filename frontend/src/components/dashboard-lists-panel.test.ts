@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { HttpError } from '../api'
 import type { PrintRecord, PrinterState, Spool } from '../types'
 import './dashboard-lists-panel'
 import type { DashboardListsPanel } from './dashboard-lists-panel'
@@ -194,6 +195,12 @@ describe('dashboard lists that are still loading, or failed to load', () => {
     const panel = await createPanel({ printerState: idleState, loadHistory: fails })
     expect(readMessage(panel)).toBe('Could not load the prints')
     expect(panel.querySelector('.print-a-file-button')).not.toBeNull()
+  })
+
+  it('says that the printer cannot be reached when the server answers 502', async () => {
+    const unreachable = () => Promise.reject(new HttpError(502, 'Bad Gateway'))
+    const panel = await createPanel({ printerState: idleState, loadHistory: unreachable })
+    expect(readMessage(panel)).toBe('The printer cannot be reached')
   })
 
   it('says there are no prints only after an empty answer', async () => {
