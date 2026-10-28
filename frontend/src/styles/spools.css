@@ -528,4 +528,9 @@
   .spools-layout .value-unit:empty {
     display: inline;
   }
+
+  .spools-details .delete-spool-button svg {
+    width: 20px;
+    height: 20px;
+  }
 }
