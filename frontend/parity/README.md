@@ -12,7 +12,8 @@ From `frontend/`:
 | `npm run parity` | Starts the mock backend and the dev server, screenshots every screen at the design size, and prints how far each is from its reference. Exit code 1 if any screen is outside the tolerance. |
 | `npm run parity -- --only dashboard-desktop history-phone` | The same for some screens. |
 | `npm run parity:tests` | Unit tests of the comparison and the mock backend. |
-| `npm run parity:references -- --runtime <path>` | Renders the reference images again from `design/`. Needs the design runtime script (it belongs to the design tool and is not stored here). |
+| `npm run parity:references -- --runtime <path> --designs <folder>` | Renders the reference images again from the design boards. Needs the design runtime script and the folder with the boards (`.dc.html`); neither is stored in this repository. |
+| `python3 -m frontend.parity.take_screenshots` | Takes the screenshots of the README from the app, filled with the sample data (`docs/screenshots/`). |
 
 Screenshots and difference images (differing pixels in red) are written to `output/`, which is git-ignored.
 
@@ -32,8 +33,9 @@ The references and the screenshots are taken under the same conditions (`browser
 
 ## Files
 
-- `design/`: the design artboards (`.dc.html`), the source of the references.
-- `references/`: the rendered reference images.
+- `references/`: the reference images, rendered from the design boards. They are what the app is compared with.
+- `top_bar_crops.py`: the header with the notification bell, compared as a crop of its board.
+- `showcase_screens.py` and `take_screenshots.py`: the screenshots of the README.
 - `fixture_data.py`: the data the design shows, in the shapes the API returns.
 - `mock_backend.py`: serves that data as JSON and as a server-sent events stream.
 - `image_comparison.py`: counts and marks differing pixels.
