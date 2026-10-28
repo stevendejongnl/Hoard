@@ -22,3 +22,9 @@ describe('the history search field stays on the history page', () => {
     expect(readStyles('history')).not.toMatch(/^\s*\.search-field/m)
   })
 })
+
+describe('buttons of every element', () => {
+  it('reset their letter spacing, as a button element does', () => {
+    expect(readStyles('components')).toContain('box-sizing: border-box;\n  letter-spacing: normal;')
+  })
+})
