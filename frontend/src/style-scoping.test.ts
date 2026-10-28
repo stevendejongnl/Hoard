@@ -59,7 +59,7 @@ describe('icons measured from the design boards', () => {
   })
 
   it('puts the search icon of the history filter 21px from the left', () => {
-    expect(readStyles('history')).toMatch(/\.search-icon \{\n  position: absolute;\n  left: 21px;/)
+    expect(readStyles('history')).toMatch(/\.search-icon \{\n {2}position: absolute;\n {2}left: 21px;/)
   })
 })
 

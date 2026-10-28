@@ -28,3 +28,10 @@ repos:
         entry: bash -c 'cd frontend && npm run typecheck'
         pass_filenames: false
         files: ^frontend/.*\.(ts|tsx)$
+
+      - id: frontend-lint
+        name: ESLint (frontend)
+        language: system
+        entry: bash -c 'cd frontend && npm run lint'
+        pass_filenames: false
+        files: ^frontend/(src/.*\.ts|eslint\.config\.js)$

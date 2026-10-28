@@ -3,7 +3,7 @@
 Both must see the same clock, locale, timezone and motion, or identical screens would still differ.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 DESKTOP_SIZE = (1360, 860)
 PHONE_SIZE = (390, 844)
@@ -13,7 +13,7 @@ TIMEZONE = "UTC"
 COLOR_SCHEME = "dark"
 
 # The dashboard shows "finish at 18:23" for a print with 3h27m left, so the clock is fixed at 14:56 UTC, the timezone of the browser.
-FIXED_TIME = datetime(2026, 10, 27, 14, 56, 0, tzinfo=timezone.utc)
+FIXED_TIME = datetime(2026, 10, 27, 14, 56, 0, tzinfo=UTC)
 
 FREEZE_MOTION_STYLE = (
     "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }"
