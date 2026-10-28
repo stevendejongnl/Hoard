@@ -357,3 +357,47 @@ describe('setting the spool in use', () => {
     expect(page.querySelector('.set-in-use-button')).toBeNull()
   })
 })
+
+describe('spool NFC tags', () => {
+  const readsTag = (tagId: string) => async () => tagId
+
+  it('offers no tag actions when the phone cannot read tags', async () => {
+    const page = await createSpoolsPage(createCalls(), { readTag: null })
+    expect(page.querySelector('.scan-tag-button')).toBeNull()
+    expect(page.querySelector('.link-tag-button')).toBeNull()
+  })
+
+  it('selects the spool that a scanned tag belongs to', async () => {
+    const page = await createSpoolsPage(createCalls(), {
+      readTag: readsTag('04a1'),
+      findSpoolByTag: async () => fixtureSpools[2],
+    })
+    await click(page, '.scan-tag-button')
+    expect(page.querySelector('.spool-row.selected .spool-name')?.textContent?.trim()).toContain('Generic')
+  })
+
+  it('says so when a scanned tag is not linked to a spool', async () => {
+    const page = await createSpoolsPage(createCalls(), {
+      readTag: readsTag('04a1'),
+      findSpoolByTag: async () => null,
+    })
+    await click(page, '.scan-tag-button')
+    expect(page.querySelector('.scan-message')?.textContent).toContain('not linked')
+  })
+
+  it('links the scanned tag to the selected spool', async () => {
+    const calls = createCalls()
+    const page = await createSpoolsPage(calls, { readTag: readsTag('04a1') })
+    await click(page, '.edit-spool-button')
+    await click(page, '.link-tag-button')
+    expect(calls.updated).toEqual([{ id: 1, data: { tag_id: '04a1' } }])
+  })
+
+  it('unlinks the tag of the selected spool with an empty tag', async () => {
+    const calls = createCalls()
+    const page = await createSpoolsPage(calls, { readTag: readsTag('04a1') }, [createSpool({ tag_id: '04a1' })])
+    await click(page, '.edit-spool-button')
+    await click(page, '.unlink-tag-button')
+    expect(calls.updated).toEqual([{ id: 1, data: { tag_id: '' } }])
+  })
+})
