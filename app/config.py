@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     influxdb_token: str = ""
     influxdb_org: str = "my-org"
     influxdb_bucket: str = "home"
-    database_path: str = "/data/printer.db"
+    database_path: str = "/data/hoard.db"
     static_dir: str = "static"
     uploads_dir: str = "./uploads"
     redis_url: str = "redis://localhost:6379"

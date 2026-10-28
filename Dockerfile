@@ -9,6 +9,7 @@ RUN npm run build
 
 # ── Stage 2: runtime ──────────────────────────────────────────────────────────
 FROM python:3.12-slim
+LABEL org.opencontainers.image.source="https://github.com/stevendejongnl/Hoard"
 WORKDIR /app
 
 ARG APP_VERSION=dev

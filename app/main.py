@@ -90,7 +90,7 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(_price_startup_backfill())
     asyncio.create_task(_price_recorder_loop())
 
-    log.info("printer started, db=%s", settings.database_path)
+    log.info("Hoard started, db=%s", settings.database_path)
     yield
 
     moonraker.stop()
