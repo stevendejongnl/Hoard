@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import { HttpError } from '../api'
 import type { PrintRecord, Spool } from '../types'
 import './history-page'
 import type { HistoryPage } from './history-page'
@@ -283,6 +284,15 @@ describe('selected print', () => {
       },
     })
     expect(readText(page, '.state-message')).toBe('Could not load the print history')
+  })
+
+  it('says that the printer cannot be reached when the server answers 502, and not that there are no prints', async () => {
+    const page = await createHistoryPage(createCalls(), fixtureRecords, 3, {
+      loadHistory: async () => {
+        throw new HttpError(502, 'Bad Gateway')
+      },
+    })
+    expect(readText(page, '.state-message')).toBe('The printer cannot be reached')
   })
 
   it('says so when there are no prints yet', async () => {
