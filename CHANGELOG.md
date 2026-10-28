@@ -1,3 +1,17 @@
+## [1.42.0](https://github.com/stevendejongnl/Hoard/compare/v1.41.0...v1.42.0) (2026-10-28)
+
+### Features
+
+* **nfc:** read an OpenPrintTag, the tag format of Prusament ([892c9f5](https://github.com/stevendejongnl/Hoard/commit/892c9f5781beb9df34d144f001403e5e639ce1a4))
+* **nfc:** read an OpenSpool tag, and one reader over all the tag formats ([3a40d1c](https://github.com/stevendejongnl/Hoard/commit/3a40d1cfd61ad7148afe3c8e10838f9984d9f16e))
+* **nfc:** read the CBOR data of a tag ([b2446f1](https://github.com/stevendejongnl/Hoard/commit/b2446f1e612c552869ed335b2744950680790537))
+* **nfc:** the reader hands over the records of the tag with its id ([fd30829](https://github.com/stevendejongnl/Hoard/commit/fd308295471f79a307ce09fd9d8156b59bf83ca7))
+* **spools:** a scanned tag that carries a spool fills in a new spool ([80454ba](https://github.com/stevendejongnl/Hoard/commit/80454baf19bf4771f559bf3e374bf3fed4148f6d))
+
+### Documentation
+
+* the tag formats that Hoard reads ([5153aa4](https://github.com/stevendejongnl/Hoard/commit/5153aa4af9e294a48737de7a85b5aeb058d0326c))
+
 ## [1.41.0](https://github.com/stevendejongnl/Hoard/compare/v1.40.1...v1.41.0) (2026-10-28)
 
 ### Features
