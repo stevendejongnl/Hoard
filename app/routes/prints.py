@@ -31,9 +31,9 @@ GcodeMetaFunction = Callable[[str], Awaitable[dict[str, Any]]]
 def _photos_dir(job_id: str) -> Path:
     """Return (and create) the photo directory for a job."""
     data_dir = Path(settings.database_path).parent
-    d = data_dir / "photos" / job_id
-    d.mkdir(parents=True, exist_ok=True)
-    return d
+    photos_dir = data_dir / "photos" / job_id
+    photos_dir.mkdir(parents=True, exist_ok=True)
+    return photos_dir
 
 
 async def _read_job(moonraker: MoonrakerClient, job_id: str) -> dict[str, Any]:
