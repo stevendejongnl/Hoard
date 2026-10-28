@@ -20,9 +20,9 @@ Requires Python 3 with Playwright (and its Chromium) and Pillow.
 
 ## Tolerance
 
-A pixel differs when any color channel is more than 24 apart. A screen passes while at most 0.5% of its
-pixels differ. Font anti-aliasing differs a little between renderers, so zero is not reachable; both numbers
-are set once in `image_comparison.py`.
+A pixel differs when any color channel is more than 24 apart, which is above the anti-aliasing noise between
+two renders of the same screen. A screen passes only when no pixel differs, so a layout shift of one pixel
+fails. Both numbers are set once in `image_comparison.py`.
 
 ## Conditions
 

@@ -148,7 +148,7 @@ def compare_screen(page: Page, name: str, app_address: str) -> float:
 
 def format_report_line(name: str, difference_share: float) -> str:
     verdict = "pass" if is_within_tolerance(difference_share, MAXIMUM_DIFFERENCE_SHARE) else "FAIL"
-    return f"{name:<26} {difference_share * 100:6.2f}% of pixels differ   {verdict}"
+    return f"{name:<26} {difference_share * 100:7.4f}% of pixels differ   {verdict}"
 
 
 def compare_screens(names: list[str], app_address: str) -> dict[str, float]:

@@ -9,8 +9,8 @@ from PIL import Image, ImageChops
 
 # A pixel differs when any color channel is further apart than this (0 to 255).
 DEFAULT_CHANNEL_TOLERANCE = 24
-# A screen passes while at most this share of its pixels differs.
-MAXIMUM_DIFFERENCE_SHARE = 0.005
+# A screen passes while at most this share of its pixels differs; none may.
+MAXIMUM_DIFFERENCE_SHARE = 0.0
 
 DIFFERENCE_COLOR = (255, 0, 0)
 MATCHING_PIXEL_BRIGHTNESS = 0.35
