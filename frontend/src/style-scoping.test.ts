@@ -52,3 +52,13 @@ describe('details taken from the design boards', () => {
     expect(readStyles('files')).toContain('.files-search::placeholder {\n  color: var(--muted-text-color);')
   })
 })
+
+describe('icons measured from the design boards', () => {
+  it('draws the close icon of the phone sheet at 20px', () => {
+    expect(readStyles('spools')).toContain('.close-details-button svg {\n    width: 20px;')
+  })
+
+  it('puts the search icon of the history filter 21px from the left', () => {
+    expect(readStyles('history')).toMatch(/\.search-icon \{\n  position: absolute;\n  left: 21px;/)
+  })
+})

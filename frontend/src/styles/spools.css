@@ -507,6 +507,11 @@
     display: inline-flex;
     margin-left: auto;
   }
+
+  .close-details-button svg {
+    width: 20px;
+    height: 20px;
+  }
 }
 
 /* NFC tags: only present where the browser can read them */
