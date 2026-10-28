@@ -446,3 +446,10 @@
 .history-details .parameter-label strong {
   color: var(--text-color);
 }
+
+/* The phone rows set this link at the size of their other detail lines */
+@media (max-width: 800px) {
+  .history-layout .assign-spool-button {
+    font-size: 12px;
+  }
+}
