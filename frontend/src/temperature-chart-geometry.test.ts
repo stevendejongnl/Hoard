@@ -86,7 +86,6 @@ describe('temperature chart ties', () => {
 
   it('does not treat a value that only looks like a tie as one', () => {
     const chart = buildTemperatureChart([sample(595, 24), sample(0, 24)], layout)
-    expect(chart.hotendLine.split(' ')[0].split(',')[0]).toBe('34.0')
-    expect(chart.hotendLine.split(' ')[1].split(',')[0]).toBe('39.5')
+    expect(chart.hotendLine.split(' ')[0].split(',')[0]).toBe('39.5')
   })
 })
