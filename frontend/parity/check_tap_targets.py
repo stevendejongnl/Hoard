@@ -32,6 +32,7 @@ FIND_MISSED_TARGETS = """(minimum) => {
     const box = element.getBoundingClientRect()
     const centerX = box.x + box.width / 2
     const centerY = box.y + box.height / 2
+    if (!isHit(element, centerX, centerY)) continue // covered, for example by a sheet: it cannot be tapped at all
     const points = []
     if (box.width < minimum) points.push([centerX - half, centerY], [centerX + half, centerY])
     if (box.height < minimum) points.push([centerX, centerY - half], [centerX, centerY + half])
