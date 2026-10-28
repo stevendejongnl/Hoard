@@ -1,3 +1,43 @@
+## [1.46.0](https://github.com/stevendejongnl/Hoard/compare/v1.45.1...v1.46.0) (2026-10-28)
+
+### Features
+
+* **moonraker:** a short connect timeout and a breaker for a printer that is off ([c65080c](https://github.com/stevendejongnl/Hoard/commit/c65080c8a8b145a006dac894a9eb0ff2de1e1f9e))
+
+### Bug Fixes
+
+* **files:** render the STL thumbnail on a worker thread ([414c9b9](https://github.com/stevendejongnl/Hoard/commit/414c9b9a1fae43f93a665164957e5770bfa7208b))
+
+### Performance Improvements
+
+* **history:** ask InfluxDB only for the period of the prints on the page ([87c907c](https://github.com/stevendejongnl/Hoard/commit/87c907c30a021a4448c5563428c5aaa670bd58e5))
+
+### Code Refactoring
+
+* **backend:** the ha and sse modules get full names ([4a14fd9](https://github.com/stevendejongnl/Hoard/commit/4a14fd9b964ada41388aae2c440d5076c07cbd13))
+* **cache:** inject the Redis client and the connect function ([579e4f4](https://github.com/stevendejongnl/Hoard/commit/579e4f4e091abf684dc3f6d4b34ebc4f8fc92b3c))
+* **control:** inject Moonraker, Home Assistant and the HTTP client ([3a8d489](https://github.com/stevendejongnl/Hoard/commit/3a8d4895d0f73438954e2e78d9ab2cfe372673f5))
+* **db:** split init_db and get_project into small named steps ([11a7d0e](https://github.com/stevendejongnl/Hoard/commit/11a7d0ee816dcd22034d5f4a185a863cbb447150))
+* **enrichment:** split the site fetchers and inject the HTTP client factory ([2a8e030](https://github.com/stevendejongnl/Hoard/commit/2a8e03024e0f1bdc46eaa006aade638254ef7ae3))
+* **files:** inject the collaborators and the thumbnail cache ([8fe920a](https://github.com/stevendejongnl/Hoard/commit/8fe920ab9a80749d0de39322fac7582baaab3e9e))
+* **frontend:** full names in the link preview card ([925b716](https://github.com/stevendejongnl/Hoard/commit/925b716827dc6a627a6013004e0b978d1b0864ad))
+* **gcode_meta:** read each header comment in its own small function ([58f7357](https://github.com/stevendejongnl/Hoard/commit/58f73577a1bd9925cbcf8173621d092c55f6b379))
+* **gcode_thumbnail:** split the toolpath render into parse, project and draw steps ([53294c6](https://github.com/stevendejongnl/Hoard/commit/53294c6ddc554617415458b0a070e4557eb3749b))
+* **ha:** split the statistics query and the energy sum, inject the websocket and HTTP clients ([9027263](https://github.com/stevendejongnl/Hoard/commit/90272636c40cf54ed1c2280f86998b5473020136))
+* **history:** inject the collaborators and split the long route functions ([2463420](https://github.com/stevendejongnl/Hoard/commit/24634204069c998f8e2ea6422df71963bbdf8d5b))
+* **influx:** the client takes settings and a connection, and the write line is built in small steps ([6969520](https://github.com/stevendejongnl/Hoard/commit/6969520c064b97035035daa68a5d465bf0394185))
+* **main:** split the lifespan and the event stream into named functions ([055b4d0](https://github.com/stevendejongnl/Hoard/commit/055b4d0d73d84e02ed3c7df5f41744a9564425c5))
+* **moonraker:** the client takes settings, HTTP client, websocket connect, sleep and clock through the constructor ([e14fa6c](https://github.com/stevendejongnl/Hoard/commit/e14fa6cf87dc6e7621aedcc4d622cdae8a75f5a4))
+* **prints:** inject the collaborators and split the job stats ([047f285](https://github.com/stevendejongnl/Hoard/commit/047f285b300a237771370a9e918f52642edd8727))
+* **projects:** inject the collaborators and share the print stats reading ([d9b9cdd](https://github.com/stevendejongnl/Hoard/commit/d9b9cdded398897de56bc7a8ba05d391757c5ef1))
+* **push:** the push notifier takes the database, the sender and the settings through the constructor ([6a65805](https://github.com/stevendejongnl/Hoard/commit/6a65805639dfb3949897719698474e2a473ccb44))
+* **recorder:** the print recorder takes its collaborators through the constructor ([1520aec](https://github.com/stevendejongnl/Hoard/commit/1520aec9c65022ede085581c0ea22d138540b151))
+* **routes:** full names for the last short variables ([aff4547](https://github.com/stevendejongnl/Hoard/commit/aff4547d8ac2ab5faf92a8aaf83f605a630ae796))
+* **routes:** inject the collaborators into chunks, predict and search ([723198d](https://github.com/stevendejongnl/Hoard/commit/723198dfaef5d044c76827dd5a580f705b61c327))
+* **routes:** inject the collaborators into webcams, spools and push ([8b666a3](https://github.com/stevendejongnl/Hoard/commit/8b666a33049ba5f77fac58afdbbf62822c092683))
+* **sse:** the printer state tracker and the pollers take their collaborators as arguments ([7656a23](https://github.com/stevendejongnl/Hoard/commit/7656a238e024f6912afb9fec430be2913e24dc1a))
+* **thumbnail:** split the STL render into rotate, light, fit and draw steps ([8bfd04f](https://github.com/stevendejongnl/Hoard/commit/8bfd04fbf225dc8a3b5a3ddb138e2562208fe631))
+
 ## [1.45.1](https://github.com/stevendejongnl/Hoard/compare/v1.45.0...v1.45.1) (2026-10-28)
 
 ### Bug Fixes
