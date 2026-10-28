@@ -16,3 +16,9 @@ describe('page styles stay on their page', () => {
     expect(readStyles('components')).toContain('.button {\n  box-sizing: border-box;')
   })
 })
+
+describe('the history search field stays on the history page', () => {
+  it('has no search field rule outside the history layout', () => {
+    expect(readStyles('history')).not.toMatch(/^\s*\.search-field/m)
+  })
+})
