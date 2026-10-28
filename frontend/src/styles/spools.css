@@ -101,7 +101,7 @@
   border: 1px solid var(--muted-text-color);
 }
 
-.notes-body {
+.spools-layout .notes-body {
   padding: 8px 12px;
 }
 
@@ -438,7 +438,7 @@
     display: none;
   }
 
-  .edit-spool-button {
+  .spool-row .edit-spool-button {
     display: inline-flex;
     width: 44px;
     min-height: 44px;
