@@ -1,3 +1,11 @@
+## [1.42.1](https://github.com/stevendejongnl/Hoard/compare/v1.42.0...v1.42.1) (2026-10-28)
+
+### Code Refactoring
+
+* **link-preview-card:** inject the timers, the opener and the outside click target, and drop the underscore names ([0ad002c](https://github.com/stevendejongnl/Hoard/commit/0ad002c3e40306ffacc7e3c0922e48b8f54e5be2))
+* **notifications:** take the browser and the server as an injected environment ([926e80f](https://github.com/stevendejongnl/Hoard/commit/926e80fbe45ea6f7370452dd06b272fedf4dc62d))
+* **router:** take the browser as an injected environment, and stop the history listener with the listener ([12378e7](https://github.com/stevendejongnl/Hoard/commit/12378e7cbdeb66ee0b5e5606a94461ac0082abde))
+
 ## [1.42.0](https://github.com/stevendejongnl/Hoard/compare/v1.41.0...v1.42.0) (2026-10-28)
 
 ### Features
