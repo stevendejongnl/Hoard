@@ -186,13 +186,13 @@ async def _enrich_link(
     database = database or provide_database()
     cache = cache or provide_cache()
     try:
-        og = await fetch_og(url)
-        if not any(og.values()):
+        open_graph = await fetch_og(url)
+        if not any(open_graph.values()):
             return
-        await database.set_link_meta(link_id, _json.dumps(og))
+        await database.set_link_meta(link_id, _json.dumps(open_graph))
         project = await database.get_project(project_id)
-        if project and not project.get("cover_url") and og.get("image_url"):
-            await database.set_project_cover(project_id, og["image_url"], link_id)
+        if project and not project.get("cover_url") and open_graph.get("image_url"):
+            await database.set_project_cover(project_id, open_graph["image_url"], link_id)
     finally:
         await _invalidate_project(cache, project_id)
 

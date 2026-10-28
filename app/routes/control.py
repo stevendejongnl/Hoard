@@ -22,24 +22,24 @@ async def _ha_service(
     domain: str, service: str, entity_id: str, create_client: CreateClient = httpx.AsyncClient
 ) -> None:
     async with create_client() as client:
-        r = await client.post(
+        response = await client.post(
             f"{settings.ha_url}/api/services/{domain}/{service}",
             headers=_ha_headers(),
             json={"entity_id": entity_id},
             timeout=10,
         )
-        r.raise_for_status()
+        response.raise_for_status()
 
 
 async def _get_switch_state(create_client: CreateClient = httpx.AsyncClient) -> str:
     async with create_client() as client:
-        r = await client.get(
+        response = await client.get(
             f"{settings.ha_url}/api/states/{settings.ha_power_switch}",
             headers=_ha_headers(),
             timeout=10,
         )
-        r.raise_for_status()
-        return r.json()["state"]  # "on" or "off"
+        response.raise_for_status()
+        return response.json()["state"]  # "on" or "off"
 
 
 async def read_switch_state(home_assistant: HomeAssistant, entity_id: str) -> str:
