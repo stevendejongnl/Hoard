@@ -64,7 +64,7 @@ async def list_history(limit: int = 20, offset: int = 0) -> dict[str, Any]:
 
         records = [_moonraker_to_record(j) for j in jobs if j.get("status") == "completed"]
 
-        influx_all = influx.query_history(limit=max(500, offset + limit + 100))
+        influx_all = await influx.query_history(limit=max(500, offset + limit + 100))
 
         def _influx_minute(iso: str) -> int:
             try:
@@ -185,8 +185,8 @@ async def assign_spool(job_id: str, body: SpoolAssign) -> dict[str, Any]:
         cost_total = round(cost_filament + cost_electricity, 4)
 
         # Delete old InfluxDB point (if any) and write updated one
-        influx.delete_print_job(end_dt, filename)
-        influx.write_print_job(
+        await influx.delete_print_job(end_dt, filename)
+        await influx.write_print_job(
             timestamp=end_dt,
             filename=filename,
             spool_id=body.spool_id,
@@ -280,8 +280,8 @@ async def restore_costs(job_id: str) -> dict[str, Any]:
     cost_filament = round(filament_g * cost_per_gram, 4)
     cost_total = round(cost_electricity + cost_filament, 4)
 
-    influx.delete_print_job(end_dt, filename)
-    influx.write_print_job(
+    await influx.delete_print_job(end_dt, filename)
+    await influx.write_print_job(
         timestamp=end_dt,
         filename=filename,
         spool_id=spool_id,
