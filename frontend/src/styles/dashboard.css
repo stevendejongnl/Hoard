@@ -109,6 +109,11 @@ printer-parameter-panel {
   cursor: pointer;
 }
 
+.power-switch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .power-switch.on {
   background: var(--accent);
 }

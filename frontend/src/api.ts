@@ -1,4 +1,4 @@
-import type { GcodeFile, PredictResult, PrintRecord, Spool } from './types'
+import type { GcodeFile, HomeAssistantSwitch, PredictResult, PrintRecord, Spool } from './types'
 import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
@@ -89,6 +89,9 @@ export const getWebcams = () => fetchJson<Webcam[]>('/api/webcams')
 // Control
 export const powerOn = () => fetchJson('/api/control/power/on', { method: 'POST' })
 export const powerOff = () => fetchJson('/api/control/power/off', { method: 'POST' })
+export const getSwitches = () => fetchJson<HomeAssistantSwitch[]>('/api/control/switches')
+export const setSwitchState = (key: string, turnOn: boolean) =>
+  fetchJson(`/api/control/switches/${encodeURIComponent(key)}/${turnOn ? 'on' : 'off'}`, { method: 'POST' })
 export const firmwareRestart = () => fetchJson('/api/control/firmware_restart', { method: 'POST' })
 export const emergencyStop = () => fetchJson('/api/control/emergency_stop', { method: 'POST' })
 export const startPrint = (filename: string) =>

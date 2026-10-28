@@ -90,3 +90,13 @@ def test_the_deployment_reads_the_energy_from_the_feed_plug() -> None:
     environment = read_container(find_object("Deployment", APPLICATION_NAME))["env"]
     values = {item["name"]: item["value"] for item in environment if "value" in item}
     assert values["HA_ENERGY_SENSORS"] == "sensor.nous_3d_printer_feed_plug_energy"
+
+
+def test_the_deployment_controls_the_power_strip_the_pi_and_the_filament_dryer() -> None:
+    environment = read_container(find_object("Deployment", APPLICATION_NAME))["env"]
+    values = {item["name"]: item["value"] for item in environment if "value" in item}
+    assert values["HA_SWITCHES"].split(",") == [
+        "Power strip=switch.nous_3d_printer_feed_plug",
+        "Raspberry Pi=switch.attic_3d_printer_power_strip_pi",
+        "Filament dryer=switch.attic_3d_printer_power_strip_filament",
+    ]

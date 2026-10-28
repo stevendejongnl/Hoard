@@ -23,6 +23,15 @@ export interface Power {
   switch: 'on' | 'off' | 'unknown'
 }
 
+/** A switch from Home Assistant that the app controls, as it is set in HA_SWITCHES. */
+export interface HomeAssistantSwitch {
+  key: string
+  label: string
+  entity_id: string
+  /** 'on' or 'off', or 'unavailable' or 'unknown' when Home Assistant cannot tell */
+  state: string
+}
+
 export interface PiStats {
   cpu_temp: number
   cpu_load: number
