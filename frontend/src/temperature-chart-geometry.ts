@@ -50,7 +50,7 @@ function formatPoint(x: number, y: number): string {
 
 function createScale(layout: TemperatureChartLayout) {
   const readX = (ageSeconds: number) =>
-    layout.left + (layout.right - layout.left) * (1 - ageSeconds / layout.windowSeconds)
+    layout.left + ((layout.windowSeconds - ageSeconds) / layout.windowSeconds) * (layout.right - layout.left)
   const readY = (temperature: number) =>
     layout.bottom - ((layout.bottom - layout.top) * temperature) / layout.maximumTemperature
   return { readX, readY }
