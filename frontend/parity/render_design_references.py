@@ -29,7 +29,6 @@ from frontend.parity.browser_settings import (
 from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 
 PARITY_DIRECTORY = Path(__file__).resolve().parent
-DESIGN_DIRECTORY = PARITY_DIRECTORY / "design"
 REFERENCE_DIRECTORY = PARITY_DIRECTORY / "references"
 FONT_FILES_DIRECTORY = PARITY_DIRECTORY.parent / "node_modules" / "@fontsource"
 
@@ -77,8 +76,8 @@ def copy_fonts(target_directory: Path) -> None:
         shutil.copy(FONT_FILES_DIRECTORY / package / "files" / file_name, target_directory / file_name)
 
 
-def assemble_site(site_directory: Path, runtime_path: Path) -> None:
-    for design_file in DESIGN_DIRECTORY.glob("*.dc.html"):
+def assemble_site(site_directory: Path, runtime_path: Path, design_directory: Path) -> None:
+    for design_file in design_directory.glob("*.dc.html"):
         shutil.copy(design_file, site_directory / design_file.name)
     shutil.copy(runtime_path, site_directory / "support.js")
     copy_fonts(site_directory / "fonts")
@@ -144,6 +143,7 @@ def render_all_screens(server_address: str) -> None:
 def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Render the design artboards to reference images.")
     parser.add_argument("--runtime", required=True, type=Path, help="path to the design runtime script")
+    parser.add_argument("--designs", required=True, type=Path, help="folder with the design boards (.dc.html)")
     return parser.parse_args()
 
 
@@ -151,7 +151,7 @@ def main() -> None:
     arguments = parse_arguments()
     with tempfile.TemporaryDirectory() as temporary_directory:
         site_directory = Path(temporary_directory)
-        assemble_site(site_directory, arguments.runtime)
+        assemble_site(site_directory, arguments.runtime, arguments.designs)
         server = start_server(site_directory)
         server_address = f"http://127.0.0.1:{server.server_address[1]}"
         render_all_screens(server_address)
