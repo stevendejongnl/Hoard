@@ -1,5 +1,6 @@
 import json as _json
 import time
+from collections.abc import Callable
 from typing import Any
 
 import aiosqlite
@@ -7,160 +8,198 @@ import aiosqlite
 _db_path: str = ""
 
 
-async def init_db(path: str) -> None:
+async def _add_column_if_missing(db: aiosqlite.Connection, table: str, column: str, definition: str) -> None:
+    try:
+        await db.execute(f"ALTER TABLE {table} ADD COLUMN {column} {definition}")
+    except Exception:
+        pass  # column already exists
+
+
+async def _create_spools(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS spools (
+            id               INTEGER PRIMARY KEY AUTOINCREMENT,
+            brand            TEXT    NOT NULL,
+            material         TEXT    NOT NULL,
+            color            TEXT    NOT NULL,
+            color_hex        TEXT,
+            cost_per_gram    REAL    NOT NULL,
+            initial_weight_g REAL    NOT NULL,
+            current_weight_g REAL    NOT NULL,
+            notes            TEXT,
+            active           INTEGER NOT NULL DEFAULT 0,
+            created_at       INTEGER NOT NULL
+        )
+    """)
+    async with db.execute("PRAGMA table_info(spools)") as cursor:
+        spool_columns = [row[1] for row in await cursor.fetchall()]
+    if "tag_id" not in spool_columns:
+        await db.execute("ALTER TABLE spools ADD COLUMN tag_id TEXT")
+    await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_spools_tag_id ON spools(tag_id)")
+
+
+async def _create_print_spools(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS print_spools (
+            job_id          TEXT PRIMARY KEY,
+            spool_id        INTEGER REFERENCES spools(id),
+            filament_used_g REAL
+        )
+    """)
+
+
+async def _create_projects(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS projects (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            name       TEXT    NOT NULL,
+            notes      TEXT,
+            created_at INTEGER NOT NULL
+        )
+    """)
+
+
+async def _create_project_files(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS project_files (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            type       TEXT    NOT NULL CHECK(type IN ('gcode', 'stl')),
+            filename   TEXT    NOT NULL,
+            label      TEXT
+        )
+    """)
+
+
+async def _project_files_has_type_check(db: aiosqlite.Connection) -> bool:
+    async with db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='project_files'") as cursor:
+        row = await cursor.fetchone()
+    return bool(row and "CHECK" in (row[0] or ""))
+
+
+async def _drop_project_files_type_check(db: aiosqlite.Connection) -> None:
+    """Migrate project_files to drop the CHECK constraint so any file extension is allowed."""
+    if not await _project_files_has_type_check(db):
+        return
+    await db.execute("""
+        CREATE TABLE project_files_new (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            type       TEXT    NOT NULL,
+            filename   TEXT    NOT NULL,
+            label      TEXT
+        )
+    """)
+    await db.execute("INSERT INTO project_files_new SELECT * FROM project_files")
+    await db.execute("DROP TABLE project_files")
+    await db.execute("ALTER TABLE project_files_new RENAME TO project_files")
+
+
+async def _create_project_links(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS project_links (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            url        TEXT    NOT NULL,
+            label      TEXT
+        )
+    """)
+
+
+async def _add_enrichment_columns(db: aiosqlite.Connection) -> None:
+    await _add_column_if_missing(db, "project_links", "meta", "TEXT")
+    await _add_column_if_missing(db, "projects", "cover_url", "TEXT")
+    await _add_column_if_missing(db, "projects", "cover_link_id", "INTEGER")
+
+
+async def _create_project_prints(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS project_prints (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id      INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            project_file_id INTEGER REFERENCES project_files(id) ON DELETE SET NULL,
+            job_id          TEXT    NOT NULL,
+            duration_s      REAL,
+            filament_g      REAL,
+            cost_total      REAL,
+            UNIQUE(project_id, job_id)
+        )
+    """)
+
+
+async def _create_print_jobs(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS print_jobs (
+            job_id      TEXT PRIMARY KEY,
+            notes       TEXT,
+            settings    TEXT,
+            created_at  INTEGER NOT NULL
+        )
+    """)
+
+
+async def _create_print_photos(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS print_photos (
+            id          INTEGER PRIMARY KEY AUTOINCREMENT,
+            job_id      TEXT    NOT NULL,
+            filename    TEXT    NOT NULL,
+            source      TEXT    NOT NULL,
+            captured_at INTEGER NOT NULL
+        )
+    """)
+
+
+async def _migrate_print_jobs_columns(db: aiosqlite.Connection) -> None:
+    """gcode_meta stores slicer metadata as JSON, end_time the unix time a print completed."""
+    await _add_column_if_missing(db, "print_jobs", "gcode_meta", "TEXT")
+    try:
+        await db.execute("ALTER TABLE print_jobs DROP COLUMN tags")  # tags is no longer used
+    except Exception:
+        pass  # column already dropped or never existed
+    await _add_column_if_missing(db, "print_jobs", "end_time", "INTEGER")
+
+
+async def _create_push_subscriptions(db: aiosqlite.Connection) -> None:
+    await db.execute("""
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            endpoint   TEXT PRIMARY KEY,
+            p256dh     TEXT NOT NULL,
+            auth       TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+    """)
+
+
+async def _create_indexes(db: aiosqlite.Connection) -> None:
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)")
+    await db.execute("CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)")
+
+
+async def init_db(path: str, connect: Callable[[str], aiosqlite.Connection] = aiosqlite.connect) -> None:
     global _db_path
     _db_path = path
-    async with aiosqlite.connect(path) as db:
+    async with connect(path) as db:
         await db.execute("PRAGMA journal_mode=WAL")
         await db.execute("PRAGMA busy_timeout=5000")
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS spools (
-                id               INTEGER PRIMARY KEY AUTOINCREMENT,
-                brand            TEXT    NOT NULL,
-                material         TEXT    NOT NULL,
-                color            TEXT    NOT NULL,
-                color_hex        TEXT,
-                cost_per_gram    REAL    NOT NULL,
-                initial_weight_g REAL    NOT NULL,
-                current_weight_g REAL    NOT NULL,
-                notes            TEXT,
-                active           INTEGER NOT NULL DEFAULT 0,
-                created_at       INTEGER NOT NULL
-            )
-        """)
-        async with db.execute("PRAGMA table_info(spools)") as cur:
-            spool_columns = [row[1] for row in await cur.fetchall()]
-        if "tag_id" not in spool_columns:
-            await db.execute("ALTER TABLE spools ADD COLUMN tag_id TEXT")
-        await db.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_spools_tag_id ON spools(tag_id)")
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS print_spools (
-                job_id          TEXT PRIMARY KEY,
-                spool_id        INTEGER REFERENCES spools(id),
-                filament_used_g REAL
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS projects (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                name       TEXT    NOT NULL,
-                notes      TEXT,
-                created_at INTEGER NOT NULL
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS project_files (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-                type       TEXT    NOT NULL CHECK(type IN ('gcode', 'stl')),
-                filename   TEXT    NOT NULL,
-                label      TEXT
-            )
-        """)
-        # Migrate project_files to drop the CHECK constraint so any file extension is allowed
-        async with db.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name='project_files'") as cur:
-            row = await cur.fetchone()
-            if row and "CHECK" in (row[0] or ""):
-                await db.execute("""
-                    CREATE TABLE project_files_new (
-                        id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                        project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-                        type       TEXT    NOT NULL,
-                        filename   TEXT    NOT NULL,
-                        label      TEXT
-                    )
-                """)
-                await db.execute("INSERT INTO project_files_new SELECT * FROM project_files")
-                await db.execute("DROP TABLE project_files")
-                await db.execute("ALTER TABLE project_files_new RENAME TO project_files")
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS project_links (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-                url        TEXT    NOT NULL,
-                label      TEXT
-            )
-        """)
-        # Enrichment columns — safe to run repeatedly via IF NOT EXISTS alternative
-        for col, typedef in [
-            ("meta", "TEXT"),
-        ]:
-            try:
-                await db.execute(f"ALTER TABLE project_links ADD COLUMN {col} {typedef}")
-            except Exception:
-                pass  # column already exists
-
-        for col, typedef in [
-            ("cover_url", "TEXT"),
-            ("cover_link_id", "INTEGER"),
-        ]:
-            try:
-                await db.execute(f"ALTER TABLE projects ADD COLUMN {col} {typedef}")
-            except Exception:
-                pass
+        await _create_spools(db)
+        await _create_print_spools(db)
+        await _create_projects(db)
+        await _create_project_files(db)
+        await _drop_project_files_type_check(db)
+        await _create_project_links(db)
+        await _add_enrichment_columns(db)
         await db.commit()
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS project_prints (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                project_id      INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-                project_file_id INTEGER REFERENCES project_files(id) ON DELETE SET NULL,
-                job_id          TEXT    NOT NULL,
-                duration_s      REAL,
-                filament_g      REAL,
-                cost_total      REAL,
-                UNIQUE(project_id, job_id)
-            )
-        """)
+        await _create_project_prints(db)
         await db.commit()
-
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS print_jobs (
-                job_id      TEXT PRIMARY KEY,
-                notes       TEXT,
-                settings    TEXT,
-                created_at  INTEGER NOT NULL
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS print_photos (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                job_id      TEXT    NOT NULL,
-                filename    TEXT    NOT NULL,
-                source      TEXT    NOT NULL,
-                captured_at INTEGER NOT NULL
-            )
-        """)
+        await _create_print_jobs(db)
+        await _create_print_photos(db)
         await db.commit()
-        # gcode_meta column — stores slicer-extracted metadata as JSON
-        try:
-            await db.execute("ALTER TABLE print_jobs ADD COLUMN gcode_meta TEXT")
-        except Exception:
-            pass  # column already exists
-        # drop tags column (no longer used)
-        try:
-            await db.execute("ALTER TABLE print_jobs DROP COLUMN tags")
-        except Exception:
-            pass  # column already dropped or never existed
-        # end_time column — unix timestamp when the print completed
-        try:
-            await db.execute("ALTER TABLE print_jobs ADD COLUMN end_time INTEGER")
-        except Exception:
-            pass  # column already exists
+        await _migrate_print_jobs_columns(db)
         await db.commit()
-
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS push_subscriptions (
-                endpoint   TEXT PRIMARY KEY,
-                p256dh     TEXT NOT NULL,
-                auth       TEXT NOT NULL,
-                created_at INTEGER NOT NULL
-            )
-        """)
+        await _create_push_subscriptions(db)
         await db.commit()
-
-        # Indexes — idempotent, safe to run on every startup
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)")
-        await db.execute("CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)")
+        await _create_indexes(db)
         await db.commit()
 
 
@@ -298,72 +337,85 @@ async def list_projects() -> list[dict[str, Any]]:
             return [dict(r) for r in await cur.fetchall()]
 
 
+async def _fetch_project_totals(db: aiosqlite.Connection, project_id: int) -> dict[str, Any] | None:
+    async with db.execute(
+        """SELECT p.*,
+                  COALESCE(COUNT(pp.id), 0)  AS print_count,
+                  SUM(pp.duration_s)          AS total_duration_s,
+                  AVG(pp.duration_s)          AS avg_duration_s,
+                  MAX(pp.duration_s)          AS max_duration_s,
+                  SUM(pp.cost_total)           AS total_cost,
+                  AVG(pp.cost_total)           AS avg_cost,
+                  SUM(pp.filament_g)           AS total_filament_g
+           FROM projects p
+           LEFT JOIN project_prints pp ON pp.project_id = p.id
+           WHERE p.id = ?
+           GROUP BY p.id""",
+        (project_id,),
+    ) as cursor:
+        row = await cursor.fetchone()
+    return dict(row) if row else None
+
+
+async def _fetch_file_with_stats(db: aiosqlite.Connection, file_row: dict[str, Any]) -> dict[str, Any]:
+    async with db.execute(
+        """SELECT COALESCE(COUNT(id), 0) AS print_count,
+                  SUM(duration_s)         AS total_duration_s,
+                  SUM(cost_total)          AS total_cost,
+                  SUM(filament_g)          AS total_filament_g
+           FROM project_prints WHERE project_file_id = ?""",
+        (file_row["id"],),
+    ) as cursor:
+        stats = await cursor.fetchone()
+    if stats is None:
+        return file_row
+    return {**file_row, **dict(stats)}
+
+
+async def _fetch_project_files(db: aiosqlite.Connection, project_id: int) -> list[dict[str, Any]]:
+    async with db.execute(
+        "SELECT * FROM project_files WHERE project_id = ? ORDER BY id",
+        (project_id,),
+    ) as cursor:
+        file_rows = [dict(row) for row in await cursor.fetchall()]
+    return [await _fetch_file_with_stats(db, file_row) for file_row in file_rows]
+
+
+def _parse_link_meta(link: dict[str, Any]) -> dict[str, Any]:
+    if not link.get("meta"):
+        return link
+    try:
+        return {**link, "meta": _json.loads(link["meta"])}
+    except Exception:
+        return {**link, "meta": None}
+
+
+async def _fetch_project_links(db: aiosqlite.Connection, project_id: int) -> list[dict[str, Any]]:
+    async with db.execute(
+        "SELECT * FROM project_links WHERE project_id = ? ORDER BY id",
+        (project_id,),
+    ) as cursor:
+        return [_parse_link_meta(dict(row)) for row in await cursor.fetchall()]
+
+
+async def _fetch_project_prints(db: aiosqlite.Connection, project_id: int) -> list[dict[str, Any]]:
+    async with db.execute(
+        "SELECT * FROM project_prints WHERE project_id = ? ORDER BY id",
+        (project_id,),
+    ) as cursor:
+        return [dict(row) for row in await cursor.fetchall()]
+
+
 async def get_project(project_id: int) -> dict[str, Any] | None:
     async with _conn() as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute(
-            """SELECT p.*,
-                      COALESCE(COUNT(pp.id), 0)  AS print_count,
-                      SUM(pp.duration_s)          AS total_duration_s,
-                      AVG(pp.duration_s)          AS avg_duration_s,
-                      MAX(pp.duration_s)          AS max_duration_s,
-                      SUM(pp.cost_total)           AS total_cost,
-                      AVG(pp.cost_total)           AS avg_cost,
-                      SUM(pp.filament_g)           AS total_filament_g
-               FROM projects p
-               LEFT JOIN project_prints pp ON pp.project_id = p.id
-               WHERE p.id = ?
-               GROUP BY p.id""",
-            (project_id,),
-        ) as cur:
-            row = await cur.fetchone()
-            if not row:
-                return None
-            result = dict(row)
-
-        async with db.execute(
-            "SELECT * FROM project_files WHERE project_id = ? ORDER BY id",
-            (project_id,),
-        ) as cur:
-            files = [dict(r) for r in await cur.fetchall()]
-
-        for f in files:
-            async with db.execute(
-                """SELECT COALESCE(COUNT(id), 0) AS print_count,
-                          SUM(duration_s)         AS total_duration_s,
-                          SUM(cost_total)          AS total_cost,
-                          SUM(filament_g)          AS total_filament_g
-                   FROM project_prints WHERE project_file_id = ?""",
-                (f["id"],),
-            ) as cur:
-                stats = await cur.fetchone()
-                if stats is not None:
-                    f.update(dict(stats))
-
-        async with db.execute(
-            "SELECT * FROM project_links WHERE project_id = ? ORDER BY id",
-            (project_id,),
-        ) as cur:
-            links = []
-            for row in await cur.fetchall():
-                link = dict(row)
-                if link.get("meta"):
-                    try:
-                        link["meta"] = _json.loads(link["meta"])
-                    except Exception:
-                        link["meta"] = None
-                links.append(link)
-
-        async with db.execute(
-            "SELECT * FROM project_prints WHERE project_id = ? ORDER BY id",
-            (project_id,),
-        ) as cur:
-            prints = [dict(r) for r in await cur.fetchall()]
-
-        result["files"] = files
-        result["links"] = links
-        result["prints"] = prints
-        return result
+        project = await _fetch_project_totals(db, project_id)
+        if project is None:
+            return None
+        project["files"] = await _fetch_project_files(db, project_id)
+        project["links"] = await _fetch_project_links(db, project_id)
+        project["prints"] = await _fetch_project_prints(db, project_id)
+        return project
 
 
 async def create_project(name: str) -> dict[str, Any]:
