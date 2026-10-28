@@ -49,14 +49,14 @@ ignore = [
     "E501",
 ]
 
-# Structure limits start at the worst value found when the rules were added and are lowered one cleanup issue at
-# a time: complexity 23, statements 66, branches 22.
+# Structure limits are the worst value found now. They were 23, 66 and 22 when the rules were added, and the
+# backend cleanup (STE-102 to 104) brought them down to complexity 9, statements 30 and branches 8.
 [tool.ruff.lint.mccabe]
-max-complexity = 23
+max-complexity = 9
 
 [tool.ruff.lint.pylint]
-max-statements = 66
-max-branches = 22
+max-statements = 30
+max-branches = 8
 
 [tool.ruff.lint.per-file-ignores]
 # the thumbnail renderer names rotation matrices Rx and Ry, as the mathematics does
