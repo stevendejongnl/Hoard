@@ -11,6 +11,7 @@ From `frontend/`:
 |---|---|
 | `npm run parity` | Starts the mock backend and the dev server, screenshots every screen at the design size, and prints how far each is from its reference. Exit code 1 if any screen is outside the tolerance. |
 | `npm run parity -- --only dashboard-desktop history-phone` | The same for some screens. |
+| `npm run parity:targets` | Starts the same servers and checks, on every phone screen, that each button and link can be hit within 44 px of its center (a small control has an invisible hit area). Exit code 1 if one cannot. |
 | `npm run parity:tests` | Unit tests of the comparison and the mock backend. |
 | `npm run parity:references -- --runtime <path> --designs <folder>` | Renders the reference images again from the design boards. Needs the design runtime script and the folder with the boards (`.dc.html`); neither is stored in this repository. |
 | `python3 -m frontend.parity.take_screenshots` | Takes the screenshots of the README from the app, filled with the sample data (`docs/screenshots/`). |
@@ -40,3 +41,4 @@ The references and the screenshots are taken under the same conditions (`browser
 - `mock_backend.py`: serves that data as JSON and as a server-sent events stream.
 - `image_comparison.py`: counts and marks differing pixels.
 - `compare_screens.py`: runs the whole comparison.
+- `check_tap_targets.py`: runs the tap target check.
