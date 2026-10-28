@@ -77,3 +77,10 @@ describe('temperature chart rounding', () => {
     expect(chart.hotendLine.split(' ')[0].split(',')[0]).toBe('61.8')
   })
 })
+
+describe('temperature chart ties', () => {
+  it('rounds a point exactly between two tenths to the even tenth, as the design does', () => {
+    const chart = buildTemperatureChart([sample(525, 24), sample(0, 24)], layout)
+    expect(chart.hotendLine.split(' ')[0].split(',')[0]).toBe('117.2')
+  })
+})
