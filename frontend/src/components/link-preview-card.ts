@@ -3,79 +3,90 @@ import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import type { ProjectLink } from '../types'
 
+const SHOW_DELAY_MILLISECONDS = 120
+const HIDE_DELAY_MILLISECONDS = 150
+
 @customElement('link-preview-card')
 export class LinkPreviewCard extends LitElement {
   @property({ type: Object }) link!: ProjectLink
-  @state() private _visible = false
-  private _showTimer = 0
-  private _hideTimer = 0
+  @state() private isVisible = false
+  private showTimer = 0
+  private hideTimer = 0
 
   /** Replaceable so tests, and browsers without media queries, decide what counts as a touch screen. */
   @property({ attribute: false }) isTouchScreen: () => boolean = () =>
     window.matchMedia?.('(hover: none)').matches ?? false
-
-  private _isTouch() {
-    return this.isTouchScreen()
+  @property({ attribute: false }) scheduleTimer: (callback: () => void, milliseconds: number) => number = (
+    callback,
+    milliseconds,
+  ) => window.setTimeout(callback, milliseconds)
+  @property({ attribute: false }) cancelTimer: (handle: number) => void = (handle) => window.clearTimeout(handle)
+  @property({ attribute: false }) openLink: (url: string) => void = (url) => {
+    window.open(url, '_blank', 'noopener')
   }
+  /** Where a tap outside the card is heard, so the preview can close. */
+  @property({ attribute: false }) outsideClickTarget: EventTarget = document
 
-  private _hasContent() {
+  private hasContent(): boolean {
     return !!(this.link?.meta?.title || this.link?.meta?.image_url)
   }
 
   // All events on the host element — avoids Shadow DOM / slotted-content event issues
   connectedCallback() {
     super.connectedCallback()
-    this.addEventListener('mouseenter', this._onEnter)
-    this.addEventListener('mouseleave', this._onLeave)
-    this.addEventListener('click', this._onClick, true)
-    document.addEventListener('click', this._onOutsideClick, true)
+    this.addEventListener('mouseenter', this.handleEnter)
+    this.addEventListener('mouseleave', this.handleLeave)
+    this.addEventListener('click', this.handleClick, true)
+    this.listeningTarget = this.outsideClickTarget
+    this.listeningTarget.addEventListener('click', this.handleOutsideClick, true)
   }
 
   disconnectedCallback() {
     super.disconnectedCallback()
-    this.removeEventListener('mouseenter', this._onEnter)
-    this.removeEventListener('mouseleave', this._onLeave)
-    this.removeEventListener('click', this._onClick, true)
-    document.removeEventListener('click', this._onOutsideClick, true)
+    this.removeEventListener('mouseenter', this.handleEnter)
+    this.removeEventListener('mouseleave', this.handleLeave)
+    this.removeEventListener('click', this.handleClick, true)
+    this.listeningTarget?.removeEventListener('click', this.handleOutsideClick, true)
   }
 
-  private _onOutsideClick = (event: Event) => {
-    if (!this._visible) return
-    if (!this._isTouch()) return // desktop uses mouseleave to hide
-    if (!this.contains(event.target as Node)) {
-      this._visible = false
-    }
+  private listeningTarget: EventTarget | null = null
+
+  private handleOutsideClick = (event: Event) => {
+    if (!this.isVisible) return
+    if (!this.isTouchScreen()) return // desktop uses mouseleave to hide
+    if (event.target instanceof Node && this.contains(event.target)) return
+    this.isVisible = false
   }
 
-  private _onEnter = () => {
-    if (this._isTouch()) return
-    clearTimeout(this._hideTimer)
-    this._showTimer = window.setTimeout(() => {
-      this._visible = true
-    }, 120)
+  private handleEnter = () => {
+    if (this.isTouchScreen()) return
+    this.cancelTimer(this.hideTimer)
+    this.showTimer = this.scheduleTimer(() => {
+      this.isVisible = true
+    }, SHOW_DELAY_MILLISECONDS)
   }
 
-  private _onLeave = () => {
-    if (this._isTouch()) return
-    clearTimeout(this._showTimer)
-    this._hideTimer = window.setTimeout(() => {
-      this._visible = false
-    }, 150)
+  private handleLeave = () => {
+    if (this.isTouchScreen()) return
+    this.cancelTimer(this.showTimer)
+    this.hideTimer = this.scheduleTimer(() => {
+      this.isVisible = false
+    }, HIDE_DELAY_MILLISECONDS)
   }
 
-  private _onClick = (event: Event) => {
-    if (!this._isTouch()) return // desktop: don't intercept, let <a> navigate
-    if (!this._hasContent()) return // nothing to show, let <a> navigate
+  private handleClick = (event: Event) => {
+    if (!this.isTouchScreen()) return // desktop: don't intercept, let <a> navigate
+    if (!this.hasContent()) return // nothing to show, let <a> navigate
     if (event.composedPath().some((target) => target instanceof Element && target.classList.contains('card'))) return // click inside popup card
     event.preventDefault()
     event.stopImmediatePropagation()
-    this._visible = !this._visible
+    this.isVisible = !this.isVisible
   }
 
-  private _open(event: Event) {
+  private open(event: Event) {
     event.stopPropagation()
-    this._visible = false
-    window.open(this.link.url, '_blank', 'noopener')
+    this.isVisible = false
+    this.openLink(this.link.url)
   }
 
   static styles = css`
@@ -172,7 +183,7 @@ export class LinkPreviewCard extends LitElement {
       border-top: 1px solid #2a2a2a;
     }
 
-    .open-btn {
+    .open-button {
       display: block;
       width: 100%;
       background: transparent;
@@ -186,8 +197,8 @@ export class LinkPreviewCard extends LitElement {
       box-sizing: border-box;
     }
 
-    .open-btn:hover,
-    .open-btn:active {
+    .open-button:hover,
+    .open-button:active {
       background: #22d3ee14;
     }
 
@@ -202,7 +213,7 @@ export class LinkPreviewCard extends LitElement {
     }
   `
 
-  private _renderCover(imageUrl: string | undefined): TemplateResult | string {
+  private renderCover(imageUrl: string | undefined): TemplateResult | string {
     if (!imageUrl) return ''
     const hideBrokenImage = (event: Event) => {
       ;(event.target as HTMLElement).style.display = 'none'
@@ -210,35 +221,35 @@ export class LinkPreviewCard extends LitElement {
     return html`<img class="cover" src="${imageUrl}" alt="" @error=${hideBrokenImage} />`
   }
 
-  private _renderChips(entries: [string, unknown][]): TemplateResult | string {
+  private renderChips(entries: [string, unknown][]): TemplateResult | string {
     if (entries.length === 0) return ''
-    const chips = entries.map(([key, value]) => html` <span class="chip">${_label(key)}: ${value}</span> `)
+    const chips = entries.map(([key, value]) => html` <span class="chip">${labelOf(key)}: ${value}</span> `)
     return html`<div class="chips">${chips}</div>`
   }
 
-  private _renderCard(): TemplateResult {
+  private renderCard(): TemplateResult {
     const meta = this.link?.meta
     const printSettings = meta?.print_settings
     const printSettingEntries = printSettings ? Object.entries(printSettings).filter(([, value]) => value) : []
-    return html`<div class="card ${this._visible ? 'visible' : ''}">
-      ${this._renderCover(meta?.image_url)}
+    return html`<div class="card ${this.isVisible ? 'visible' : ''}">
+      ${this.renderCover(meta?.image_url)}
       <div class="body">
         ${meta?.title ? html`<div class="title">${meta.title}</div>` : ''}
-        ${meta?.description ? html`<div class="desc">${_stripHtml(meta.description)}</div>` : ''}
-        ${this._renderChips(printSettingEntries)}
+        ${meta?.description ? html`<div class="desc">${stripHtml(meta.description)}</div>` : ''}
+        ${this.renderChips(printSettingEntries)}
       </div>
       <div class="footer">
-        <button class="open-btn" @click=${this._open}>Open link ↗</button>
+        <button class="open-button" @click=${this.open}>Open link ↗</button>
       </div>
     </div>`
   }
 
   render() {
-    return html`<slot></slot> ${this._hasContent() ? this._renderCard() : ''}`
+    return html`<slot></slot> ${this.hasContent() ? this.renderCard() : ''}`
   }
 }
 
-function _stripHtml(markup: string): string {
+function stripHtml(markup: string): string {
   return markup
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
@@ -246,7 +257,7 @@ function _stripHtml(markup: string): string {
     .trim()
 }
 
-const _LABELS: Record<string, string> = {
+const LABELS: Record<string, string> = {
   layer_height: 'Layer',
   walls: 'Walls',
   infill: 'Infill',
@@ -256,8 +267,8 @@ const _LABELS: Record<string, string> = {
   weight_g: 'Weight',
   parts: 'Parts',
 }
-function _label(key: string) {
-  return _LABELS[key] ?? key
+function labelOf(key: string) {
+  return LABELS[key] ?? key
 }
 
 declare global {
