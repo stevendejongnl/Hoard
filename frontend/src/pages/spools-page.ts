@@ -10,11 +10,15 @@ import {
   updateSpool as updateSpoolRequest,
 } from '../api'
 import { renderIcon } from '../icons'
-import { createBrowserReaderFactory, readNextTag } from '../nfc-reader'
+import { createBrowserReaderFactory, readNextTagReading } from '../nfc-reader'
+import type { TagReading } from '../nfc-reader'
+import type { SpoolTagDraft } from '../spool-tag-formats'
+import { readSpoolDraft } from '../spool-tag-reader'
 import {
   buildSpoolName,
   calculateRemainingPercent,
   createFormFromSpool,
+  createFormFromTagDraft,
   filterSpools,
   formatCostPerGram,
   formatMaterialLabel,
@@ -29,9 +33,9 @@ import '../styles/spools.css'
 type LoadState = 'loading' | 'ready' | 'error'
 type DeleteResponse = { ok: boolean; status: number }
 
-function createDefaultTagReader(): (() => Promise<string>) | null {
+function createDefaultTagReader(): (() => Promise<TagReading>) | null {
   const factory = createBrowserReaderFactory(window)
-  return factory === null ? null : () => readNextTag(factory)
+  return factory === null ? null : () => readNextTagReading(factory)
 }
 
 const HAS_LINKED_PRINTS_STATUS = 409
@@ -49,10 +53,12 @@ export class SpoolsPage extends LitElement {
   @property({ attribute: false }) confirmAction: (message: string) => boolean = (message) => window.confirm(message)
 
   /** Reads the id of the next NFC tag, or is null where the browser cannot read tags. */
-  @property({ attribute: false }) readTag: (() => Promise<string>) | null = createDefaultTagReader()
+  @property({ attribute: false }) readTag: (() => Promise<TagReading>) | null = createDefaultTagReader()
   @property({ attribute: false }) findSpoolByTag: (tagId: string) => Promise<Spool | null> = getSpoolByTag
 
   @state() private scanMessage = ''
+  /** the tag that a new spool is made from: it is linked to the spool when that is saved */
+  @state() private pendingTag: { tagId: string; formatName: string } | null = null
   @state() private spools: Spool[] = []
   @state() private loadState: LoadState = 'loading'
   @state() private materialFilter = ''
@@ -88,6 +94,7 @@ export class SpoolsPage extends LitElement {
     this.selectedSpoolId = spool?.id ?? null
     this.form = createFormFromSpool(spool)
     this.formError = ''
+    this.pendingTag = null
   }
 
   private selectFirstSpool(): void {
@@ -106,6 +113,7 @@ export class SpoolsPage extends LitElement {
 
   private closeDetails(): void {
     this.isDetailsOpen = false
+    this.pendingTag = null
   }
 
   private changeField(name: keyof SpoolForm, event: Event): void {
@@ -120,7 +128,7 @@ export class SpoolsPage extends LitElement {
       return
     }
     try {
-      await this.sendSpool(result.payload)
+      await this.sendSpool(this.pendingTag ? { ...result.payload, tag_id: this.pendingTag.tagId } : result.payload)
     } catch {
       this.formError = 'Could not save the spool'
     }
@@ -169,13 +177,32 @@ export class SpoolsPage extends LitElement {
     this.isDetailsOpen = false
   }
 
+  private showScannedSpool(spool: Spool): void {
+    this.scanMessage = ''
+    this.selectSpool(this.spools.find((known) => known.id === spool.id) ?? spool)
+  }
+
+  private startSpoolFromTag(tagId: string, draft: SpoolTagDraft): void {
+    this.scanMessage = ''
+    this.selectSpool(null)
+    this.form = createFormFromTagDraft(draft)
+    this.pendingTag = { tagId, formatName: draft.format }
+    this.isDetailsOpen = true
+  }
+
+  private async handleReading(reading: TagReading): Promise<void> {
+    const spool = await this.findSpoolByTag(reading.tagId)
+    if (spool) return this.showScannedSpool(spool)
+    const draft = readSpoolDraft(reading.records)
+    if (draft) return this.startSpoolFromTag(reading.tagId, draft)
+    this.scanMessage = 'This tag is not linked to a spool'
+  }
+
   private async scanTag(): Promise<void> {
     if (this.readTag === null) return
     this.scanMessage = 'Hold a tag to the back of the phone…'
     try {
-      const spool = await this.findSpoolByTag(await this.readTag())
-      this.scanMessage = spool ? '' : 'This tag is not linked to a spool'
-      if (spool) this.selectSpool(this.spools.find((known) => known.id === spool.id) ?? spool)
+      await this.handleReading(await this.readTag())
     } catch {
       this.scanMessage = 'Could not read the tag'
     }
@@ -193,7 +220,7 @@ export class SpoolsPage extends LitElement {
   }
 
   private linkTag(): Promise<void> {
-    return this.changeSelectedSpoolTag(() => this.readTag!())
+    return this.changeSelectedSpoolTag(async () => (await this.readTag!()).tagId)
   }
 
   private unlinkTag(): Promise<void> {
@@ -472,6 +499,14 @@ export class SpoolsPage extends LitElement {
     </div>`
   }
 
+  private renderTagNotice(): TemplateResult | typeof nothing {
+    if (this.pendingTag === null) return nothing
+    return html`<div class="spool-tag-notice">
+      Filled in from the ${this.pendingTag.formatName} tag. Check it, add the price per gram and save: the tag is linked
+      to this spool.
+    </div>`
+  }
+
   private renderDetails(): TemplateResult {
     const selected = this.findSelectedSpool()
     return html`<aside class="spools-details ${this.isDetailsOpen ? 'open' : ''}" aria-label="Details">
@@ -483,7 +518,7 @@ export class SpoolsPage extends LitElement {
       </div>
       <div class="details-body">
         ${this.formError === '' ? nothing : html`<div class="form-error" role="alert">${this.formError}</div>`}
-        ${this.renderDetailsSections()}
+        ${this.renderTagNotice()} ${this.renderDetailsSections()}
       </div>
       ${this.renderDetailsFooter(selected)}
     </aside>`
