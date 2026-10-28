@@ -1,3 +1,4 @@
+import type { SpoolTagDraft } from './spool-tag-formats'
 import type { Spool } from './types'
 import { normalizeHexadecimalColor } from './theme'
 
@@ -59,6 +60,24 @@ export function summarizeSpools(spools: Spool[]): SpoolSummary {
     spoolCount: spools.length,
     inUseCount: spools.filter((spool) => Boolean(spool.active)).length,
     filamentLeftGrams: spools.reduce((total, spool) => total + spool.current_weight_g, 0),
+  }
+}
+
+function describeWeight(grams: number | null, fallback: string): string {
+  return grams === null ? fallback : String(Math.round(grams))
+}
+
+/** The form of a new spool, filled in with what a tag says about it; the price per gram is left to the person. */
+export function createFormFromTagDraft(draft: SpoolTagDraft): SpoolForm {
+  const blank = createFormFromSpool(null)
+  return {
+    ...blank,
+    brand: draft.brand,
+    material: draft.material,
+    color: draft.color,
+    colorHex: draft.colorHexadecimal ?? '',
+    initialWeight: describeWeight(draft.initialWeightGrams, blank.initialWeight),
+    currentWeight: describeWeight(draft.currentWeightGrams, blank.currentWeight),
   }
 }
 

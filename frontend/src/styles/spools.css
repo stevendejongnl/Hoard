@@ -539,3 +539,10 @@
     height: 20px;
   }
 }
+
+.spool-tag-notice {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--muted-text-color);
+  border-bottom: 1px solid var(--border-color);
+}
