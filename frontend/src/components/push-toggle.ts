@@ -1,81 +1,82 @@
-import { LitElement, html, css } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { renderIcon } from '../icons'
 import {
-  pushSupported,
-  isPushConfigured,
   getPushSubscription,
+  isPushConfigured,
+  pushSupported,
   subscribeToPush,
   unsubscribeFromPush,
 } from '../notifications'
 
+/** The bell of the top bar: turns print notifications on or off, shown only where push can work. */
 @customElement('push-toggle')
 export class PushToggle extends LitElement {
-  @state() private _visible = false
-  @state() private _subscribed = false
-  @state() private _busy = false
+  @property({ attribute: false }) isSupported: () => boolean = pushSupported
+  @property({ attribute: false }) isConfigured: () => Promise<boolean> = isPushConfigured
+  @property({ attribute: false }) loadSubscription: () => Promise<unknown> = getPushSubscription
+  @property({ attribute: false }) subscribe: () => Promise<void> = subscribeToPush
+  @property({ attribute: false }) unsubscribe: () => Promise<void> = unsubscribeFromPush
 
-  static styles = css`
-    :host {
-      display: contents;
-    }
-    .bell {
-      font-size: 14px;
-      color: var(--text-muted);
-      cursor: pointer;
-      user-select: none;
-    }
-    .bell:hover {
-      color: var(--text);
-    }
-    .bell.busy {
-      opacity: 0.5;
-      cursor: default;
-    }
-  `
+  @state() private isVisible = false
+  @state() private isSubscribed = false
+  @state() private isBusy = false
 
-  async connectedCallback() {
+  createRenderRoot() {
+    return this
+  }
+
+  connectedCallback(): void {
     super.connectedCallback()
-    if (!pushSupported()) return
+    void this.showWhenPushCanWork()
+  }
+
+  private async showWhenPushCanWork(): Promise<void> {
+    if (!this.isSupported()) return
     try {
-      if (!(await isPushConfigured())) return
+      if (!(await this.isConfigured())) return
     } catch {
       return
     }
-    this._visible = true
-    this._refresh()
+    this.isVisible = true
+    await this.refreshSubscription()
   }
 
-  private async _refresh() {
-    const sub = await getPushSubscription()
-    this._subscribed = Boolean(sub)
+  private async refreshSubscription(): Promise<void> {
+    this.isSubscribed = Boolean(await this.loadSubscription())
   }
 
-  private async _toggle() {
-    if (this._busy) return
-    this._busy = true
+  private async toggleSubscription(): Promise<void> {
+    if (this.isBusy) return
+    this.isBusy = true
     try {
-      if (this._subscribed) {
-        await unsubscribeFromPush()
-      } else {
-        await subscribeToPush()
-      }
-      await this._refresh()
+      await (this.isSubscribed ? this.unsubscribe() : this.subscribe())
+      await this.refreshSubscription()
     } catch {
-      /* permission denied or subscribe failed - leave state as-is */
+      // permission denied or the subscription failed: leave the state as it was
     } finally {
-      this._busy = false
+      this.isBusy = false
     }
   }
 
-  render() {
-    if (!this._visible) return html``
-    return html`
-      <span
-        class="bell ${this._busy ? 'busy' : ''}"
-        title=${this._subscribed ? 'Disable print notifications' : 'Enable print notifications'}
-        @click=${() => this._toggle()}
-        >${this._subscribed ? '🔔' : '🔕'}</span
-      >
-    `
+  render(): TemplateResult | typeof nothing {
+    if (!this.isVisible) return nothing
+    const label = this.isSubscribed ? 'Disable print notifications' : 'Enable print notifications'
+    return html`<button
+      class="button icon-only push-button ${this.isSubscribed ? 'subscribed' : ''}"
+      aria-label=${label}
+      title=${label}
+      aria-pressed=${this.isSubscribed ? 'true' : 'false'}
+      @click=${this.toggleSubscription}
+    >
+      ${renderIcon(this.isSubscribed ? 'bell' : 'bell-off')}
+    </button>`
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'push-toggle': PushToggle
   }
 }

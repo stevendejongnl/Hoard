@@ -1,0 +1,273 @@
+/* Shared component classes, written from the design. Light DOM only: pages and the shell use them directly. */
+
+.monospace {
+  font-family: var(--monospace-family);
+}
+
+.muted {
+  color: var(--muted-text-color);
+}
+
+.panel {
+  background: var(--panel-color);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  min-width: 0;
+}
+
+/* A titled block inside a side panel. */
+.section {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  background: var(--section-header-color);
+  font: 600 13px var(--font-family);
+  color: var(--text-color);
+  letter-spacing: 0.02em;
+}
+
+.section-header svg {
+  color: var(--muted-text-color);
+}
+
+.section-header .actions {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+/* A label on the left and a value field on the right. */
+.parameter-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.parameter-row .parameter-label {
+  color: var(--secondary-text-color);
+}
+
+.value-field {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-width: 76px;
+  height: 24px;
+  padding: 0 8px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  font: 400 12px var(--monospace-family);
+  color: var(--text-color);
+}
+
+.value-field .value-unit {
+  color: var(--muted-text-color);
+}
+
+.value-field.select-field {
+  justify-content: space-between;
+}
+
+.value-field.accented {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.button {
+  box-sizing: border-box;
+  letter-spacing: normal;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 2px;
+  border: 1px solid var(--strong-border-color);
+  background: var(--button-color);
+  color: var(--text-color);
+  font: 600 13px var(--font-family);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.button:hover {
+  background: var(--button-hover-color);
+}
+
+.button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+  font-weight: 700;
+}
+
+.button.primary:hover {
+  filter: brightness(1.1);
+}
+
+.button.danger {
+  color: var(--danger-color);
+}
+
+.button.emergency-stop {
+  background: var(--emergency-color);
+  border-color: var(--emergency-color);
+  color: #fff;
+}
+
+.button.emergency-stop:hover {
+  background: var(--emergency-hover-color);
+}
+
+.button.icon-only {
+  padding: 0;
+  width: 36px;
+}
+
+.button.flat {
+  background: transparent;
+  border-color: transparent;
+}
+
+.button.flat:hover {
+  background: var(--button-hover-color);
+}
+
+.button.small {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* A row in a list of things (prints, project files). */
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  color: var(--text-color);
+  text-decoration: none;
+}
+
+.list-item:hover {
+  background: var(--section-header-color);
+}
+
+.list-item.selected {
+  background: var(--selection-tint);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.thumbnail {
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 2px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  display: grid;
+  place-items: center;
+  color: var(--muted-text-color);
+  overflow: hidden;
+}
+
+.table-row {
+  display: grid;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+}
+
+.table-row:hover {
+  background: var(--section-header-color);
+}
+
+.table-row.selected {
+  background: var(--selection-tint);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.table-row.header {
+  min-height: 32px;
+  border-top: 0;
+  background: var(--section-header-color);
+  font: 600 12px var(--font-family);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.table-row.header:hover {
+  background: var(--section-header-color);
+}
+
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--ok-background-color);
+  color: var(--ok-color);
+  font: 700 12px var(--font-family);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.state-badge.paused {
+  background: #3a3220;
+  color: var(--hotend-color);
+}
+
+.state-badge.error {
+  background: #3f1f1f;
+  color: var(--danger-color);
+}
+
+.pulsing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulsing-dot {
+    animation: none;
+  }
+}

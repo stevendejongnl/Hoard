@@ -1,0 +1,75 @@
+/*
+ * Design tokens. The accent color, the text color on it and the selection tint are set at runtime
+ * by accent-theme.ts; the values below are the defaults.
+ */
+:root {
+  --chrome-color: #232326; /* top bar, status bar, panel footers */
+  --panel-color: #2b2b2f;
+  --section-header-color: #323237;
+  --button-color: #3a3a40;
+  --button-hover-color: #46464d;
+  --well-color: #1a1a1d; /* viewport, input wells, thumbnails */
+
+  --border-color: #3e3e44;
+  --field-border-color: #45454c;
+  --strong-border-color: #5a5a62;
+
+  --text-color: #e4e4e7;
+  --secondary-text-color: #b8b8c0;
+  --muted-text-color: #9a9aa3;
+
+  --ok-color: #86e0a4;
+  --ok-background-color: #1e3a28;
+  --danger-color: #ff8a80;
+  --emergency-color: #c62828;
+  --emergency-hover-color: #b71c1c;
+  --hotend-color: #ffd54f;
+  --bed-color: #64b5f6;
+
+  --accent: #f45bcb;
+  --text-on-accent: #1a1a1d;
+  --selection-tint: rgb(79, 52, 75);
+
+  --font-family: 'Barlow', system-ui, sans-serif;
+  --monospace-family: 'JetBrains Mono', ui-monospace, monospace;
+
+  color-scheme: dark;
+}
+
+/* No global box-sizing: the design sizes each element itself, and matching it needs the same defaults. */
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--panel-color);
+  color: var(--text-color);
+  font-family: var(--font-family);
+  font-size: 14px;
+  line-height: 1.4;
+  overflow: hidden;
+}
+
+a {
+  color: var(--accent);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

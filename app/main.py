@@ -15,7 +15,20 @@ from app.config import settings
 from app.influx import influx
 from app.moonraker import moonraker
 from app.nordpool import backfill_prices, record_current_price
-from app.routes import chunks, control, files, history, predict, prints, projects, push, search, spools, webcams
+from app.routes import (
+    chunks,
+    control,
+    files,
+    history,
+    predict,
+    prints,
+    projects,
+    push,
+    search,
+    spools,
+    temperatures,
+    webcams,
+)
 from app.routes.projects import enrich_existing_links
 from app.sse import hub
 
@@ -102,6 +115,7 @@ app.include_router(search.router)
 app.include_router(projects.router)
 app.include_router(prints.router)
 app.include_router(push.router)
+app.include_router(temperatures.router)
 
 
 @app.get("/api/version")

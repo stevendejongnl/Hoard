@@ -1,0 +1,109 @@
+/* The search palette: a centered box over a dimmed page. */
+
+search-modal {
+  display: contents;
+}
+
+.search-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 80px;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.search-overlay.open {
+  display: flex;
+}
+
+.search-box {
+  width: min(560px, calc(100vw - 32px));
+  overflow: hidden;
+  background: var(--panel-color);
+  border: 1px solid var(--strong-border-color);
+  border-radius: 2px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+}
+
+.search-input-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 14px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--muted-text-color);
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: 400 15px var(--font-family);
+  color: var(--text-color);
+}
+
+.search-input:focus-visible {
+  outline: none;
+}
+
+.search-escape {
+  font-size: 11px;
+}
+
+.search-body {
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+}
+
+.search-group-title {
+  padding: 8px 14px;
+  background: var(--section-header-color);
+  font: 600 12px var(--font-family);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 14px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.search-result.cursor {
+  background: var(--selection-tint);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.search-result-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--monospace-family);
+  font-size: 12px;
+}
+
+.search-result-detail {
+  flex: none;
+  font-size: 12px;
+}
+
+.search-hint {
+  padding: 20px 14px;
+  font-size: 13px;
+  color: var(--muted-text-color);
+}

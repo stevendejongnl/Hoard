@@ -44,10 +44,23 @@ target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "PLC"]
+select = ["E", "F", "I", "UP", "PLC", "C901", "PLR0912", "PLR0915", "N"]
 ignore = [
     "E501",
 ]
+
+# Structure limits start at the worst value found when the rules were added and are lowered one cleanup issue at
+# a time: complexity 23, statements 66, branches 22.
+[tool.ruff.lint.mccabe]
+max-complexity = 23
+
+[tool.ruff.lint.pylint]
+max-statements = 66
+max-branches = 22
+
+[tool.ruff.lint.per-file-ignores]
+# the thumbnail renderer names rotation matrices Rx and Ry, as the mathematics does
+"app/thumbnail.py" = ["N806"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

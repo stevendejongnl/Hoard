@@ -1,359 +1,177 @@
-import { LitElement, html, css } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { renderIcon } from '../icons'
 import { router } from '../router'
+import { buildSearchGroups, findSearchResultPath, parseSearchQuery } from '../search-results'
+import type { SearchGroup, SearchPayload, SearchResult, SearchScope } from '../search-results'
+import '../styles/search.css'
 
-interface SearchResult {
-  type: 'history' | 'spool' | 'project'
-  id: string | number
-  label: string
-  sub?: string
-  badge?: string
+type SearchState = 'idle' | 'found' | 'empty' | 'failed'
+
+const HINT = 'Type to search prints, projects and spools. Narrow with !h prints, !p projects, !s spools.'
+
+async function searchOnServer(text: string, scope: SearchScope): Promise<SearchPayload> {
+  const parameters = new URLSearchParams({ q: text, ...(scope === 'all' ? {} : { scope }) })
+  const response = await fetch(`/api/search?${parameters}`)
+  if (!response.ok) throw new Error(`Search failed: ${response.status}`)
+  return response.json()
 }
 
+/** A command palette: type, see prints, projects and spools grouped, press Enter on one. */
 @customElement('search-modal')
 export class SearchModal extends LitElement {
-  @state() private _open = false
-  @state() private _query = ''
-  @state() private _results: SearchResult[] = []
-  @state() private _cursor = 0
-  @state() private _loading = false
+  @property({ attribute: false }) runSearch: (text: string, scope: SearchScope) => Promise<SearchPayload> =
+    searchOnServer
+  @property({ attribute: false }) navigate: (path: string) => void = (path) =>
+    router.navigate(path as Parameters<typeof router.navigate>[0])
+  @property({ type: Number }) debounceMilliseconds = 200
 
-  private _debounce = 0
+  @state() private isOpen = false
+  @state() private query = ''
+  @state() private groups: SearchGroup[] = []
+  @state() private searchState: SearchState = 'idle'
+  @state() private cursor = 0
 
-  connectedCallback() {
+  private debounceTimer = 0
+
+  createRenderRoot() {
+    return this
+  }
+
+  connectedCallback(): void {
     super.connectedCallback()
-    document.addEventListener('keydown', this._onGlobalKey)
+    document.addEventListener('keydown', this.handleGlobalKey)
   }
 
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     super.disconnectedCallback()
-    document.removeEventListener('keydown', this._onGlobalKey)
+    document.removeEventListener('keydown', this.handleGlobalKey)
+    clearTimeout(this.debounceTimer)
   }
 
-  private _onGlobalKey = (e: KeyboardEvent) => {
-    // Open on '/' unless focus is in an input/textarea
-    const tag = (e.target as HTMLElement)?.tagName
-    if (e.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
-      e.preventDefault()
-      this._openModal()
+  private handleGlobalKey = (event: KeyboardEvent): void => {
+    const tag = (event.target as HTMLElement | null)?.tagName
+    if (event.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+      event.preventDefault()
+      this.open()
+    }
+    if (event.key === 'Escape' && this.isOpen) this.close()
+  }
+
+  open(): void {
+    this.isOpen = true
+    this.query = ''
+    this.groups = []
+    this.searchState = 'idle'
+    this.cursor = 0
+    void this.updateComplete.then(() => this.querySelector<HTMLInputElement>('input.search-input')?.focus())
+  }
+
+  private close(): void {
+    this.isOpen = false
+    this.query = ''
+    this.groups = []
+  }
+
+  private changeQuery(event: Event): void {
+    this.query = (event.target as HTMLInputElement).value
+    this.cursor = 0
+    clearTimeout(this.debounceTimer)
+    if (parseSearchQuery(this.query).text === '') {
+      this.groups = []
+      this.searchState = 'idle'
       return
     }
-    if (e.key === 'Escape' && this._open) {
-      this._close()
-    }
+    this.debounceTimer = window.setTimeout(() => void this.search(), this.debounceMilliseconds)
   }
 
-  open() {
-    this._openModal()
-  }
-
-  private _openModal() {
-    this._open = true
-    this._query = ''
-    this._results = []
-    this._cursor = 0
-    this.updateComplete.then(() => {
-      this.shadowRoot?.querySelector<HTMLInputElement>('input')?.focus()
-    })
-  }
-
-  private _close() {
-    this._open = false
-    this._query = ''
-    this._results = []
-  }
-
-  private _onInput(e: Event) {
-    this._query = (e.target as HTMLInputElement).value
-    this._cursor = 0
-    clearTimeout(this._debounce)
-    if (!this._query.trim()) {
-      this._results = []
-      return
-    }
-    this._debounce = window.setTimeout(() => this._search(), 200)
-  }
-
-  private _onKeydown(e: KeyboardEvent) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault()
-      this._cursor = Math.min(this._cursor + 1, this._results.length - 1)
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault()
-      this._cursor = Math.max(this._cursor - 1, 0)
-    } else if (e.key === 'Enter' && this._results[this._cursor]) {
-      this._select(this._results[this._cursor])
-    }
-  }
-
-  private _parseQuery(): { scope: string; q: string } {
-    const raw = this._query.trim()
-    if (raw.startsWith('!h ')) return { scope: 'h', q: raw.slice(3) }
-    if (raw.startsWith('!s ')) return { scope: 's', q: raw.slice(3) }
-    if (raw.startsWith('!p ')) return { scope: 'p', q: raw.slice(3) }
-    // bare prefix without space = still all until space is typed
-    if (/^![hsp]$/.test(raw)) return { scope: 'all', q: '' }
-    return { scope: 'all', q: raw }
-  }
-
-  private async _search() {
-    const { scope, q } = this._parseQuery()
-    if (!q) {
-      this._results = []
-      return
-    }
-    this._loading = true
+  private async search(): Promise<void> {
+    const { text, scope } = parseSearchQuery(this.query)
     try {
-      const params = new URLSearchParams({ q, ...(scope !== 'all' ? { scope } : {}) })
-      const r = await fetch(`/api/search?${params}`)
-      const data = await r.json()
-      const results: SearchResult[] = []
-
-      for (const p of data.projects ?? []) {
-        results.push({ type: 'project', id: p.id, label: p.name, sub: `${p.print_count} prints`, badge: 'project' })
-      }
-      for (const s of data.spools ?? []) {
-        results.push({
-          type: 'spool',
-          id: s.id,
-          label: `${s.brand} ${s.material}`,
-          sub: s.color,
-          badge: 'spool',
-        })
-      }
-      for (const h of data.history ?? []) {
-        const d = new Date((h.time ?? 0) * 1000)
-        const date = h.time ? d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : ''
-        results.push({ type: 'history', id: h.job_id, label: h.filename, sub: date, badge: 'print' })
-      }
-      this._results = results
-      this._cursor = 0
+      this.groups = buildSearchGroups(await this.runSearch(text, scope))
+      this.searchState = this.groups.length > 0 ? 'found' : 'empty'
     } catch {
-      this._results = []
-    } finally {
-      this._loading = false
+      this.groups = []
+      this.searchState = 'failed'
     }
   }
 
-  private _select(r: SearchResult) {
-    this._close()
-    if (r.type === 'project') {
-      router.navigate(`/projects/${String(r.id)}`)
-    } else if (r.type === 'spool') {
-      router.navigate('/spools')
-    } else if (r.type === 'history') {
-      router.navigate('/history')
-    }
+  private countResults(): number {
+    return this.groups.reduce((total, group) => total + group.results.length, 0)
   }
 
-  static styles = css`
-    :host {
-      display: contents;
-    }
+  private choosePath(path: string | null): void {
+    if (path === null) return
+    this.close()
+    this.navigate(path)
+  }
 
-    .overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.6);
-      z-index: 200;
-      align-items: flex-start;
-      justify-content: center;
-      padding-top: 80px;
+  private handleKey(event: KeyboardEvent): void {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      this.cursor = Math.min(this.cursor + 1, this.countResults() - 1)
     }
-    .overlay.open {
-      display: flex;
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      this.cursor = Math.max(this.cursor - 1, 0)
     }
+    if (event.key === 'Enter') this.choosePath(findSearchResultPath(this.groups, this.cursor))
+  }
 
-    .box {
-      width: min(560px, calc(100vw - 32px));
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 10px;
-      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.8);
-      overflow: hidden;
-    }
+  private renderResult(result: SearchResult, position: number): TemplateResult {
+    const isCursor = position === this.cursor
+    return html`<div class="search-result ${isCursor ? 'cursor' : ''}" @click=${() => this.choosePath(result.path)}>
+      <span class="search-result-label">${result.label}</span
+      ><span class="muted search-result-detail">${result.detail}</span>
+    </div>`
+  }
 
-    .input-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 16px;
-      border-bottom: 1px solid #222;
-    }
+  private renderGroup(group: SearchGroup, firstPosition: number): TemplateResult {
+    return html`<div class="search-group">
+      <div class="search-group-title">${group.title}</div>
+      ${group.results.map((result, index) => this.renderResult(result, firstPosition + index))}
+    </div>`
+  }
 
-    .search-icon {
-      color: #555;
-      font-size: 14px;
-      flex-shrink: 0;
-    }
+  private countResultsBefore(groupIndex: number): number {
+    return this.groups.slice(0, groupIndex).reduce((total, earlier) => total + earlier.results.length, 0)
+  }
 
-    input {
-      flex: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: #e0e0e0;
-      font-size: 14px;
-      font-family: inherit;
-    }
-    input::placeholder {
-      color: #444;
-    }
+  private renderResults(): TemplateResult {
+    return html`${this.groups.map((group, index) => this.renderGroup(group, this.countResultsBefore(index)))}`
+  }
 
-    .hint {
-      font-size: 10px;
-      color: #333;
-      flex-shrink: 0;
-    }
+  private describeHint(): string {
+    if (this.searchState === 'empty') return `No results for "${parseSearchQuery(this.query).text}"`
+    if (this.searchState === 'failed') return 'Search is not available right now'
+    return HINT
+  }
 
-    .results {
-      max-height: 360px;
-      overflow-y: auto;
-    }
+  private renderBody(): TemplateResult {
+    if (this.searchState === 'found') return this.renderResults()
+    return html`<div class="search-hint">${this.describeHint()}</div>`
+  }
 
-    .result {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 16px;
-      cursor: pointer;
-      border-bottom: 1px solid #1e1e1e;
-    }
-    .result:last-child {
-      border-bottom: none;
-    }
-    .result:hover,
-    .result.active {
-      background: #222;
-    }
-
-    .badge {
-      font-size: 8px;
-      font-weight: 600;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      border-radius: 3px;
-      padding: 2px 5px;
-      flex-shrink: 0;
-      width: 38px;
-      text-align: center;
-    }
-    .badge.project {
-      background: #22d3ee14;
-      color: #22d3ee;
-      border: 1px solid #22d3ee28;
-    }
-    .badge.spool {
-      background: #a78bfa14;
-      color: #a78bfa;
-      border: 1px solid #a78bfa28;
-    }
-    .badge.print {
-      background: #34d39914;
-      color: #34d399;
-      border: 1px solid #34d39928;
-    }
-
-    .label {
-      font-size: 13px;
-      color: #e0e0e0;
-      flex: 1;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .sub {
-      font-size: 11px;
-      color: #555;
-      flex-shrink: 0;
-    }
-
-    .empty {
-      padding: 20px 16px;
-      text-align: center;
-      font-size: 12px;
-      color: #444;
-    }
-
-    .prefixes {
-      padding: 10px 16px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      border-top: 1px solid #1e1e1e;
-    }
-    .prefix-tag {
-      font-size: 10px;
-      color: #555;
-      background: #141414;
-      border: 1px solid #222;
-      border-radius: 3px;
-      padding: 2px 6px;
-    }
-    .prefix-tag span {
-      color: #22d3ee;
-    }
-  `
-
-  render() {
-    const { scope } = this._parseQuery()
-    const hasQuery = !!this._query.trim()
-
-    return html`
-      <div
-        class="overlay ${this._open ? 'open' : ''}"
-        @click=${(e: Event) => {
-          if (e.target === e.currentTarget) this._close()
-        }}
-      >
-        <div class="box">
-          <div class="input-row">
-            <span class="search-icon">⌕</span>
-            <input
-              type="text"
-              placeholder="Search… (try !p, !h, !s)"
-              .value=${this._query}
-              @input=${this._onInput}
-              @keydown=${this._onKeydown}
-            />
-            <span class="hint">esc to close</span>
-          </div>
-
-          ${hasQuery
-            ? html`
-                <div class="results">
-                  ${this._loading
-                    ? html`<div class="empty">Searching…</div>`
-                    : this._results.length === 0
-                      ? html`<div class="empty">No results for "${this._query}"</div>`
-                      : this._results.map(
-                          (r, i) => html`
-                            <div
-                              class="result ${i === this._cursor ? 'active' : ''}"
-                              @click=${() => this._select(r)}
-                              @mouseover=${() => {
-                                this._cursor = i
-                              }}
-                            >
-                              <span class="badge ${r.badge ?? ''}">${r.badge}</span>
-                              <span class="label">${r.label}</span>
-                              ${r.sub ? html`<span class="sub">${r.sub}</span>` : ''}
-                            </div>
-                          `,
-                        )}
-                </div>
-              `
-            : html`
-                <div class="prefixes">
-                  <span class="prefix-tag"><span>!p</span> projects</span>
-                  <span class="prefix-tag"><span>!h</span> history</span>
-                  <span class="prefix-tag"><span>!s</span> spools</span>
-                </div>
-              `}
+  render(): TemplateResult | typeof nothing {
+    return html`<div class="search-overlay ${this.isOpen ? 'open' : ''}" @click=${this.close}>
+      <div class="search-box" role="dialog" aria-label="Search" @click=${(event: Event) => event.stopPropagation()}>
+        <div class="search-input-row">
+          ${renderIcon('search', 16)}
+          <input
+            class="search-input"
+            type="text"
+            placeholder="Search prints, projects and spools"
+            aria-label="Search"
+            .value=${this.query}
+            @input=${this.changeQuery}
+            @keydown=${this.handleKey}
+          />
+          <span class="monospace muted search-escape">Esc</span>
         </div>
+        <div class="search-body">${this.renderBody()}</div>
       </div>
-    `
+    </div>`
   }
 }
 
