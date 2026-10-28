@@ -204,10 +204,36 @@ describe('edit form', () => {
   it('fills from the selected spool', async () => {
     const page = await createSpoolsPage(createCalls())
     expect(
-      ['brand', 'material', 'color', 'colorHex', 'initialWeight', 'currentWeight', 'costPerGram'].map(
+      ['brand', 'material', 'color', 'colorHex', 'initialWeight', 'currentWeight', 'totalPrice'].map(
         (name) => findInput(page, name).value,
       ),
-    ).toEqual(['Sunlu', 'PLA+', 'White', '#F8FAFC', '1000', '840', '0.010'])
+    ).toEqual(['Sunlu', 'PLA+', 'White', '#F8FAFC', '1000', '840', '10'])
+  })
+
+  it('has no input for the cost per gram, the total price replaces it', async () => {
+    const page = await createSpoolsPage(createCalls())
+    expect(page.querySelector('[name="costPerGram"]')).toBeNull()
+  })
+
+  it('shows the cost per gram calculated from the total price and the initial weight', async () => {
+    const page = await createSpoolsPage(createCalls())
+    await type(page, 'totalPrice', '15.07')
+    expect(page.querySelector('.cost-per-gram-hint')?.textContent?.trim()).toBe('= 0.01507 € per gram')
+  })
+
+  it('updates the calculated cost per gram when the initial weight changes', async () => {
+    const page = await createSpoolsPage(createCalls())
+    await type(page, 'totalPrice', '15.07')
+    await type(page, 'initialWeight', '500')
+    expect(page.querySelector('.cost-per-gram-hint')?.textContent?.trim()).toBe('= 0.03014 € per gram')
+  })
+
+  it('saves the cost per gram calculated from the total price', async () => {
+    const calls = createCalls()
+    const page = await createSpoolsPage(calls)
+    await type(page, 'totalPrice', '15.07')
+    await click(page, '.save-button')
+    expect(calls.updated[0].data).toMatchObject({ cost_per_gram: 0.01507, initial_weight_g: 1000 })
   })
 
   it('fills from another spool when its row is clicked', async () => {
@@ -294,7 +320,7 @@ describe('saving', () => {
     await type(page, 'brand', 'Prusa')
     await type(page, 'material', 'PETG')
     await type(page, 'color', 'Orange')
-    await type(page, 'costPerGram', '0.02')
+    await type(page, 'totalPrice', '20')
     await click(page, '.save-button')
     expect(calls.updated).toEqual([])
     expect(calls.created).toHaveLength(1)
@@ -455,7 +481,7 @@ describe('a scanned tag that carries a spool', () => {
     const calls = createCalls()
     const page = await createSpoolsPage(calls, readsUnlinkedTag([openPrintTagRecord]))
     await click(page, '.scan-tag-button')
-    await type(page, 'costPerGram', '0.025')
+    await type(page, 'totalPrice', '25')
     await click(page, '.save-button')
     expect(calls.created).toHaveLength(1)
     expect(calls.created[0]).toMatchObject({ brand: 'Prusament', material: 'PLA', tag_id: '04a1' })
@@ -472,7 +498,7 @@ describe('a scanned tag that carries a spool', () => {
     await type(page, 'color', 'Red')
     await type(page, 'initialWeight', '1000')
     await type(page, 'currentWeight', '1000')
-    await type(page, 'costPerGram', '0.02')
+    await type(page, 'totalPrice', '20')
     await click(page, '.save-button')
     expect(calls.created[0]).not.toHaveProperty('tag_id')
   })
