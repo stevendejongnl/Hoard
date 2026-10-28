@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/predict", tags=["predict"])
 
 _FALLBACK_WATTS = 105.0
 # 1.75mm filament, PLA density 1.24 g/cm³: π × (0.875mm)² × 1.24 × 0.001
-_MM_TO_GRAMS = math.pi * (0.875 ** 2) * 1.24 * 0.001
+_MM_TO_GRAMS = math.pi * (0.875**2) * 1.24 * 0.001
 
 
 def _filament_grams(meta: dict) -> float:

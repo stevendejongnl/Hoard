@@ -43,18 +43,15 @@ async def search(q: str = "", scope: str = "all") -> dict[str, Any]:
     if "s" in scopes:
         spools = await db.list_spools()
         results["spools"] = [
-            s for s in spools
-            if q in s.get("brand", "").lower()
-            or q in s.get("material", "").lower()
-            or q in s.get("color", "").lower()
+            s
+            for s in spools
+            if q in s.get("brand", "").lower() or q in s.get("material", "").lower() or q in s.get("color", "").lower()
         ][:10]
 
     if "p" in scopes:
         projects = await db.list_projects()
         results["projects"] = [
-            p for p in projects
-            if q in p.get("name", "").lower()
-            or q in (p.get("notes") or "").lower()
+            p for p in projects if q in p.get("name", "").lower() or q in (p.get("notes") or "").lower()
         ][:10]
 
     return results

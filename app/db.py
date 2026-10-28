@@ -159,12 +159,8 @@ async def init_db(path: str) -> None:
         await db.commit()
 
         # Indexes — idempotent, safe to run on every startup
-        await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)"
-        )
-        await db.execute(
-            "CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)"
-        )
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)")
+        await db.execute("CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)")
         await db.commit()
 
 

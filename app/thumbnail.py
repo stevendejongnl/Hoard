@@ -28,11 +28,11 @@ def render_stl_thumbnail(stl_bytes: bytes, size: int = 300) -> bytes:
 
     center = verts.reshape(-1, 3).mean(axis=0)
     v_centered = (verts - center).reshape(-1, 3) @ _R.T  # (N*3, 3)
-    v_rot = v_centered.reshape(-1, 3, 3)                  # (N, 3, 3)
+    v_rot = v_centered.reshape(-1, 3, 3)  # (N, 3, 3)
 
     # Orthographic: X→right, Y→up, Z→depth
-    proj2d = v_rot[..., :2]          # (N, 3, 2)
-    depth = v_rot[..., 2].mean(1)   # (N,)
+    proj2d = v_rot[..., :2]  # (N, 3, 2)
+    depth = v_rot[..., 2].mean(1)  # (N,)
 
     # Face normals for diffuse lighting
     e1 = verts[:, 1] - verts[:, 0]
