@@ -33,6 +33,11 @@
   border-bottom: 1px solid var(--border-color);
 }
 
+.files-search::placeholder {
+  color: var(--muted-text-color);
+  opacity: 1;
+}
+
 .files-search {
   box-sizing: border-box;
   width: 100%;

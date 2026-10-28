@@ -119,6 +119,7 @@ def perform_step(page: Page, step: tuple) -> None:
 
 def capture_screen(page: Page, address: str, size: tuple[int, int], target: Path, steps: list | None = None) -> None:
     page.set_viewport_size({"width": size[0], "height": size[1]})
+    page.mouse.move(0, 0)
     page.goto(address, wait_until="load")
     page.add_style_tag(content=FREEZE_MOTION_STYLE)
     page.evaluate("document.fonts.ready")

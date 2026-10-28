@@ -42,3 +42,13 @@ describe('the spool of the selected print', () => {
     expect(readStyles('history')).toContain('.detail-value {\n  display: inline-flex;\n  align-items: center;')
   })
 })
+
+describe('details taken from the design boards', () => {
+  it('draws the delete icon of the phone sheet at 20px', () => {
+    expect(readStyles('spools')).toContain('.spools-details .delete-spool-button svg {\n    width: 20px;')
+  })
+
+  it('shows the placeholder of the file search in the muted text colour', () => {
+    expect(readStyles('files')).toContain('.files-search::placeholder {\n  color: var(--muted-text-color);')
+  })
+})
