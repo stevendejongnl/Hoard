@@ -1,7 +1,7 @@
 import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
-import { assignSpool, getHistory, getProjects, getSpools, linkProjectPrint } from '../api'
+import { assignSpool, describeLoadFailure, getHistory, getProjects, getSpools, linkProjectPrint } from '../api'
 import { renderIcon } from '../icons'
 import {
   filterPrints,
@@ -78,6 +78,7 @@ export class HistoryPage extends LitElement {
   @state() private spools: Spool[] = []
   @state() private projects: ProjectChoice[] = []
   @state() private loadState: LoadState = 'loading'
+  @state() private loadFailureMessage = ''
   @state() private filters: PrintFilters = NO_FILTERS
   @state() private sort: PrintSort = 'newest'
   @state() private selectedJobId: string | null = null
@@ -131,7 +132,8 @@ export class HistoryPage extends LitElement {
       this.records = isAppending ? [...this.records, ...history.records] : history.records
       this.total = history.total
       this.loadState = 'ready'
-    } catch {
+    } catch (error) {
+      this.loadFailureMessage = describeLoadFailure(error, 'Could not load the print history')
       this.loadState = 'error'
     }
   }
@@ -414,7 +416,7 @@ export class HistoryPage extends LitElement {
 
   private renderStateMessage(): TemplateResult | null {
     if (this.loadState === 'loading') return html`<div class="state-message">Loading prints…</div>`
-    if (this.loadState === 'error') return html`<div class="state-message">Could not load the print history</div>`
+    if (this.loadState === 'error') return html`<div class="state-message">${this.loadFailureMessage}</div>`
     if (this.records.length === 0) return html`<div class="state-message">No prints yet</div>`
     if (this.findVisiblePrints().length === 0) return html`<div class="state-message">No prints match the filters</div>`
     return null
