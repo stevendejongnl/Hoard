@@ -15,10 +15,10 @@ log = logging.getLogger(__name__)
 _CHUNK_DIR = Path(tempfile.gettempdir()) / "printer_chunks"
 _CHUNK_DIR.mkdir(exist_ok=True)
 
-_UPLOAD_ID_RE = re.compile(r'^[A-Za-z0-9_-]{8,64}$')
+_UPLOAD_ID_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
 
-MAX_CHUNKS = 50                          # 50 × 50 MB = 2.5 GB ceiling
-MAX_CHUNK_BYTES = 55 * 1024 * 1024      # 55 MB — 50 MB client chunk + HTTP overhead
+MAX_CHUNKS = 50  # 50 × 50 MB = 2.5 GB ceiling
+MAX_CHUNK_BYTES = 55 * 1024 * 1024  # 55 MB — 50 MB client chunk + HTTP overhead
 
 
 def _safe_upload_dir(upload_id: str) -> Path:
@@ -32,7 +32,7 @@ def _safe_upload_dir(upload_id: str) -> Path:
 
 def _safe_filename(filename: str) -> str:
     safe = PurePosixPath(filename).name
-    if safe != filename or '/' in filename or '\\' in filename or filename.startswith('.'):
+    if safe != filename or "/" in filename or "\\" in filename or filename.startswith("."):
         raise HTTPException(400, "Invalid filename")
     if not safe.endswith(".gcode"):
         raise HTTPException(400, "Only .gcode files are allowed")
@@ -66,8 +66,9 @@ async def upload_chunk(
     chunk_path = upload_dir / f"chunk_{chunk_index:04d}"
     chunk_path.write_bytes(content)
 
-    log.info("chunk %d/%d for %s (upload_id=%s, %d bytes)",
-             chunk_index + 1, total_chunks, safe_name, upload_id, len(content))
+    log.info(
+        "chunk %d/%d for %s (upload_id=%s, %d bytes)", chunk_index + 1, total_chunks, safe_name, upload_id, len(content)
+    )
 
     received = sorted(upload_dir.glob("chunk_*"))
     if len(received) < total_chunks:

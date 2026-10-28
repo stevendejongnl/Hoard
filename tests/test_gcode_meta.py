@@ -131,13 +131,7 @@ def test_parse_gcode_header_old_cura_m190_overrides_m140():
 
 def test_parse_gcode_header_start_print_takes_precedence_over_mcodes():
     """START_PRINT params take precedence; M-code temps should be ignored by setdefault."""
-    gcode = (
-        b"M140 S55\n"
-        b"M104 S200\n"
-        b"START_PRINT BED_TEMP=60 EXTRUDER_TEMP=205\n"
-        b"M109 S200\n"
-        b"M190 S55\n"
-    )
+    gcode = b"M140 S55\nM104 S200\nSTART_PRINT BED_TEMP=60 EXTRUDER_TEMP=205\nM109 S200\nM190 S55\n"
     result = parse_gcode_header(gcode)
     # START_PRINT runs first; M109/M190 come after so they would override via assignment
     # In real files START_PRINT comes before M109 wait commands — verify both temp sources coexist

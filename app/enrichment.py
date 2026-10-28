@@ -6,12 +6,14 @@ import httpx
 
 log = logging.getLogger(__name__)
 
-_BROWSER_UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+_BROWSER_UA = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+)
 
 
 async def _fetch_makerworld(url: str) -> dict[str, Any]:
     """MakerWorld: uses public JSON API — returns title, cover, and print settings."""
-    m = re.search(r'makerworld\.com/[^/]+/models/(\d+)', url)
+    m = re.search(r"makerworld\.com/[^/]+/models/(\d+)", url)
     if not m:
         return {}
     design_id = m.group(1)
@@ -48,7 +50,7 @@ async def _fetch_makerworld(url: str) -> dict[str, Any]:
 
 async def _fetch_printables(url: str) -> dict[str, Any]:
     """Printables: uses public GraphQL API — returns title, cover, and available print settings."""
-    m = re.search(r'printables\.com/(?:model|[^/?#]+/models)/(\d+)', url)
+    m = re.search(r"printables\.com/(?:model|[^/?#]+/models)/(\d+)", url)
     if not m:
         return {}
     model_id = m.group(1)
@@ -116,7 +118,7 @@ async def fetch_og(url: str) -> dict[str, Any]:
 
         title = _og("title")
         if not title:
-            m = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
+            m = re.search(r"<title[^>]*>([^<]+)</title>", html, re.IGNORECASE)
             title = m.group(1).strip() if m else None
 
         return {

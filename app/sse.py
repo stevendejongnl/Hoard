@@ -47,6 +47,7 @@ hub = SSEHub()
 
 # ── Background tasks ──────────────────────────────────────────────────────────
 
+
 async def _poll_printer_state(interval: int = 10) -> None:
     """Poll Moonraker REST every 10s as a fallback so live status is always accurate.
 
@@ -113,13 +114,16 @@ async def _poll_pi_stats(interval: int = 30) -> None:
             except Exception:
                 pass
 
-            await hub.broadcast("pi_stats", {
-                "cpu_temp": round(cpu_temp, 1),
-                "cpu_load": round(cpu_load, 1),
-                "memory_pct": round(mem_used / mem_total * 100, 1) if mem_total else 0,
-                "disk_pct": disk_pct,
-                "uptime_s": int(uptime),
-            })
+            await hub.broadcast(
+                "pi_stats",
+                {
+                    "cpu_temp": round(cpu_temp, 1),
+                    "cpu_load": round(cpu_load, 1),
+                    "memory_pct": round(mem_used / mem_total * 100, 1) if mem_total else 0,
+                    "disk_pct": disk_pct,
+                    "uptime_s": int(uptime),
+                },
+            )
         except Exception as exc:
             log.warning("Pi stats poll error: %s", exc)
         await asyncio.sleep(interval)
@@ -198,7 +202,11 @@ async def _handle_status_update(params: list[Any]) -> None:
             _standby_task.cancel()
             _standby_task = None
 
-        if new_state in ("complete", "error", "cancelled") and prev_state in ("printing", "paused") and new_state != prev_state:
+        if (
+            new_state in ("complete", "error", "cancelled")
+            and prev_state in ("printing", "paused")
+            and new_state != prev_state
+        ):
             filename = updated.get("filename") or "Print"
             if new_state == "complete":
                 title, body = "Print complete", f"{filename} finished printing."
@@ -214,12 +222,15 @@ async def _handle_status_update(params: list[Any]) -> None:
     bed = status.get("heater_bed", {})
     if extruder or bed:
         prev = hub._cache.get("temps", {})
-        await hub.broadcast("temps", {
-            "hotend_actual": round(extruder.get("temperature", prev.get("hotend_actual", 0)), 1),
-            "hotend_target": round(extruder.get("target", prev.get("hotend_target", 0)), 1),
-            "bed_actual": round(bed.get("temperature", prev.get("bed_actual", 0)), 1),
-            "bed_target": round(bed.get("target", prev.get("bed_target", 0)), 1),
-        })
+        await hub.broadcast(
+            "temps",
+            {
+                "hotend_actual": round(extruder.get("temperature", prev.get("hotend_actual", 0)), 1),
+                "hotend_target": round(extruder.get("target", prev.get("hotend_target", 0)), 1),
+                "bed_actual": round(bed.get("temperature", prev.get("bed_actual", 0)), 1),
+                "bed_target": round(bed.get("target", prev.get("bed_target", 0)), 1),
+            },
+        )
 
 
 async def _handle_klippy_ready(params: list[Any]) -> None:
