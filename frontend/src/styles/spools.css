@@ -508,3 +508,13 @@
     margin-left: auto;
   }
 }
+
+/* NFC tags: only present where the browser can read them */
+.scan-tag-button {
+  flex: 1;
+}
+
+.scan-message {
+  margin-left: 12px;
+  font-size: 12px;
+}
