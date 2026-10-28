@@ -375,7 +375,7 @@ export class SpoolsPage extends LitElement {
           name=${name}
           .value=${this.form[name]}
           @input=${(event: Event) => this.changeField(name, event)}
-        />${unit === '' ? nothing : html`<span class="value-unit">${unit}</span>`}</span
+        /><span class="value-unit">${unit}</span></span
       >
     </label>`
   }
