@@ -26,16 +26,40 @@ def _format_flux_time(moment: datetime) -> str:
     return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _escape_tag(value: str) -> str:
+    return value.replace(" ", r"\ ").replace(",", r"\,").replace("=", r"\=")
+
+
+def _print_job_tags(filename: str, spool_id: int | None, material: str | None, job_id: str | None) -> dict[str, str]:
+    tags: dict[str, str] = {"filename": filename}
+    if spool_id is not None:
+        tags["spool_id"] = str(spool_id)
+    if material:
+        tags["material"] = material
+    if job_id:
+        tags["job_id"] = job_id
+    return tags
+
+
+def _row_from_record(record: Any) -> dict[str, Any]:
+    row = dict(record.values)
+    row["time"] = record.get_time().isoformat().replace("+00:00", "Z")
+    for tag in ("filename", "spool_id", "material"):
+        if tag not in row:
+            row[tag] = record.values.get(tag)
+    return row
+
+
 class InfluxClient:
-    def __init__(self) -> None:
-        self._client = InfluxDBClient(
-            url=settings.influxdb_url,
-            token=settings.influxdb_token,
-            org=settings.influxdb_org,
+    def __init__(self, app_settings: Any = settings, connection: Any = None) -> None:
+        self._client = connection or InfluxDBClient(
+            url=app_settings.influxdb_url,
+            token=app_settings.influxdb_token,
+            org=app_settings.influxdb_org,
         )
         self._write = self._client.write_api(write_options=SYNCHRONOUS)
-        self._bucket = settings.influxdb_bucket
-        self._org = settings.influxdb_org
+        self._bucket = app_settings.influxdb_bucket
+        self._org = app_settings.influxdb_org
 
     @run_in_thread
     def write_print_job(
@@ -54,18 +78,8 @@ class InfluxClient:
         cost_total: float,
         job_id: str | None = None,
     ) -> None:
-        tags: dict[str, str] = {"filename": filename}
-        if spool_id is not None:
-            tags["spool_id"] = str(spool_id)
-        if material:
-            tags["material"] = material
-        if job_id:
-            tags["job_id"] = job_id
-
-        def _esc(v: str) -> str:
-            return v.replace(" ", r"\ ").replace(",", r"\,").replace("=", r"\=")
-
-        tag_str = ",".join(f"{_esc(k)}={_esc(v)}" for k, v in tags.items())
+        tags = _print_job_tags(filename, spool_id, material, job_id)
+        tag_str = ",".join(f"{_escape_tag(key)}={_escape_tag(value)}" for key, value in tags.items())
         fields = (
             f"duration_s={duration_s},"
             f"filament_g={filament_g},"
@@ -91,15 +105,6 @@ class InfluxClient:
         predicate = f'_measurement="print_job" AND filename="{safe}"'
         delete_api.delete(start, stop, predicate, bucket=self._bucket, org=self._org)
 
-    @staticmethod
-    def _read_row(record: Any) -> dict[str, Any]:
-        row = dict(record.values)
-        row["time"] = record.get_time().isoformat().replace("+00:00", "Z")
-        for tag in ("filename", "spool_id", "material"):
-            if tag not in row:
-                row[tag] = record.values.get(tag)
-        return row
-
     @run_in_thread
     def query_history_between(self, start: datetime, stop: datetime) -> list[dict[str, Any]]:
         """The print records between two moments, newest first. Only these records are pivoted, so it stays fast."""
@@ -114,7 +119,7 @@ from(bucket: "{self._bucket}")
             tables = self._client.query_api().query(flux, org=self._org)
         except Exception:
             return []
-        return [self._read_row(record) for table in tables for record in table.records]
+        return [_row_from_record(record) for table in tables for record in table.records]
 
     @run_in_thread
     def query_history(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
@@ -130,16 +135,9 @@ from(bucket: "{self._bucket}")
             tables = self._client.query_api().query(flux, org=self._org)
         except Exception:
             return []
-        results = []
+        results: list[dict[str, Any]] = []
         for table in tables:
-            for record in table.records:
-                row = dict(record.values)
-                row["time"] = record.get_time().isoformat().replace("+00:00", "Z")
-                # include tags
-                for tag in ("filename", "spool_id", "material"):
-                    if tag not in row:
-                        row[tag] = record.values.get(tag)
-                results.append(row)
+            results.extend(_row_from_record(record) for record in table.records)
         return results
 
     @run_in_thread
@@ -160,12 +158,7 @@ from(bucket: "{self._bucket}")
             tables = self._client.query_api().query(flux, org=self._org)
             for table in tables:
                 for record in table.records:
-                    row = dict(record.values)
-                    row["time"] = record.get_time().isoformat().replace("+00:00", "Z")
-                    for tag in ("filename", "spool_id", "material"):
-                        if tag not in row:
-                            row[tag] = record.values.get(tag)
-                    return row
+                    return _row_from_record(record)
         except Exception:
             pass
         return None
