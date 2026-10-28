@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     vapid_private_key: str = Field(default="", repr=False)
     vapid_subject: str = "mailto:admin@example.com"
 
+    # The clients of the MCP endpoint (/mcp), as comma separated name:scope:hash entries. The scope is read, control
+    # or admin; the hash is the SHA-256 of the client's token. Make an entry with `python -m app.mcp.new_token`.
+    mcp_clients: str = Field(default="", repr=False)
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
     @model_validator(mode="after")

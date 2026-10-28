@@ -1,6 +1,6 @@
 import httpx
 
-from app.config import Settings
+from app.config import Settings, settings
 from app.main import app
 from app.mcp.catalog import build_tool_definitions
 from app.mcp.new_token import create_client_entry
@@ -40,8 +40,6 @@ def test_a_new_client_entry_works_with_the_token_it_was_made_for() -> None:
 
 
 async def test_the_real_app_answers_mcp_only_to_a_client_that_is_registered(monkeypatch) -> None:
-    from app.config import settings
-
     monkeypatch.setattr(settings, "mcp_clients", f"claude:read:{hash_token('real-token')}")
     message = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
     async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://hoard") as client:
