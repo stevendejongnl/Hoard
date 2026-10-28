@@ -1,9 +1,13 @@
 import importlib.util
+import json
 from datetime import UTC, datetime
+
+import httpx
 
 from app import ha
 from app.config import Settings, settings
 from app.routes import control
+from tests.route_fakes import recording_client_factory
 
 
 def configure(monkeypatch, **names: str) -> None:
@@ -115,16 +119,15 @@ async def test_the_energy_statistics_ask_for_the_configured_sensors(monkeypatch)
 
 
 async def test_the_power_switch_is_the_configured_one(monkeypatch) -> None:
-    switched: list[tuple[str, str, str]] = []
-
-    async def fake_service(domain: str, service: str, entity_id: str) -> None:
-        switched.append((domain, service, entity_id))
-
+    requests: list[httpx.Request] = []
     configure(monkeypatch, ha_power_switch="switch.plug")
-    monkeypatch.setattr(control, "_ha_service", fake_service)
-    await control.power_on()
-    await control.power_off()
-    assert switched == [("switch", "turn_on", "switch.plug"), ("switch", "turn_off", "switch.plug")]
+    create_client = recording_client_factory(requests)
+    await control.power_on(create_client)
+    await control.power_off(create_client)
+    assert [(request.url.path, json.loads(request.content)) for request in requests] == [
+        ("/api/services/switch/turn_on", {"entity_id": "switch.plug"}),
+        ("/api/services/switch/turn_off", {"entity_id": "switch.plug"}),
+    ]
 
 
 async def test_the_current_price_is_recorded_in_influx_when_it_is_known(monkeypatch) -> None:

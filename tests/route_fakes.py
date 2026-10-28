@@ -137,6 +137,16 @@ def override_provider(monkeypatch, provider, value) -> None:
     monkeypatch.setitem(app.dependency_overrides, provider, provide(value))
 
 
+def recording_client_factory(requests: list[httpx.Request], state: str = "on"):
+    """A factory of HTTP clients that record every request and answer 200 with a Home Assistant state."""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, json={"state": state})
+
+    return lambda: httpx.AsyncClient(transport=httpx.MockTransport(respond))
+
+
 def printer_files_client_factory(files: dict[str, tuple[bytes, str]]):
     """A factory of HTTP clients that serve the given files of the printer: url path -> (content, content type)."""
 
