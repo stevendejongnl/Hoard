@@ -3,7 +3,7 @@ import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { getFiles, getHistory, getSpools, predict } from '../api'
 import { renderIcon } from '../icons'
-import { formatPrintCost, formatPrintDuration, formatPrintFilament } from '../print-history-list'
+import { formatPrintCost, formatPrintDuration } from '../print-history-list'
 import { buildSpoolName } from '../spool-list'
 import type { GcodeFile, PredictResult, PrintRecord, Spool } from '../types'
 
@@ -153,16 +153,16 @@ export class CostPredictorPanel extends LitElement {
     </div>`
   }
 
-  private describeFilamentAndTime(): string {
+  private renderFilamentAndTime(): TemplateResult | string {
     if (!this.prediction) return NO_VALUE
-    const filament = formatPrintFilament(this.prediction.filament_g)
-    return `${filament} · ${formatPrintDuration(this.prediction.estimated_time_s)}`
+    const grams = this.prediction.filament_g.toFixed(1)
+    return html`${grams}<span class="value-unit"> g</span> · ${formatPrintDuration(this.prediction.estimated_time_s)}`
   }
 
   private renderResults(): TemplateResult {
     return html`<div class="parameter-row">
         <span class="parameter-label">Filament / time</span
-        ><span class="value-field" data-field="filament-time">${this.describeFilamentAndTime()}</span>
+        ><span class="value-field" data-field="filament-time">${this.renderFilamentAndTime()}</span>
       </div>
       <div class="parameter-row">
         <span class="parameter-label predictor-total-label">Total</span
