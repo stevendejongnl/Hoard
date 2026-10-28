@@ -1,7 +1,10 @@
+from contextlib import aclosing
+
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import StreamingResponse
 
+from app.mjpeg_relay import RELAY_CONTENT_TYPE, relay_latest_frames
 from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/webcams", tags=["webcams"])
@@ -27,11 +30,13 @@ async def list_webcams():
         # ever loads same-origin HTTPS URLs, avoiding mixed-content blocks.
         result = []
         for i, cam in enumerate(cams):
-            result.append({
-                **cam,
-                "snapshot_url": f"/api/webcams/{i}/snapshot",
-                "stream_url": f"/api/webcams/{i}/stream",
-            })
+            result.append(
+                {
+                    **cam,
+                    "snapshot_url": f"/api/webcams/{i}/snapshot",
+                    "stream_url": f"/api/webcams/{i}/stream",
+                }
+            )
         return result
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
@@ -75,18 +80,17 @@ async def proxy_stream(index: int, request: Request):
 
         async def generate():
             try:
-                async for chunk in r.aiter_bytes(4096):
-                    if await request.is_disconnected():
-                        break
-                    yield chunk
+                # Whole frames, newest first: a slow client drops frames instead of seeing half of one.
+                async with aclosing(relay_latest_frames(r.aiter_bytes(4096))) as parts:
+                    async for part in parts:
+                        if await request.is_disconnected():
+                            break
+                        yield part
             finally:
                 await r.aclose()
                 await client.aclose()
 
-        return StreamingResponse(
-            generate(),
-            media_type=r.headers.get("content-type", "multipart/x-mixed-replace; boundary=frame"),
-        )
+        return StreamingResponse(generate(), media_type=RELAY_CONTENT_TYPE)
     except IndexError:
         raise HTTPException(404, "Webcam not found")
     except HTTPException:
