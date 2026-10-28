@@ -168,3 +168,53 @@ describe('spools tab', () => {
     expect(items[1].textContent).not.toContain('IN USE')
   })
 })
+
+describe('dashboard lists that are still loading, or failed to load', () => {
+  const idleState = { state: 'standby' } as PrinterState
+  const neverArrives = () => new Promise<never>(() => {})
+  const fails = () => Promise.reject(new Error('502'))
+
+  function readMessage(panel: DashboardListsPanel): string {
+    return panel.querySelector('.list-message')?.textContent?.trim() ?? ''
+  }
+
+  async function openSpoolsTab(panel: DashboardListsPanel): Promise<void> {
+    ;(panel.querySelectorAll('.list-tab')[1] as HTMLButtonElement).click()
+    await panel.updateComplete
+  }
+
+  it('says the prints are loading, and offers no file to print yet', async () => {
+    const panel = await createPanel({ printerState: idleState, loadHistory: neverArrives })
+    expect(readMessage(panel)).toBe('Loading prints…')
+    expect(panel.querySelector('.print-a-file-button')).toBeNull()
+  })
+
+  it('says the prints could not be loaded when the request fails', async () => {
+    const panel = await createPanel({ printerState: idleState, loadHistory: fails })
+    expect(readMessage(panel)).toBe('Could not load the prints')
+  })
+
+  it('says there are no prints only after an empty answer', async () => {
+    const panel = await createPanel({ printerState: idleState, loadHistory: async () => ({ records: [], total: 0 }) })
+    expect(readMessage(panel)).toBe('No prints to show')
+    expect(panel.querySelector('.print-a-file-button')).not.toBeNull()
+  })
+
+  it('says the spools are loading', async () => {
+    const panel = await createPanel({ loadSpools: neverArrives })
+    await openSpoolsTab(panel)
+    expect(readMessage(panel)).toBe('Loading spools…')
+  })
+
+  it('says the spools could not be loaded when the request fails', async () => {
+    const panel = await createPanel({ loadSpools: fails })
+    await openSpoolsTab(panel)
+    expect(readMessage(panel)).toBe('Could not load the spools')
+  })
+
+  it('says there are no spools after an empty answer', async () => {
+    const panel = await createPanel({ loadSpools: async () => [] })
+    await openSpoolsTab(panel)
+    expect(readMessage(panel)).toBe('No spools yet')
+  })
+})
