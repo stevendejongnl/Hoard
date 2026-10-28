@@ -1,3 +1,10 @@
+## [1.39.4](https://github.com/stevendejongnl/Hoard/compare/v1.39.3...v1.39.4) (2026-10-28)
+
+### Bug Fixes
+
+* **dashboard:** the lists say they are loading or failed, and keep the print action ([75a604a](https://github.com/stevendejongnl/Hoard/commit/75a604afb30d29cab0712ac38d65c85a0c0c76c1))
+* **projects:** the page says it is loading, and that loading failed ([baecab1](https://github.com/stevendejongnl/Hoard/commit/baecab1c525020755e4f502d40c97001d72f30b7))
+
 ## [1.39.3](https://github.com/stevendejongnl/Hoard/compare/v1.39.2...v1.39.3) (2026-10-28)
 
 ### Bug Fixes
