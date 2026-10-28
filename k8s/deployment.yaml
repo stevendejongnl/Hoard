@@ -28,8 +28,12 @@ spec:
               value: /data/hoard.db
             - name: UPLOADS_DIR
               value: /data/uploads
+            - name: HA_POWER_SENSOR
+              value: sensor.nous_3d_printer_feed_plug_power
+            - name: HA_POWER_SWITCH
+              value: switch.attic_3d_printer_power_strip_machine
             - name: HA_ENERGY_SENSORS
-              value: sensor.3dprinter_consumption,sensor.3d_printer_summation_delivered,sensor.3d_printer_energy
+              value: sensor.3dprinter_consumption,sensor.3d_printer_summation_delivered,sensor.3d_printer_energy,sensor.nous_3d_printer_feed_plug_energy
             - name: STATIC_DIR
               value: /app/static
             - name: REDIS_URL
