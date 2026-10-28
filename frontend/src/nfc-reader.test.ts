@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isNfcSupported, normalizeTagId, readNextTag } from './nfc-reader'
+import { isNfcSupported, normalizeTagId, readNextTag, readNextTagReading } from './nfc-reader'
 import type { NdefReaderLike } from './nfc-reader'
 
 class FakeReader implements NdefReaderLike {
@@ -16,8 +16,8 @@ class FakeReader implements NdefReaderLike {
     this.listeners.set(name, [...(this.listeners.get(name) ?? []), listener])
   }
 
-  emitReading(serialNumber: string): void {
-    const event = Object.assign(new Event('reading'), { serialNumber })
+  emitReading(serialNumber: string, records?: { recordType: string; mediaType?: string; data?: DataView }[]): void {
+    const event = Object.assign(new Event('reading'), { serialNumber, message: records ? { records } : undefined })
     this.listeners.get('reading')?.forEach((listener) => listener(event))
   }
 
@@ -77,5 +77,39 @@ describe('reading the next tag', () => {
     controller.abort()
     await expect(reading).rejects.toThrow('Scanning stopped')
     expect(reader.scans[0].aborted).toBe(true)
+  })
+})
+
+describe('reading the next tag with what is on it', () => {
+  const json = new TextEncoder().encode('{"protocol":"openspool"}')
+
+  async function readWith(records?: { recordType: string; mediaType?: string; data?: DataView }[]) {
+    const reader = new FakeReader()
+    const reading = readNextTagReading(() => reader)
+    await Promise.resolve()
+    await Promise.resolve()
+    reader.emitReading('04:A2:2B', records)
+    return reading
+  }
+
+  it('gives the id and the records that have a media type', async () => {
+    const reading = await readWith([
+      { recordType: 'text' },
+      { recordType: 'mime', mediaType: 'application/json', data: new DataView(json.buffer) },
+    ])
+    expect(reading.tagId).toBe('04:a2:2b')
+    expect(reading.records).toHaveLength(1)
+    expect(reading.records[0].mediaType).toBe('application/json')
+    expect(new TextDecoder().decode(reading.records[0].data)).toBe('{"protocol":"openspool"}')
+  })
+
+  it('gives no records for a tag without a message', async () => {
+    expect((await readWith()).records).toEqual([])
+  })
+
+  it('keeps only the bytes of the record when its data is a window on a larger buffer', async () => {
+    const buffer = new Uint8Array([9, 9, 1, 2, 3, 9]).buffer
+    const reading = await readWith([{ recordType: 'mime', mediaType: 'a/b', data: new DataView(buffer, 2, 3) }])
+    expect([...reading.records[0].data]).toEqual([1, 2, 3])
   })
 })
