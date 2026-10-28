@@ -452,6 +452,10 @@ project-prints-panel {
     display: none;
   }
 
+  .file-print {
+    margin-left: auto;
+  }
+
   .short-label {
     display: inline;
   }
