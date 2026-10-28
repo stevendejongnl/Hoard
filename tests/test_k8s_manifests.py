@@ -79,6 +79,13 @@ def test_no_object_is_named_after_the_old_application() -> None:
         assert "printer" not in item["metadata"]["name"], item["metadata"]["name"]
 
 
+def test_the_deployment_maps_the_sensors_and_the_switch_to_the_entities_of_the_home_assistant() -> None:
+    environment = read_container(find_object("Deployment", APPLICATION_NAME))["env"]
+    values = {item["name"]: item["value"] for item in environment if "value" in item}
+    assert values["HA_POWER_SENSOR"] == "sensor.nous_3d_printer_feed_plug_power"
+    assert values["HA_POWER_SWITCH"] == "switch.attic_3d_printer_power_strip_machine"
+
+
 def test_the_deployment_lists_the_energy_sensors_of_the_older_plugs_oldest_first() -> None:
     environment = read_container(find_object("Deployment", APPLICATION_NAME))["env"]
     values = {item["name"]: item["value"] for item in environment if "value" in item}
@@ -86,4 +93,5 @@ def test_the_deployment_lists_the_energy_sensors_of_the_older_plugs_oldest_first
         "sensor.3dprinter_consumption",
         "sensor.3d_printer_summation_delivered",
         "sensor.3d_printer_energy",
+        "sensor.nous_3d_printer_feed_plug_energy",
     ]
