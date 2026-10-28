@@ -1,3 +1,13 @@
+## [1.43.0](https://github.com/stevendejongnl/Hoard/compare/v1.42.1...v1.43.0) (2026-10-28)
+
+### Features
+
+* **mcp:** an MCP server at /mcp with a tool for every operation of the API, bearer tokens and scopes ([b4af72b](https://github.com/stevendejongnl/Hoard/commit/b4af72b3d0c43aed24b0f34225b4a463bb3bae6f))
+
+### Documentation
+
+* the README points to the MCP server in the wiki ([9acdc2b](https://github.com/stevendejongnl/Hoard/commit/9acdc2bef8b6f99a96076d95f6b34c5b8d34ea75))
+
 ## [1.42.1](https://github.com/stevendejongnl/Hoard/compare/v1.42.0...v1.42.1) (2026-10-28)
 
 ### Code Refactoring
