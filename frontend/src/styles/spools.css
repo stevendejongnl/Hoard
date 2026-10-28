@@ -79,6 +79,17 @@
   text-align: right;
 }
 
+.spools-layout .cost-per-gram-hint {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 400 11px var(--monospace-family);
+  color: var(--secondary-text-color);
+}
+
 .spools-layout .value-field.wide-field {
   min-width: 160px;
 }
