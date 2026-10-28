@@ -1,3 +1,9 @@
+## [1.40.1](https://github.com/stevendejongnl/Hoard/compare/v1.40.0...v1.40.1) (2026-10-28)
+
+### Bug Fixes
+
+* **influx:** queries run on a worker thread, so a slow one no longer freezes the server ([316f4b8](https://github.com/stevendejongnl/Hoard/commit/316f4b88f32c0a9901d6d1a298f8ceb1da02609f))
+
 ## [1.40.0](https://github.com/stevendejongnl/Hoard/compare/v1.39.4...v1.40.0) (2026-10-28)
 
 ### Features
