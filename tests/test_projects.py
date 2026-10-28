@@ -46,8 +46,7 @@ async def test_delete_project(client: AsyncClient):
 async def test_add_and_delete_gcode_file(client: AsyncClient):
     r = await client.post("/api/projects", json={"name": "Test"})
     pid = r.json()["id"]
-    r2 = await client.post(f"/api/projects/{pid}/files",
-                            json={"type": "gcode", "filename": "part.gcode"})
+    r2 = await client.post(f"/api/projects/{pid}/files", json={"type": "gcode", "filename": "part.gcode"})
     assert r2.status_code == 201
     fid = r2.json()["id"]
     assert (await client.delete(f"/api/projects/{pid}/files/{fid}")).status_code == 204
@@ -59,8 +58,9 @@ async def test_add_and_delete_gcode_file(client: AsyncClient):
 async def test_add_and_delete_link(client: AsyncClient):
     r = await client.post("/api/projects", json={"name": "Test"})
     pid = r.json()["id"]
-    r2 = await client.post(f"/api/projects/{pid}/links",
-                            json={"url": "https://printables.com/model/1", "label": "printables"})
+    r2 = await client.post(
+        f"/api/projects/{pid}/links", json={"url": "https://printables.com/model/1", "label": "printables"}
+    )
     assert r2.status_code == 201
     lid = r2.json()["id"]
     assert (await client.delete(f"/api/projects/{pid}/links/{lid}")).status_code == 204
@@ -68,10 +68,8 @@ async def test_add_and_delete_link(client: AsyncClient):
 
 @pytest.mark.asyncio
 async def test_link_print_moonraker_unavailable(client: AsyncClient, monkeypatch):
-    monkeypatch.setattr("app.routes.projects.moonraker.get",
-                        AsyncMock(side_effect=Exception("no moonraker")))
-    monkeypatch.setattr("app.routes.projects.influx.query_history",
-                        lambda limit=500: [])
+    monkeypatch.setattr("app.routes.projects.moonraker.get", AsyncMock(side_effect=Exception("no moonraker")))
+    monkeypatch.setattr("app.routes.projects.influx.query_history", AsyncMock(return_value=[]))
     r = await client.post("/api/projects", json={"name": "Test"})
     pid = r.json()["id"]
     r2 = await client.post(f"/api/projects/{pid}/prints", json={"job_id": "abc123"})
@@ -82,11 +80,14 @@ async def test_link_print_moonraker_unavailable(client: AsyncClient, monkeypatch
 
 @pytest.mark.asyncio
 async def test_link_print_with_stats(client: AsyncClient, monkeypatch):
-    monkeypatch.setattr("app.routes.projects.moonraker.get", AsyncMock(return_value={
-        "job": {"print_duration": 3600.0, "filament_used": 5000.0, "filename": "part.gcode"}
-    }))
-    monkeypatch.setattr("app.routes.projects.influx.query_history",
-                        lambda limit=500: [{"filename": "part.gcode", "cost_total": 1.5}])
+    monkeypatch.setattr(
+        "app.routes.projects.moonraker.get",
+        AsyncMock(return_value={"job": {"print_duration": 3600.0, "filament_used": 5000.0, "filename": "part.gcode"}}),
+    )
+    monkeypatch.setattr(
+        "app.routes.projects.influx.query_history",
+        AsyncMock(return_value=[{"filename": "part.gcode", "cost_total": 1.5}]),
+    )
     r = await client.post("/api/projects", json={"name": "Test"})
     pid = r.json()["id"]
     await client.post(f"/api/projects/{pid}/prints", json={"job_id": "job1"})
@@ -99,9 +100,8 @@ async def test_link_print_with_stats(client: AsyncClient, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_unlink_print(client: AsyncClient, monkeypatch):
-    monkeypatch.setattr("app.routes.projects.moonraker.get",
-                        AsyncMock(side_effect=Exception("no moonraker")))
-    monkeypatch.setattr("app.routes.projects.influx.query_history", lambda limit=500: [])
+    monkeypatch.setattr("app.routes.projects.moonraker.get", AsyncMock(side_effect=Exception("no moonraker")))
+    monkeypatch.setattr("app.routes.projects.influx.query_history", AsyncMock(return_value=[]))
     r = await client.post("/api/projects", json={"name": "Test"})
     pid = r.json()["id"]
     await client.post(f"/api/projects/{pid}/prints", json={"job_id": "abc"})
@@ -111,9 +111,8 @@ async def test_unlink_print(client: AsyncClient, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_duplicate_print_link_is_noop(client: AsyncClient, monkeypatch):
-    monkeypatch.setattr("app.routes.projects.moonraker.get",
-                        AsyncMock(side_effect=Exception("no moonraker")))
-    monkeypatch.setattr("app.routes.projects.influx.query_history", lambda limit=500: [])
+    monkeypatch.setattr("app.routes.projects.moonraker.get", AsyncMock(side_effect=Exception("no moonraker")))
+    monkeypatch.setattr("app.routes.projects.influx.query_history", AsyncMock(return_value=[]))
     r = await client.post("/api/projects", json={"name": "Test"})
     pid = r.json()["id"]
     await client.post(f"/api/projects/{pid}/prints", json={"job_id": "abc"})

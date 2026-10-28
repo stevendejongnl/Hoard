@@ -19,7 +19,7 @@ from app.moonraker import moonraker
 
 router = APIRouter(prefix="/api/projects", tags=["projects"])
 
-_MM_TO_GRAMS = math.pi * (0.875 ** 2) * 1.24 * 0.001
+_MM_TO_GRAMS = math.pi * (0.875**2) * 1.24 * 0.001
 
 
 class ProjectCreate(BaseModel):
@@ -201,20 +201,24 @@ async def link_print(project_id: int, body: PrintLink) -> dict[str, Any]:
         end_time = job.get("end_time")
         # Prefer timestamp-based lookup so two prints of the same file get distinct costs
         if end_time and filename:
-            h = influx.query_by_end_time(filename, float(end_time))
+            h = await influx.query_by_end_time(filename, float(end_time))
             if h:
                 cost_total = h.get("cost_total")
         # Fallback: scan by filename only (covers edge cases with missing end_time)
         if cost_total is None and filename:
-            for h in influx.query_history(limit=500):
+            for h in await influx.query_history(limit=500):
                 if h.get("filename") == filename:
                     cost_total = h.get("cost_total")
                     break
     except Exception:
         pass
     result = await db.add_project_print(
-        project_id, body.project_file_id, body.job_id,
-        duration_s, filament_g, cost_total,
+        project_id,
+        body.project_file_id,
+        body.job_id,
+        duration_s,
+        filament_g,
+        cost_total,
     )
     await cache.invalidate("projects:list", f"project:{project_id}", f"print:{body.job_id}")
     return result
@@ -235,11 +239,11 @@ async def refresh_print_stats(project_id: int, job_id: str) -> dict[str, Any]:
         filename = job.get("filename", "")
         end_time = job.get("end_time")
         if end_time and filename:
-            h = influx.query_by_end_time(filename, float(end_time))
+            h = await influx.query_by_end_time(filename, float(end_time))
             if h:
                 cost_total = h.get("cost_total")
         if cost_total is None and filename:
-            for h in influx.query_history(limit=500):
+            for h in await influx.query_history(limit=500):
                 if h.get("filename") == filename:
                     cost_total = h.get("cost_total")
                     break

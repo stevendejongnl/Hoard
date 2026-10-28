@@ -105,7 +105,7 @@ async def avg_price_over(start: datetime, end: datetime) -> float:
 
     Priority: InfluxDB (full history) → HA history (recent 10 days) → 0.
     """
-    influx_price = influx.query_avg_price_between(start, end)
+    influx_price = await influx.query_avg_price_between(start, end)
     if influx_price and influx_price > 0.001:
         return influx_price
 
@@ -209,4 +209,4 @@ async def record_current_price() -> None:
     """Write the price that the price sensor shows now to InfluxDB, so a later cost can look it up."""
     price = await get_current_price()
     if price > 0:
-        influx.write_electricity_price(datetime.now(UTC), price)
+        await influx.write_electricity_price(datetime.now(UTC), price)

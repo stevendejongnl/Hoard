@@ -92,7 +92,7 @@ async def _record_print(job: dict[str, Any], skip_settle: bool = False) -> None:
     cost_total = round(cost_electricity + cost_filament, 4)
 
     try:
-        influx.write_print_job(
+        await influx.write_print_job(
             timestamp=end_dt,
             filename=filename,
             spool_id=spool_id,
@@ -188,7 +188,7 @@ async def startup_reconcile(lookback: int = 1000) -> None:
         return
 
     # Build a minute-bucket index of existing InfluxDB entries
-    influx_records = influx.query_history(limit=lookback * 2)
+    influx_records = await influx.query_history(limit=lookback * 2)
 
     def _minute(iso: str) -> int:
         try:
@@ -243,11 +243,7 @@ async def startup_reconcile(lookback: int = 1000) -> None:
                     needs_fix.append(job)
 
     # Bulk-store end_time for all historical prints so cleanup can detect stale photos
-    job_end_times = {
-        j["job_id"]: int(j["end_time"])
-        for j in jobs
-        if j.get("job_id") and j.get("end_time")
-    }
+    job_end_times = {j["job_id"]: int(j["end_time"]) for j in jobs if j.get("job_id") and j.get("end_time")}
     await db.bulk_set_print_end_times(job_end_times)
 
     # Remove webcam photos taken during previous reconcile runs (captured long after print ended)

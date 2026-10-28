@@ -16,10 +16,10 @@ class FakeInflux:
         self.average_price = average_price
         self.written: list[tuple[datetime, float]] = []
 
-    def query_avg_price_between(self, start, end):
+    async def query_avg_price_between(self, start, end):
         return self.average_price
 
-    def write_electricity_price(self, moment: datetime, price: float) -> None:
+    async def write_electricity_price(self, moment: datetime, price: float) -> None:
         self.written.append((moment, price))
 
 

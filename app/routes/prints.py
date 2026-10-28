@@ -63,7 +63,7 @@ async def _get_job_stats(job_id: str) -> dict[str, Any]:
     # InfluxDB cost enrichment
     if end_ts and filename:
         record_minute = int(end_ts) // 60
-        influx_all = influx.query_history(limit=20)
+        influx_all = await influx.query_history(limit=20)
         cost = None
         for r in influx_all:
             try:

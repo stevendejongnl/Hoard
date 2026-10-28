@@ -1,10 +1,25 @@
+import asyncio
+import functools
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime, timedelta
-from typing import Any, cast
+from typing import Any, Concatenate, cast
 
 from influxdb_client import InfluxDBClient, WritePrecision
 from influxdb_client.client.write_api import SYNCHRONOUS
 
 from app.config import settings
+
+
+def run_in_thread[**Parameters, Result](
+    method: Callable[Concatenate["InfluxClient", Parameters], Result],
+) -> Callable[Concatenate["InfluxClient", Parameters], Awaitable[Result]]:
+    """Makes a method that blocks on InfluxDB awaitable, so it runs on a worker thread and the event loop is free."""
+
+    @functools.wraps(method)
+    async def run(self: "InfluxClient", *arguments: Parameters.args, **keywords: Parameters.kwargs) -> Result:
+        return await asyncio.to_thread(method, self, *arguments, **keywords)
+
+    return run
 
 
 class InfluxClient:
@@ -18,6 +33,7 @@ class InfluxClient:
         self._bucket = settings.influxdb_bucket
         self._org = settings.influxdb_org
 
+    @run_in_thread
     def write_print_job(
         self,
         *,
@@ -61,6 +77,7 @@ class InfluxClient:
             bucket=self._bucket, org=self._org, record=line, write_precision=cast(WritePrecision, WritePrecision.S)
         )
 
+    @run_in_thread
     def delete_print_job(self, timestamp: datetime, filename: str) -> None:
         """Delete the InfluxDB entry for one specific print (±10 min window around its end time)."""
         delete_api = self._client.delete_api()
@@ -70,6 +87,7 @@ class InfluxClient:
         predicate = f'_measurement="print_job" AND filename="{safe}"'
         delete_api.delete(start, stop, predicate, bucket=self._bucket, org=self._org)
 
+    @run_in_thread
     def query_history(self, limit: int = 20, offset: int = 0) -> list[dict[str, Any]]:
         flux = f"""
 from(bucket: "{self._bucket}")
@@ -95,6 +113,7 @@ from(bucket: "{self._bucket}")
                 results.append(row)
         return results
 
+    @run_in_thread
     def query_by_end_time(self, filename: str, end_time_s: float) -> dict[str, Any] | None:
         """Find the InfluxDB record for a specific print using filename + end timestamp (±5 min)."""
         dt = datetime.fromtimestamp(end_time_s, tz=UTC)
@@ -122,6 +141,7 @@ from(bucket: "{self._bucket}")
             pass
         return None
 
+    @run_in_thread
     def count_history(self) -> int:
         flux = f"""
 from(bucket: "{self._bucket}")
@@ -138,6 +158,7 @@ from(bucket: "{self._bucket}")
             pass
         return 0
 
+    @run_in_thread
     def write_electricity_price(self, timestamp: datetime, price_eur_per_kwh: float) -> None:
         """Write a single electricity price data point to InfluxDB."""
         ts = int(timestamp.timestamp())
@@ -149,6 +170,7 @@ from(bucket: "{self._bucket}")
             write_precision=cast(WritePrecision, WritePrecision.S),
         )
 
+    @run_in_thread
     def query_avg_price_between(self, start: datetime, end: datetime) -> float | None:
         """Return time-weighted average electricity price (€/kWh) for a window.
 
@@ -173,6 +195,7 @@ from(bucket: "{self._bucket}")
             pass
         return None
 
+    @run_in_thread
     def oldest_electricity_price(self) -> datetime | None:
         """Return the timestamp of the oldest electricity price in InfluxDB."""
         flux = f"""
