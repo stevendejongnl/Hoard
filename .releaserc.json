@@ -1,6 +1,6 @@
 {
   "branches": ["main"],
-  "repositoryUrl": "https://github.com/stevendejongnl/printer",
+  "repositoryUrl": "https://github.com/stevendejongnl/Hoard",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
