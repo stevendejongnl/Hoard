@@ -1,7 +1,12 @@
+import json
+
+import httpx
+
 from app import ha
 from app.config import Settings, settings
-from app.routes import control
+from app.routes.dependencies import provide_http_client_factory
 from app.switches import SwitchDefinition, create_switch_key, parse_switch_definitions
+from tests.route_fakes import override_provider, recording_client_factory
 
 POWER_STRIP = "Power strip=switch.feed_plug"
 PI = "Raspberry Pi=switch.pi_outlet"
@@ -81,18 +86,14 @@ async def test_the_list_is_empty_without_configured_switches(client, monkeypatch
 
 
 async def test_a_switch_is_turned_on_and_off_through_home_assistant(client, monkeypatch) -> None:
-    called: list[tuple[str, str, str]] = []
-
-    async def fake_service(domain: str, service: str, entity_id: str) -> None:
-        called.append((domain, service, entity_id))
-
+    requests: list[httpx.Request] = []
     configure(monkeypatch, f"{PI},{DRYER}")
-    monkeypatch.setattr(control, "_ha_service", fake_service)
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
     assert (await client.post("/api/control/switches/filament-dryer/on")).json() == {"state": "on"}
     assert (await client.post("/api/control/switches/raspberry-pi/off")).json() == {"state": "off"}
-    assert called == [
-        ("homeassistant", "turn_on", "switch.dryer_outlet"),
-        ("homeassistant", "turn_off", "switch.pi_outlet"),
+    assert [(request.url.path, json.loads(request.content)["entity_id"]) for request in requests] == [
+        ("/api/services/homeassistant/turn_on", "switch.dryer_outlet"),
+        ("/api/services/homeassistant/turn_off", "switch.pi_outlet"),
     ]
 
 
@@ -102,9 +103,13 @@ async def test_an_unknown_switch_is_not_found(client, monkeypatch) -> None:
 
 
 async def test_a_failing_home_assistant_is_a_bad_gateway(client, monkeypatch) -> None:
-    async def failing_service(domain: str, service: str, entity_id: str) -> None:
-        raise RuntimeError("offline")
+    def refuse(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("offline")
 
     configure(monkeypatch, PI)
-    monkeypatch.setattr(control, "_ha_service", failing_service)
+    override_provider(
+        monkeypatch,
+        provide_http_client_factory,
+        lambda: httpx.AsyncClient(transport=httpx.MockTransport(refuse)),
+    )
     assert (await client.post("/api/control/switches/raspberry-pi/on")).status_code == 502
