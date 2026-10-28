@@ -22,7 +22,7 @@ The screenshots are taken from the app filled with sample data (`python3 -m fron
 
 ## What it does
 
-- **Live printer.** Status, progress, temperatures with a ten-minute chart, the camera, power and the Raspberry Pi's load. Pause, resume, cancel, emergency stop, firmware restart and power on or off.
+- **Live printer.** Status, progress, temperatures with a ten-minute chart, the camera, power and the Raspberry Pi's load. Pause, resume, cancel, emergency stop, firmware restart, and power on or off for the printer and for any other switch you configure (a power strip, the Pi, a filament dryer).
 - **Print history with costs.** Each print gets its filament cost (from the spool you assign) and its electricity cost (the power the printer drew, at the price of that hour). Prices and costs can be recalculated.
 - **Cost predictor.** Pick a G-code file and a spool and see the filament, the time and the cost before you print. The print-ready step confirms the file and helps you recover from a powered-off printer or a firmware error.
 - **Spools.** Brand, material, colour, weight and price per gram, what is left, and which spool is in use. A spool can be linked to an NFC tag and found again by scanning it (Web NFC: Chrome on Android).
@@ -50,6 +50,7 @@ The Home Assistant entities are settings, so you map them to the names of your o
 | `HA_POWER_SENSOR` | `sensor.3d_printer_power` | the power the printer draws (W) |
 | `HA_PRICE_SENSOR` | `sensor.electricity_price_all_in` | the price per kWh, all in |
 | `HA_POWER_SWITCH` | `switch.3d_printer` | the switch that powers the printer |
+| `HA_SWITCHES` | none | more switches to control from the dashboard, as `Label=entity` pairs separated by commas (for example `Pi=switch.pi_outlet,Filament dryer=switch.dryer_outlet`); any switch, light or input_boolean works |
 | `HA_ENERGY_SENSORS` | `sensor.3d_printer_energy` | energy in kWh, comma separated, oldest first (keep the sensors of a plug you replaced) |
 
 The price is read from the price sensor and written to InfluxDB every half hour, so the cost of a print is worked out with the price of its own hours. The filament weight is derived from the length with the density of PLA for 1.75 mm filament.

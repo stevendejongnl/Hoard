@@ -1,12 +1,14 @@
 import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
-import { customElement, property } from 'lit/decorators.js'
+import { customElement, property, state } from 'lit/decorators.js'
 import {
   cancelPrint as cancelPrintRequest,
+  getSwitches,
   pausePrint as pausePrintRequest,
   powerOff,
   powerOn,
   resumePrint as resumePrintRequest,
+  setSwitchState,
 } from '../api'
 import { renderIcon } from '../icons'
 import {
@@ -16,12 +18,14 @@ import {
   formatFinishTime,
   formatSpentDuration,
 } from '../print-job-metrics'
-import type { PiStats, Power, PrinterState, Temps } from '../types'
+import type { HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
 
 const NO_VALUE = '—'
 const SECTION_CHEVRON_SIZE = 14
 const ICON_STROKE_WIDTH = 2.4
 const CANCEL_QUESTION = 'Cancel this print?'
+const SWITCH_REFRESH_MILLISECONDS = 10_000
+const SWITCHABLE_STATES = ['on', 'off']
 
 /** The left panel of the dashboard: what the printer is doing right now, as parameters. */
 @customElement('printer-parameter-panel')
@@ -40,9 +44,54 @@ export class PrinterParameterPanel extends LitElement {
   @property({ attribute: false }) switchPower: (turnOn: boolean) => Promise<unknown> = (turnOn) =>
     turnOn ? powerOn() : powerOff()
   @property({ attribute: false }) confirmAction: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) loadSwitches: () => Promise<HomeAssistantSwitch[]> = getSwitches
+  @property({ attribute: false }) changeSwitch: (key: string, turnOn: boolean) => Promise<unknown> = setSwitchState
+
+  @state() private switches: HomeAssistantSwitch[] = []
+  private switchesLoadedAt = 0
 
   createRenderRoot() {
     return this
+  }
+
+  connectedCallback(): void {
+    super.connectedCallback()
+    void this.reloadSwitches()
+  }
+
+  protected updated(changed: Map<string, unknown>): void {
+    if (changed.has('power') && this.now() - this.switchesLoadedAt >= SWITCH_REFRESH_MILLISECONDS) {
+      void this.reloadSwitches()
+    }
+  }
+
+  private async reloadSwitches(): Promise<void> {
+    this.switchesLoadedAt = this.now()
+    try {
+      this.switches = await this.loadSwitches()
+    } catch {
+      // keep the switches that are shown: a failed refresh is not a reason to hide them
+    }
+  }
+
+  private confirmSwitchOff(item: HomeAssistantSwitch): boolean {
+    const warning = this.isPrintActive() ? 'A print is running. ' : ''
+    return this.confirmAction(`${warning}Switch off ${item.label}?`)
+  }
+
+  private replaceSwitchState(key: string, state: string): void {
+    this.switches = this.switches.map((item) => (item.key === key ? { ...item, state } : item))
+  }
+
+  private async toggleSwitch(item: HomeAssistantSwitch): Promise<void> {
+    const turnOn = item.state !== 'on'
+    if (!turnOn && !this.confirmSwitchOff(item)) return
+    try {
+      await this.changeSwitch(item.key, turnOn)
+      this.replaceSwitchState(item.key, turnOn ? 'on' : 'off')
+    } catch {
+      // the switch keeps the state it showed
+    }
   }
 
   private isPrintActive(): boolean {
@@ -154,11 +203,29 @@ export class PrinterParameterPanel extends LitElement {
     </div>`
   }
 
+  private renderExtraSwitch(item: HomeAssistantSwitch): TemplateResult {
+    const isOn = item.state === 'on'
+    return html`<div class="parameter-row">
+      <span class="parameter-label">${item.label}</span>
+      <button
+        class="power-switch ${isOn ? 'on' : ''}"
+        role="switch"
+        aria-checked=${isOn ? 'true' : 'false'}
+        aria-label=${item.label}
+        data-switch=${item.key}
+        ?disabled=${!SWITCHABLE_STATES.includes(item.state)}
+        @click=${() => this.toggleSwitch(item)}
+      >
+        <span class="power-switch-knob"></span>
+      </button>
+    </div>`
+  }
+
   private renderPower(): TemplateResult {
     return html`<div class="section">
       ${this.renderSectionHeader('Power & energy')}
       <div class="section-body">
-        ${this.renderPowerSwitch()}
+        ${this.renderPowerSwitch()} ${this.switches.map((item) => this.renderExtraSwitch(item))}
         ${this.renderField('Draw', 'draw', this.power ? String(Math.round(this.power.watts)) : NO_VALUE, 'W')}
         ${this.renderField('Price', 'price', this.power ? this.power.eur_per_kwh.toFixed(2) : NO_VALUE, '€/kWh')}
       </div>
