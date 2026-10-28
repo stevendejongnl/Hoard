@@ -1,7 +1,7 @@
 import asyncio
 import json
 import logging
-from collections.abc import Callable, Coroutine
+from collections.abc import Awaitable, Callable, Coroutine
 from typing import Any
 
 import httpx
@@ -16,7 +16,19 @@ NotifyHandler = Callable[[list[Any]], Coroutine[Any, Any, None]]
 
 
 class MoonrakerClient:
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        app_settings: Any = settings,
+        http_client_factory: Callable[[], Any] = httpx.AsyncClient,
+        connect: Callable[..., Any] = websockets.connect,
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+        clock: Callable[[], float] = lambda: asyncio.get_event_loop().time(),
+    ) -> None:
+        self._settings = app_settings
+        self._http_client_factory = http_client_factory
+        self._connect = connect
+        self._sleep = sleep
+        self._clock = clock
         self._ws: websockets.ClientConnection | None = None
         self._handlers: dict[str, list[NotifyHandler]] = {}
         self._running = False
@@ -24,14 +36,14 @@ class MoonrakerClient:
         self._last_msg_at: float = 0.0
 
     def _client_base(self) -> str:
-        return settings.moonraker_url
+        return self._settings.moonraker_url
 
     # ── REST ──────────────────────────────────────────────────────────────────
 
     async def get(self, path: str, **params: Any) -> Any:
-        async with httpx.AsyncClient() as client:
+        async with self._http_client_factory() as client:
             r = await client.get(
-                f"{settings.moonraker_url}{path}",
+                f"{self._settings.moonraker_url}{path}",
                 params=params or None,
                 timeout=15,
             )
@@ -39,9 +51,9 @@ class MoonrakerClient:
             return r.json().get("result", r.json())
 
     async def post(self, path: str, **data: Any) -> Any:
-        async with httpx.AsyncClient() as client:
+        async with self._http_client_factory() as client:
             r = await client.post(
-                f"{settings.moonraker_url}{path}",
+                f"{self._settings.moonraker_url}{path}",
                 json=data or None,
                 timeout=15,
             )
@@ -49,9 +61,9 @@ class MoonrakerClient:
             return r.json().get("result", r.json())
 
     async def upload_file(self, filename: str, content: bytes) -> Any:
-        async with httpx.AsyncClient() as client:
+        async with self._http_client_factory() as client:
             r = await client.post(
-                f"{settings.moonraker_url}/server/files/upload",
+                f"{self._settings.moonraker_url}/server/files/upload",
                 files={"file": (filename, content, "application/octet-stream")},
                 timeout=300,
             )
@@ -77,9 +89,9 @@ class MoonrakerClient:
         return await self.get("/server/files/metadata", filename=filename)
 
     async def download_file(self, filename: str) -> bytes:
-        async with httpx.AsyncClient() as client:
+        async with self._http_client_factory() as client:
             r = await client.get(
-                f"{settings.moonraker_url}/server/files/gcodes/{filename}",
+                f"{self._settings.moonraker_url}/server/files/gcodes/{filename}",
                 timeout=300,
             )
             r.raise_for_status()
@@ -87,9 +99,9 @@ class MoonrakerClient:
 
     async def download_file_partial(self, filename: str, size: int = 131072) -> bytes:
         """Fetch only the first `size` bytes via HTTP Range — fast for thumbnail extraction."""
-        async with httpx.AsyncClient() as client:
+        async with self._http_client_factory() as client:
             r = await client.get(
-                f"{settings.moonraker_url}/server/files/gcodes/{filename}",
+                f"{self._settings.moonraker_url}/server/files/gcodes/{filename}",
                 headers={"Range": f"bytes=0-{size - 1}"},
                 timeout=15,
             )
@@ -111,7 +123,7 @@ class MoonrakerClient:
         self._handlers.setdefault(method, []).append(handler)
 
     async def _seed_initial_state(self) -> None:
-        await asyncio.sleep(2)
+        await self._sleep(2)
         try:
             result = await self.get(
                 "/printer/objects/query",
@@ -132,19 +144,19 @@ class MoonrakerClient:
         self._running = True
         while self._running:
             try:
-                async with websockets.connect(
-                    settings.moonraker_ws,
+                async with self._connect(
+                    self._settings.moonraker_ws,
                     ping_interval=20,
                     ping_timeout=30,
                 ) as ws:
                     self._ws = ws
-                    self._last_msg_at = asyncio.get_event_loop().time()
+                    self._last_msg_at = self._clock()
                     log.info("Moonraker WS connected")
                     await self._subscribe(ws)
                     asyncio.create_task(self._seed_initial_state())
                     asyncio.create_task(self._watchdog(ws))
                     async for raw in ws:
-                        self._last_msg_at = asyncio.get_event_loop().time()
+                        self._last_msg_at = self._clock()
                         if isinstance(raw, str):
                             await self._dispatch(raw)
             except ConnectionClosed:
@@ -154,13 +166,13 @@ class MoonrakerClient:
             finally:
                 self._ws = None
             if self._running:
-                await asyncio.sleep(5)
+                await self._sleep(5)
 
     async def _watchdog(self, ws: websockets.ClientConnection) -> None:
         """Force-close the WS if no message arrives for 90s — catches silent subscription loss after Klipper restarts."""
         while ws.state.value == 1:  # OPEN
-            await asyncio.sleep(30)
-            idle = asyncio.get_event_loop().time() - self._last_msg_at
+            await self._sleep(30)
+            idle = self._clock() - self._last_msg_at
             if idle > 90:
                 log.warning("Moonraker WS silent for %.0fs — forcing reconnect", idle)
                 await ws.close()
