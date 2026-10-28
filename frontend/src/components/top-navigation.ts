@@ -15,6 +15,7 @@ import {
 import type { NavigationItem, NavigationPath } from '../navigation'
 import { router } from '../router'
 import './search-modal'
+import './push-toggle'
 import type { SearchModal } from './search-modal'
 
 type NavigateFunction = (path: string) => void
@@ -134,7 +135,7 @@ export class TopNavigation extends LitElement {
     return html`<header class="top-navigation">
       ${this.renderBrandArea()} ${this.renderTabs()}
       <div class="top-navigation-actions">
-        ${this.renderStateBadge()}${this.renderSearchButton()}${this.renderEmergencyStop()}
+        ${this.renderStateBadge()}${this.renderSearchButton()}<push-toggle></push-toggle>${this.renderEmergencyStop()}
       </div>
       <search-modal></search-modal>
     </header>`

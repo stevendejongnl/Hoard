@@ -9,6 +9,9 @@ const ICON_SHAPES = {
   play: '<path d="m6 4 14 8-14 8z"/>',
   pause: '<rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/>',
   close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  'bell-off':
+    '<path d="M8.7 3A6 6 0 0 1 18 8c0 2.5.3 4.4.8 5.8M17 17H3s3-2 3-9c0-.7.1-1.4.4-2"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/><path d="m2 2 20 20"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/>',
   expand: '<path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/>',
   camera:

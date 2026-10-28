@@ -341,3 +341,19 @@ status-bar {
     height: 16px;
   }
 }
+
+/* The bell sits in the top bar only where push can work, and takes no room otherwise */
+push-toggle {
+  display: contents;
+}
+
+.push-button.subscribed {
+  color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  .top-navigation .push-button {
+    width: 44px;
+    min-height: 44px;
+  }
+}
