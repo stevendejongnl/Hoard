@@ -7,8 +7,6 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-import httpx
-
 from app import cache, db, ha
 from app.config import settings
 from app.gcode_meta import extract_gcode_meta
@@ -153,7 +151,7 @@ async def _try_webcam_snapshot(job_id: str) -> None:
         if snapshot_url.startswith("/"):
             snapshot_url = moonraker._client_base() + snapshot_url
 
-        async with httpx.AsyncClient() as client:
+        async with moonraker.http_client() as client:
             resp = await client.get(snapshot_url, timeout=10)
             resp.raise_for_status()
             image_bytes = resp.content

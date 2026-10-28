@@ -9,19 +9,29 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 
 from app.config import settings
+from app.moonraker_connection import CONNECT_TIMEOUT_SECONDS, ConnectionBreaker, GuardedTransport
 
 log = logging.getLogger(__name__)
 
 NotifyHandler = Callable[[list[Any]], Coroutine[Any, Any, None]]
 
+DEFAULT_TIMEOUT = httpx.Timeout(5, connect=CONNECT_TIMEOUT_SECONDS)
+REQUEST_TIMEOUT = httpx.Timeout(15, connect=CONNECT_TIMEOUT_SECONDS)
+TRANSFER_TIMEOUT = httpx.Timeout(300, connect=CONNECT_TIMEOUT_SECONDS)
+
 
 class MoonrakerClient:
-    def __init__(self) -> None:
+    def __init__(self, breaker: ConnectionBreaker | None = None) -> None:
         self._ws: websockets.ClientConnection | None = None
         self._handlers: dict[str, list[NotifyHandler]] = {}
         self._running = False
         self._req_id = 0
         self._last_msg_at: float = 0.0
+        self.breaker = breaker or ConnectionBreaker()
+
+    def http_client(self, timeout: httpx.Timeout = DEFAULT_TIMEOUT) -> httpx.AsyncClient:
+        """A client for the printer's host: it fails at once while the printer is known to be off."""
+        return httpx.AsyncClient(transport=GuardedTransport(self.breaker), timeout=timeout)
 
     def _client_base(self) -> str:
         return settings.moonraker_url
@@ -29,31 +39,31 @@ class MoonrakerClient:
     # ── REST ──────────────────────────────────────────────────────────────────
 
     async def get(self, path: str, **params: Any) -> Any:
-        async with httpx.AsyncClient() as client:
+        async with self.http_client() as client:
             r = await client.get(
                 f"{settings.moonraker_url}{path}",
                 params=params or None,
-                timeout=15,
+                timeout=REQUEST_TIMEOUT,
             )
             r.raise_for_status()
             return r.json().get("result", r.json())
 
     async def post(self, path: str, **data: Any) -> Any:
-        async with httpx.AsyncClient() as client:
+        async with self.http_client() as client:
             r = await client.post(
                 f"{settings.moonraker_url}{path}",
                 json=data or None,
-                timeout=15,
+                timeout=REQUEST_TIMEOUT,
             )
             r.raise_for_status()
             return r.json().get("result", r.json())
 
     async def upload_file(self, filename: str, content: bytes) -> Any:
-        async with httpx.AsyncClient() as client:
+        async with self.http_client() as client:
             r = await client.post(
                 f"{settings.moonraker_url}/server/files/upload",
                 files={"file": (filename, content, "application/octet-stream")},
-                timeout=300,
+                timeout=TRANSFER_TIMEOUT,
             )
             r.raise_for_status()
             return r.json()
@@ -77,21 +87,21 @@ class MoonrakerClient:
         return await self.get("/server/files/metadata", filename=filename)
 
     async def download_file(self, filename: str) -> bytes:
-        async with httpx.AsyncClient() as client:
+        async with self.http_client() as client:
             r = await client.get(
                 f"{settings.moonraker_url}/server/files/gcodes/{filename}",
-                timeout=300,
+                timeout=TRANSFER_TIMEOUT,
             )
             r.raise_for_status()
             return r.content
 
     async def download_file_partial(self, filename: str, size: int = 131072) -> bytes:
         """Fetch only the first `size` bytes via HTTP Range — fast for thumbnail extraction."""
-        async with httpx.AsyncClient() as client:
+        async with self.http_client() as client:
             r = await client.get(
                 f"{settings.moonraker_url}/server/files/gcodes/{filename}",
                 headers={"Range": f"bytes=0-{size - 1}"},
-                timeout=15,
+                timeout=REQUEST_TIMEOUT,
             )
             # 206 Partial Content or 200 OK both acceptable
             if r.status_code not in (200, 206):
