@@ -172,6 +172,11 @@ async def test_a_reply_that_is_too_long_is_cut_and_says_so() -> None:
 async def test_every_call_is_written_to_the_audit_log_without_its_arguments() -> None:
     audit = FakeAudit()
     server = create_server(audit=audit)
-    await call_tool(server, READER, "list_spools", {"secret": "do-not-log"})
+    await call_tool(server, READER, "list_spools")
     await call_tool(server, READER, "pause_print")
-    assert audit.entries == [("laptop", "list_spools", "ok"), ("laptop", "pause_print", "forbidden")]
+    await call_tool(server, READER, "list_spools", {"secret": "do-not-log"})
+    assert audit.entries == [
+        ("laptop", "list_spools", "ok"),
+        ("laptop", "pause_print", "forbidden"),
+        ("laptop", "list_spools", "invalid"),
+    ]

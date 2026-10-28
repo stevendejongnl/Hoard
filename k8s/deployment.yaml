@@ -40,6 +40,12 @@ spec:
               value: /app/static
             - name: REDIS_URL
               value: redis://redis:6379
+            - name: MCP_CLIENTS
+              valueFrom:
+                secretKeyRef:
+                  name: hoard-secrets
+                  key: MCP_CLIENTS
+                  optional: true
             - name: MOONRAKER_URL
               valueFrom:
                 secretKeyRef:

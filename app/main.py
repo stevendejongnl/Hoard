@@ -12,6 +12,11 @@ from fastapi.staticfiles import StaticFiles
 from app import cache, db, ha, recorder, sse
 from app.config import settings
 from app.influx import influx
+from app.mcp.api_request import InProcessApi
+from app.mcp.catalog import build_tool_definitions
+from app.mcp.endpoint import create_mcp_router
+from app.mcp.server import McpServer
+from app.mcp.tokens import parse_registered_clients
 from app.moonraker import moonraker
 from app.routes import (
     chunks,
@@ -93,6 +98,23 @@ app.include_router(projects.router)
 app.include_router(prints.router)
 app.include_router(push.router)
 app.include_router(temperatures.router)
+
+
+def create_mcp_server() -> McpServer:
+    return McpServer(build_tool_definitions(app.openapi()), InProcessApi(app), version=_APP_VERSION)
+
+
+_mcp_server: McpServer | None = None
+
+
+def get_mcp_server() -> McpServer:
+    global _mcp_server
+    if _mcp_server is None:
+        _mcp_server = create_mcp_server()
+    return _mcp_server
+
+
+app.include_router(create_mcp_router(get_mcp_server, lambda: parse_registered_clients(settings.mcp_clients)))
 
 
 @app.get("/api/version")
