@@ -1,6 +1,6 @@
 // Served from the root (not /assets/sw.js) so its scope covers the whole
 // origin - a worker scoped to /assets/ can never control real page requests.
-const CACHE = 'printer-v1';
+const CACHE = 'hoard-v1';
 const APP_SHELL = ['/'];
 
 self.addEventListener('install', (e) => {

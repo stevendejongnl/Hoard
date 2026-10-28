@@ -1,5 +1,5 @@
 services:
-  printer:
+  hoard:
     build: .
     restart: unless-stopped
     ports:

@@ -8,7 +8,7 @@ import './styles/design-tokens.css'
 import './styles/components.css'
 import './styles/shell.css'
 import { createAccentTheme } from './accent-theme'
-import './components/printer-app'
+import './components/hoard-app'
 import { sseClient } from './sse'
 import { registerServiceWorker } from './notifications'
 

@@ -149,7 +149,7 @@ bottom-tabs {
 }
 
 /* The frame of the app: top bar, page, status bar, phone tab bar. */
-printer-app {
+hoard-app {
   display: flex;
   flex-direction: column;
   height: 100vh;

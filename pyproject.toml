@@ -1,5 +1,5 @@
 [project]
-name = "printer"
+name = "hoard"
 version = "1.38.0"
 requires-python = ">=3.12"
 dependencies = [
