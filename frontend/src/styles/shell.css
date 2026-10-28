@@ -325,3 +325,15 @@ status-bar {
     display: none;
   }
 }
+
+/* The dashboard's phone header is drawn with a wider right edge and a smaller stop icon than the other pages. */
+@media (max-width: 800px) {
+  top-navigation[route='/'] .top-navigation {
+    padding: 0 12px 0 16px;
+  }
+
+  top-navigation[route='/'] .top-navigation .button.emergency-stop svg {
+    width: 16px;
+    height: 16px;
+  }
+}
