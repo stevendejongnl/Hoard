@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: printer-data
-  namespace: printer
+  name: hoard-data
+  namespace: hoard
 spec:
   accessModes:
     - ReadWriteOnce

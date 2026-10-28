@@ -1,31 +1,33 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: printer
-  namespace: printer
+  name: hoard
+  namespace: hoard
   labels:
-    app: printer
+    app: hoard
   annotations: {}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: printer
+      app: hoard
   template:
     metadata:
       labels:
-        app: printer
+        app: hoard
     spec:
       containers:
-        - name: printer
-          image: ghcr.io/stevendejongnl/printer:latest
+        - name: hoard
+          image: ghcr.io/stevendejongnl/hoard:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8765
               name: http
           env:
             - name: DATABASE_PATH
-              value: /data/printer.db
+              value: /data/hoard.db
+            - name: UPLOADS_DIR
+              value: /data/uploads
             - name: STATIC_DIR
               value: /app/static
             - name: REDIS_URL
@@ -33,57 +35,57 @@ spec:
             - name: MOONRAKER_URL
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: MOONRAKER_URL
             - name: MOONRAKER_WS
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: MOONRAKER_WS
             - name: HA_URL
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: HA_URL
             - name: HA_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: HA_TOKEN
             - name: INFLUXDB_URL
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: INFLUXDB_URL
             - name: INFLUXDB_TOKEN
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: INFLUXDB_TOKEN
             - name: INFLUXDB_ORG
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: INFLUXDB_ORG
             - name: INFLUXDB_BUCKET
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: INFLUXDB_BUCKET
             - name: VAPID_PUBLIC_KEY
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: VAPID_PUBLIC_KEY
             - name: VAPID_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: VAPID_PRIVATE_KEY
             - name: VAPID_SUBJECT
               valueFrom:
                 secretKeyRef:
-                  name: printer-secrets
+                  name: hoard-secrets
                   key: VAPID_SUBJECT
           volumeMounts:
             - name: data
@@ -98,4 +100,4 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: printer-data
+            claimName: hoard-data

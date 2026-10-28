@@ -58,7 +58,7 @@ cp .env.example .env
 docker compose up --build
 ```
 
-The app listens on port 8765. `docker-compose.yml` starts Redis next to it, and keeps the database in a volume. The images are built and published by the release workflow as `ghcr.io/stevendejongnl/printer`. The `k8s/` folder has the manifests I deploy with.
+The app listens on port 8765. `docker-compose.yml` starts Redis next to it, and keeps the database in a volume. The images are built and published by the release workflow as `ghcr.io/stevendejongnl/hoard`. The `k8s/` folder has the manifests I deploy with.
 
 Web push needs a VAPID key pair (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`). Without it the bell stays hidden.
 

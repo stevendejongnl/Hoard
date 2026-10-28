@@ -5,11 +5,11 @@ services:
     ports:
       - "8765:8765"
     volumes:
-      - printer-data:/data
+      - hoard-data:/data
     env_file:
       - .env
     environment:
-      DATABASE_PATH: /data/printer.db
+      DATABASE_PATH: /data/hoard.db
       STATIC_DIR: /app/static
       REDIS_URL: redis://redis:6379
     depends_on:
@@ -20,4 +20,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  printer-data:
+  hoard-data:
