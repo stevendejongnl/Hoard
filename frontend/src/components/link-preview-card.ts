@@ -83,7 +83,7 @@ export class LinkPreviewCard extends LitElement {
     this.isVisible = !this.isVisible
   }
 
-  private open(event: Event) {
+  private openLinkAndHide(event: Event) {
     event.stopPropagation()
     this.isVisible = false
     this.openLink(this.link.url)
@@ -152,7 +152,7 @@ export class LinkPreviewCard extends LitElement {
       -webkit-box-orient: vertical;
     }
 
-    .desc {
+    .description {
       font-size: 11px;
       color: #888;
       line-height: 1.5;
@@ -228,18 +228,18 @@ export class LinkPreviewCard extends LitElement {
   }
 
   private renderCard(): TemplateResult {
-    const meta = this.link?.meta
-    const printSettings = meta?.print_settings
+    const metadata = this.link?.meta
+    const printSettings = metadata?.print_settings
     const printSettingEntries = printSettings ? Object.entries(printSettings).filter(([, value]) => value) : []
     return html`<div class="card ${this.isVisible ? 'visible' : ''}">
-      ${this.renderCover(meta?.image_url)}
+      ${this.renderCover(metadata?.image_url)}
       <div class="body">
-        ${meta?.title ? html`<div class="title">${meta.title}</div>` : ''}
-        ${meta?.description ? html`<div class="desc">${stripHtml(meta.description)}</div>` : ''}
+        ${metadata?.title ? html`<div class="title">${metadata.title}</div>` : ''}
+        ${metadata?.description ? html`<div class="description">${stripHtml(metadata.description)}</div>` : ''}
         ${this.renderChips(printSettingEntries)}
       </div>
       <div class="footer">
-        <button class="open-button" @click=${this.open}>Open link ↗</button>
+        <button class="open-button" @click=${this.openLinkAndHide}>Open link ↗</button>
       </div>
     </div>`
   }
