@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit'
+import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import type { ProjectLink } from '../types'
 
@@ -201,54 +202,44 @@ export class LinkPreviewCard extends LitElement {
     }
   `
 
-  render() {
+  private _renderCover(imageUrl: string | undefined): TemplateResult | string {
+    if (!imageUrl) return ''
+    const hideBrokenImage = (event: Event) => {
+      ;(event.target as HTMLElement).style.display = 'none'
+    }
+    return html`<img class="cover" src="${imageUrl}" alt="" @error=${hideBrokenImage} />`
+  }
+
+  private _renderChips(entries: [string, unknown][]): TemplateResult | string {
+    if (entries.length === 0) return ''
+    const chips = entries.map(([key, value]) => html` <span class="chip">${_label(key)}: ${value}</span> `)
+    return html`<div class="chips">${chips}</div>`
+  }
+
+  private _renderCard(): TemplateResult {
     const meta = this.link?.meta
     const printSettings = meta?.print_settings
     const printSettingEntries = printSettings ? Object.entries(printSettings).filter(([, value]) => value) : []
+    return html`<div class="card ${this._visible ? 'visible' : ''}">
+      ${this._renderCover(meta?.image_url)}
+      <div class="body">
+        ${meta?.title ? html`<div class="title">${meta.title}</div>` : ''}
+        ${meta?.description ? html`<div class="desc">${_stripHtml(meta.description)}</div>` : ''}
+        ${this._renderChips(printSettingEntries)}
+      </div>
+      <div class="footer">
+        <button class="open-btn" @click=${this._open}>Open link ↗</button>
+      </div>
+    </div>`
+  }
 
-    return html`
-      <slot></slot>
-
-      ${this._hasContent()
-        ? html`
-            <div class="card ${this._visible ? 'visible' : ''}">
-              ${meta?.image_url
-                ? html`
-                    <img
-                      class="cover"
-                      src="${meta.image_url}"
-                      alt=""
-                      @error=${(event: Event) => {
-                        ;(event.target as HTMLElement).style.display = 'none'
-                      }}
-                    />
-                  `
-                : ''}
-              <div class="body">
-                ${meta?.title ? html`<div class="title">${meta.title}</div>` : ''}
-                ${meta?.description ? html`<div class="desc">${_stripHtml(meta.description)}</div>` : ''}
-                ${printSettingEntries.length > 0
-                  ? html`
-                      <div class="chips">
-                        ${printSettingEntries.map(
-                          ([key, value]) => html` <span class="chip">${_label(key)}: ${value}</span> `,
-                        )}
-                      </div>
-                    `
-                  : ''}
-              </div>
-              <div class="footer">
-                <button class="open-btn" @click=${this._open}>Open link ↗</button>
-              </div>
-            </div>
-          `
-        : ''}
-    `
+  render() {
+    return html`<slot></slot> ${this._hasContent() ? this._renderCard() : ''}`
   }
 }
 
-function _stripHtml(html: string): string {
-  return html
+function _stripHtml(markup: string): string {
+  return markup
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')

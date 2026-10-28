@@ -133,29 +133,41 @@ export class StatusBar extends LitElement {
     this.accentTheme.storeAccentColor(text)
   }
 
+  private changeAccentColorFromInput(event: Event): void {
+    this.changeAccentColor((event.target as HTMLInputElement).value)
+  }
+
+  private renderAccentError(): TemplateResult | typeof nothing {
+    if (!this.hasAccentError) return nothing
+    return html`<span class="appearance-error">Use a hex color like #f45bcb</span>`
+  }
+
+  private renderAccentInputs(): TemplateResult {
+    const colorInputValue = normalizeHexadecimalColor(this.accentDraft) ?? this.accentTheme.readAccentColor()
+    return html`<div class="appearance-row">
+      <input
+        class="accent-color"
+        type="color"
+        aria-label="Pick accent color"
+        .value=${colorInputValue}
+        @input=${this.changeAccentColorFromInput}
+      />
+      <input
+        class="accent-text"
+        aria-label="Accent color hex"
+        maxlength="7"
+        spellcheck="false"
+        .value=${this.accentDraft}
+        @input=${this.changeAccentColorFromInput}
+      />
+    </div>`
+  }
+
   private renderPicker(): TemplateResult | typeof nothing {
     if (!this.isPickerOpen) return nothing
-    const colorInputValue = normalizeHexadecimalColor(this.accentDraft) ?? this.accentTheme.readAccentColor()
     return html`<div class="appearance-popover" id="appearance-popover" role="dialog" aria-label="Appearance">
       <span class="muted">Accent color (hex)</span>
-      <div class="appearance-row">
-        <input
-          class="accent-color"
-          type="color"
-          aria-label="Pick accent color"
-          .value=${colorInputValue}
-          @input=${(event: Event) => this.changeAccentColor((event.target as HTMLInputElement).value)}
-        />
-        <input
-          class="accent-text"
-          aria-label="Accent color hex"
-          maxlength="7"
-          spellcheck="false"
-          .value=${this.accentDraft}
-          @input=${(event: Event) => this.changeAccentColor((event.target as HTMLInputElement).value)}
-        />
-      </div>
-      ${this.hasAccentError ? html`<span class="appearance-error">Use a hex color like #f45bcb</span>` : nothing}
+      ${this.renderAccentInputs()} ${this.renderAccentError()}
       <div class="appearance-row">
         <button class="button small accent-reset" @click=${() => this.changeAccentColor(DEFAULT_ACCENT_COLOR)}>
           Reset

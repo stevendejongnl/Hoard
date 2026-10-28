@@ -296,9 +296,31 @@ export class SpoolsPage extends LitElement {
     </button>`
   }
 
+  private renderRemaining(spool: Spool): TemplateResult {
+    return html`<span class="spool-remaining">
+      <span class="remaining-bar"
+        ><span class="remaining-fill" style="width: ${calculateRemainingPercent(spool)}%"></span
+      ></span>
+      <span class="remaining-grams monospace">${spool.current_weight_g} / ${spool.initial_weight_g} g</span>
+    </span>`
+  }
+
+  private renderEditButton(spool: Spool): TemplateResult {
+    const stopAndEdit = (event: Event) => {
+      event.stopPropagation()
+      this.editSpool(spool)
+    }
+    return html`<button
+      class="button icon-only flat edit-spool-button"
+      aria-label="Edit ${buildSpoolName(spool)}"
+      @click=${stopAndEdit}
+    >
+      ${renderIcon('edit')}
+    </button>`
+  }
+
   private renderSpoolRow(spool: Spool): TemplateResult {
     const isSelected = spool.id === this.selectedSpoolId
-    const name = buildSpoolName(spool)
     return html`<div
       class="table-row spool-row ${isSelected ? 'selected' : ''}"
       tabindex="0"
@@ -307,30 +329,16 @@ export class SpoolsPage extends LitElement {
     >
       <span class="spool-swatch" style="background: ${spool.color_hex ?? 'transparent'}"></span>
       <div class="spool-heading">
-        <span class="spool-name">${name}</span>
+        <span class="spool-name">${buildSpoolName(spool)}</span>
         <span class="spool-meta">
           <span class="spool-material monospace">${formatMaterialLabel(spool.material)}</span>
           <span class="spool-color">${spool.color}</span>
           <span class="spool-price monospace">€${formatCostPerGram(spool.cost_per_gram)}</span>
         </span>
       </div>
-      <span class="spool-remaining">
-        <span class="remaining-bar"
-          ><span class="remaining-fill" style="width: ${calculateRemainingPercent(spool)}%"></span
-        ></span>
-        <span class="remaining-grams monospace">${spool.current_weight_g} / ${spool.initial_weight_g} g</span>
-      </span>
+      ${this.renderRemaining(spool)}
       <span class="spool-tag-cell">${spool.active ? html`<span class="in-use-tag">IN USE</span>` : nothing}</span>
-      <button
-        class="button icon-only flat edit-spool-button"
-        aria-label="Edit ${name}"
-        @click=${(event: Event) => {
-          event.stopPropagation()
-          this.editSpool(spool)
-        }}
-      >
-        ${renderIcon('edit')}
-      </button>
+      ${this.renderEditButton(spool)}
     </div>`
   }
 
@@ -397,37 +405,45 @@ export class SpoolsPage extends LitElement {
     </label>`
   }
 
+  private renderIdentitySection(): TemplateResult {
+    return html`<div class="section">
+      ${this.renderSectionHeader('Identity')}
+      <div class="section-body">
+        ${this.renderTextField('Brand', 'brand')} ${this.renderTextField('Material', 'material')}
+        ${this.renderTextField('Color', 'color')} ${this.renderColorHexField()}
+      </div>
+    </div>`
+  }
+
+  private renderWeightAndCostSection(): TemplateResult {
+    return html`<div class="section">
+      ${this.renderSectionHeader('Weight & cost')}
+      <div class="section-body">
+        ${this.renderTextField('Initial', 'initialWeight', '', 'g')}
+        ${this.renderTextField('Current', 'currentWeight', '', 'g')}
+        ${this.renderTextField('Cost per gram', 'costPerGram', '', '€')}
+      </div>
+    </div>`
+  }
+
+  private renderNotesSection(): TemplateResult {
+    return html`<div class="section">
+      ${this.renderSectionHeader('Notes')}
+      <div class="section-body notes-body">
+        <textarea
+          class="notes-field"
+          name="notes"
+          placeholder="[Notes]"
+          aria-label="Notes"
+          .value=${this.form.notes}
+          @input=${(event: Event) => this.changeField('notes', event)}
+        ></textarea>
+      </div>
+    </div>`
+  }
+
   private renderDetailsSections(): TemplateResult {
-    return html`
-      <div class="section">
-        ${this.renderSectionHeader('Identity')}
-        <div class="section-body">
-          ${this.renderTextField('Brand', 'brand')} ${this.renderTextField('Material', 'material')}
-          ${this.renderTextField('Color', 'color')} ${this.renderColorHexField()}
-        </div>
-      </div>
-      <div class="section">
-        ${this.renderSectionHeader('Weight & cost')}
-        <div class="section-body">
-          ${this.renderTextField('Initial', 'initialWeight', '', 'g')}
-          ${this.renderTextField('Current', 'currentWeight', '', 'g')}
-          ${this.renderTextField('Cost per gram', 'costPerGram', '', '€')}
-        </div>
-      </div>
-      <div class="section">
-        ${this.renderSectionHeader('Notes')}
-        <div class="section-body notes-body">
-          <textarea
-            class="notes-field"
-            name="notes"
-            placeholder="[Notes]"
-            aria-label="Notes"
-            .value=${this.form.notes}
-            @input=${(event: Event) => this.changeField('notes', event)}
-          ></textarea>
-        </div>
-      </div>
-    `
+    return html`${this.renderIdentitySection()} ${this.renderWeightAndCostSection()} ${this.renderNotesSection()}`
   }
 
   private renderTagButton(selected: Spool | null): TemplateResult | typeof nothing {

@@ -4,7 +4,7 @@ import { customElement, property, state } from 'lit/decorators.js'
 import { renderIcon } from '../icons'
 import { router } from '../router'
 import { buildSearchGroups, findSearchResultPath, parseSearchQuery } from '../search-results'
-import type { SearchGroup, SearchPayload, SearchScope } from '../search-results'
+import type { SearchGroup, SearchPayload, SearchResult, SearchScope } from '../search-results'
 import '../styles/search.css'
 
 type SearchState = 'idle' | 'found' | 'empty' | 'failed'
@@ -119,25 +119,27 @@ export class SearchModal extends LitElement {
     if (event.key === 'Enter') this.choosePath(findSearchResultPath(this.groups, this.cursor))
   }
 
+  private renderResult(result: SearchResult, position: number): TemplateResult {
+    const isCursor = position === this.cursor
+    return html`<div class="search-result ${isCursor ? 'cursor' : ''}" @click=${() => this.choosePath(result.path)}>
+      <span class="search-result-label">${result.label}</span
+      ><span class="muted search-result-detail">${result.detail}</span>
+    </div>`
+  }
+
+  private renderGroup(group: SearchGroup, firstPosition: number): TemplateResult {
+    return html`<div class="search-group">
+      <div class="search-group-title">${group.title}</div>
+      ${group.results.map((result, index) => this.renderResult(result, firstPosition + index))}
+    </div>`
+  }
+
+  private countResultsBefore(groupIndex: number): number {
+    return this.groups.slice(0, groupIndex).reduce((total, earlier) => total + earlier.results.length, 0)
+  }
+
   private renderResults(): TemplateResult {
-    let position = -1
-    return html`${this.groups.map(
-      (group) =>
-        html`<div class="search-group">
-          <div class="search-group-title">${group.title}</div>
-          ${group.results.map((result) => {
-            position += 1
-            const isCursor = position === this.cursor
-            return html`<div
-              class="search-result ${isCursor ? 'cursor' : ''}"
-              @click=${() => this.choosePath(result.path)}
-            >
-              <span class="search-result-label">${result.label}</span
-              ><span class="muted search-result-detail">${result.detail}</span>
-            </div>`
-          })}
-        </div>`,
-    )}`
+    return html`${this.groups.map((group, index) => this.renderGroup(group, this.countResultsBefore(index)))}`
   }
 
   private describeHint(): string {
