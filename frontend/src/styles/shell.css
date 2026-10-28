@@ -332,6 +332,10 @@ status-bar {
     padding: 0 12px 0 16px;
   }
 
+  top-navigation[route='/'] .top-navigation .phone-title {
+    font-size: 15px;
+  }
+
   top-navigation[route='/'] .top-navigation .button.emergency-stop svg {
     width: 16px;
     height: 16px;

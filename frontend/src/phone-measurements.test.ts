@@ -20,4 +20,14 @@ describe('phone measurements taken from the design', () => {
   it('sets the assign spool link at 12px in a history row', () => {
     expect(readStyles('history')).toContain('.history-layout .assign-spool-button {\n    font-size: 12px;')
   })
+
+  it('sets the dashboard title at 15px in the phone header', () => {
+    expect(readStyles('shell')).toContain(
+      "top-navigation[route='/'] .top-navigation .phone-title {\n    font-size: 15px;",
+    )
+  })
+
+  it('draws the back button of the print title strip with 8px of padding', () => {
+    expect(readStyles('print-detail')).toContain('.detail-layout .back-button {\n  padding: 0 8px;')
+  })
 })
