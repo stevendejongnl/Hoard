@@ -77,7 +77,7 @@ export class PrintDetailPage extends LitElement {
   }
 
   private renderField(label: string, name: string, value: string, unit = ''): TemplateResult {
-    const unitText = unit === '' ? nothing : html`<span class="value-unit">${unit}</span>`
+    const unitText = html`<span class="value-unit">${unit}</span>`
     return html`<div class="parameter-row">
       <span class="parameter-label">${label}</span
       ><span class="value-field" data-field=${name}>${value}${unitText}</span>
