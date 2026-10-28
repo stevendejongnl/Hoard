@@ -1,3 +1,15 @@
+## [1.41.0](https://github.com/stevendejongnl/Hoard/compare/v1.40.1...v1.41.0) (2026-10-28)
+
+### Features
+
+* **dashboard:** toggles for the configured switches, with a question before one is turned off ([658dbb3](https://github.com/stevendejongnl/Hoard/commit/658dbb3f9000c3f1009b560cd73429e7301c2ba4))
+* **switches:** control more Home Assistant switches, configured by label and entity ([dcbec9a](https://github.com/stevendejongnl/Hoard/commit/dcbec9a1067bee7f15fe76bb23ef0e82f50ac3e8))
+
+### Bug Fixes
+
+* **k8s:** the energy comes from the feed plug, the only sensor with statistics left ([a5581ce](https://github.com/stevendejongnl/Hoard/commit/a5581ce14028a2e4ec1a2416032236d5cbc889a7))
+* **k8s:** the sensors and the switch are the entities that Home Assistant has now ([c4477e2](https://github.com/stevendejongnl/Hoard/commit/c4477e2ebe8914e1695a255019f737fa5e190b8f))
+
 ## [1.40.1](https://github.com/stevendejongnl/Hoard/compare/v1.40.0...v1.40.1) (2026-10-28)
 
 ### Bug Fixes
