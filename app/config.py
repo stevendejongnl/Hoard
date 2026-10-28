@@ -1,3 +1,6 @@
+from pathlib import Path
+
+from pydantic import model_validator
 from pydantic_settings import BaseSettings
 
 
@@ -12,13 +15,20 @@ class Settings(BaseSettings):
     influxdb_bucket: str = "home"
     database_path: str = "/data/hoard.db"
     static_dir: str = "static"
-    uploads_dir: str = "./uploads"
+    # Empty means a folder next to the database: that folder is on the persistent volume of a deployment.
+    uploads_dir: str = ""
     redis_url: str = "redis://localhost:6379"
     vapid_public_key: str = ""
     vapid_private_key: str = ""
     vapid_subject: str = "mailto:admin@example.com"
 
     model_config = {"env_file": ".env", "extra": "ignore"}
+
+    @model_validator(mode="after")
+    def place_uploads_next_to_the_database(self) -> "Settings":
+        if not self.uploads_dir:
+            self.uploads_dir = str(Path(self.database_path).parent / "uploads")
+        return self
 
 
 settings = Settings()
