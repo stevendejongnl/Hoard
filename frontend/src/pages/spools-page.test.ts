@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
+import type { TagRecord } from '../spool-tag-formats'
 import type { Spool } from '../types'
 import './spools-page'
 import type { SpoolsPage } from './spools-page'
@@ -359,7 +360,9 @@ describe('setting the spool in use', () => {
 })
 
 describe('spool NFC tags', () => {
-  const readsTag = (tagId: string) => async () => tagId
+  const readsTag =
+    (tagId: string, records: TagRecord[] = []) =>
+    async () => ({ tagId, records })
 
   it('offers no tag actions when the phone cannot read tags', async () => {
     const page = await createSpoolsPage(createCalls(), { readTag: null })
@@ -399,5 +402,95 @@ describe('spool NFC tags', () => {
     await click(page, '.edit-spool-button')
     await click(page, '.unlink-tag-button')
     expect(calls.updated).toEqual([{ id: 1, data: { tag_id: '' } }])
+  })
+})
+
+describe('a scanned tag that carries a spool', () => {
+  const encoder = new TextEncoder()
+  const openSpoolRecord: TagRecord = {
+    mediaType: 'application/json',
+    data: encoder.encode('{"protocol":"openspool","type":"PETG","brand":"Polymaker","color_hex":"FFAABB"}'),
+  }
+  // an OpenPrintTag: PLA Galaxy Black of Prusament, 1012 g, color #3d3e3d
+  const openPrintTagRecord: TagRecord = {
+    mediaType: 'application/vnd.openprinttag',
+    data: Uint8Array.from(
+      'a0bf080009000a70504c412047616c61787920426c61636b0b6950727573616d656e74111903f413433d3e3dff'
+        .match(/../g)!
+        .map((pair) => parseInt(pair, 16)),
+    ),
+  }
+  const readsUnlinkedTag = (records: TagRecord[]) => ({
+    readTag: async () => ({ tagId: '04a1', records }),
+    findSpoolByTag: async () => null,
+  })
+
+  it('fills in the form of a new spool with what the tag says', async () => {
+    const page = await createSpoolsPage(createCalls(), readsUnlinkedTag([openSpoolRecord]))
+    await click(page, '.scan-tag-button')
+    expect(page.querySelector('.spools-details')?.textContent).toContain('Add spool')
+    expect(findInput(page, 'brand').value).toBe('Polymaker')
+    expect(findInput(page, 'material').value).toBe('PETG')
+    expect(findInput(page, 'colorHex').value).toBe('#ffaabb')
+  })
+
+  it('says where the data came from and what is left to fill in', async () => {
+    const page = await createSpoolsPage(createCalls(), readsUnlinkedTag([openSpoolRecord]))
+    await click(page, '.scan-tag-button')
+    expect(page.querySelector('.spool-tag-notice')?.textContent).toContain('OpenSpool')
+    expect(page.querySelector('.spool-tag-notice')?.textContent).toContain('price per gram')
+  })
+
+  it('fills in the name of the color and the weights from an OpenPrintTag', async () => {
+    const page = await createSpoolsPage(createCalls(), readsUnlinkedTag([openPrintTagRecord]))
+    await click(page, '.scan-tag-button')
+    expect(findInput(page, 'brand').value).toBe('Prusament')
+    expect(findInput(page, 'color').value).toBe('Galaxy Black')
+    expect(findInput(page, 'initialWeight').value).toBe('1012')
+    expect(findInput(page, 'currentWeight').value).toBe('1012')
+    expect(findInput(page, 'colorHex').value).toBe('#3d3e3d')
+  })
+
+  it('saves the spool with the id of the tag', async () => {
+    const calls = createCalls()
+    const page = await createSpoolsPage(calls, readsUnlinkedTag([openPrintTagRecord]))
+    await click(page, '.scan-tag-button')
+    await type(page, 'costPerGram', '0.025')
+    await click(page, '.save-button')
+    expect(calls.created).toHaveLength(1)
+    expect(calls.created[0]).toMatchObject({ brand: 'Prusament', material: 'PLA', tag_id: '04a1' })
+  })
+
+  it('does not link the tag when the form is closed and another spool is started', async () => {
+    const calls = createCalls()
+    const page = await createSpoolsPage(calls, readsUnlinkedTag([openSpoolRecord]))
+    await click(page, '.scan-tag-button')
+    await click(page, '.close-details-button')
+    await click(page, '.add-spool-button')
+    await type(page, 'brand', 'Other')
+    await type(page, 'material', 'PLA')
+    await type(page, 'color', 'Red')
+    await type(page, 'initialWeight', '1000')
+    await type(page, 'currentWeight', '1000')
+    await type(page, 'costPerGram', '0.02')
+    await click(page, '.save-button')
+    expect(calls.created[0]).not.toHaveProperty('tag_id')
+  })
+
+  it('still selects the spool of the tag when the tag is linked, whatever is on it', async () => {
+    const page = await createSpoolsPage(createCalls(), {
+      readTag: async () => ({ tagId: '04a1', records: [openSpoolRecord] }),
+      findSpoolByTag: async () => fixtureSpools[2],
+    })
+    await click(page, '.scan-tag-button')
+    expect(page.querySelector('.spool-row.selected .spool-name')?.textContent?.trim()).toContain('Generic')
+    expect(page.querySelector('.spools-details')?.textContent).not.toContain('Add spool')
+  })
+
+  it('says the tag is not linked when nothing on it is a known format', async () => {
+    const unknown: TagRecord = { mediaType: 'text/plain', data: encoder.encode('hello') }
+    const page = await createSpoolsPage(createCalls(), readsUnlinkedTag([unknown]))
+    await click(page, '.scan-tag-button')
+    expect(page.querySelector('.scan-message')?.textContent).toContain('not linked')
   })
 })
