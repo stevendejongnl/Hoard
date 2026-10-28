@@ -11,17 +11,6 @@ from app.influx import influx
 
 log = logging.getLogger(__name__)
 
-_POWER_SENSOR = "sensor.3d_printer_power"
-_PRICE_SENSOR = "sensor.electricity_price_all_in"
-
-# Energy entities in chronological order — the plug was renamed over time.
-# We query all three and use whichever has data for the print's time window.
-_ENERGY_STATS_IDS = [
-    "sensor.3dprinter_consumption",  # Dec 2021 → Oct 2023
-    "sensor.3d_printer_summation_delivered",  # Oct 2023 → Nov 2023 (bridge)
-    "sensor.3d_printer_energy",  # Nov 2023 → present
-]
-
 
 def _headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {settings.ha_token}"}
@@ -38,9 +27,14 @@ async def get_state(entity_id: str) -> dict[str, Any]:
         return r.json()
 
 
+def energy_sensor_ids() -> list[str]:
+    """The configured energy sensors, oldest first."""
+    return [name.strip() for name in settings.ha_energy_sensors.split(",") if name.strip()]
+
+
 async def get_current_power() -> float:
     try:
-        data = await get_state(_POWER_SENSOR)
+        data = await get_state(settings.ha_power_sensor)
         return float(data["state"])
     except Exception:
         return 0.0
@@ -48,7 +42,7 @@ async def get_current_power() -> float:
 
 async def get_current_price() -> float:
     try:
-        data = await get_state(_PRICE_SENSOR)
+        data = await get_state(settings.ha_price_sensor)
         return float(data["state"])
     except Exception:
         return 0.0
@@ -102,7 +96,7 @@ def time_weighted_avg(states: list[dict[str, Any]], window_end: datetime | None 
 
 
 async def avg_power_over(start: datetime, end: datetime) -> float:
-    states = await get_history(_POWER_SENSOR, start, end)
+    states = await get_history(settings.ha_power_sensor, start, end)
     return time_weighted_avg(states, window_end=end)
 
 
@@ -115,7 +109,7 @@ async def avg_price_over(start: datetime, end: datetime) -> float:
     if influx_price and influx_price > 0.001:
         return influx_price
 
-    states = await get_history(_PRICE_SENSOR, start, end)
+    states = await get_history(settings.ha_price_sensor, start, end)
     return time_weighted_avg(states, window_end=end)
 
 
@@ -175,17 +169,18 @@ async def _ws_statistics_during_period(
 async def energy_used_kwh(start: datetime, end: datetime) -> float | None:
     """Get exact kWh used between start and end using HA long-term statistics.
 
-    Queries all historical energy entities (plug was renamed over the years)
-    via the WebSocket API — works for any print going back to Dec 2021.
+    Queries the configured energy entities (a plug that was renamed over the years keeps its old sensors in
+    the list) via the WebSocket API.
     Returns None if no statistics cover the period.
     """
     start_ms = start.timestamp() * 1000
     end_ms = end.timestamp() * 1000
 
-    all_stats = await _ws_statistics_during_period(_ENERGY_STATS_IDS, start, end)
+    sensor_ids = energy_sensor_ids()
+    all_stats = await _ws_statistics_during_period(sensor_ids, start, end)
 
     # Try each entity; use the first one that brackets the print window
-    for entity_id in _ENERGY_STATS_IDS:
+    for entity_id in sensor_ids:
         points = all_stats.get(entity_id, [])
         if not isinstance(points, list) or not points:
             continue
@@ -208,3 +203,10 @@ async def energy_used_kwh(start: datetime, end: datetime) -> float | None:
             return max(0.0, round(delta, 4))
 
     return None
+
+
+async def record_current_price() -> None:
+    """Write the price that the price sensor shows now to InfluxDB, so a later cost can look it up."""
+    price = await get_current_price()
+    if price > 0:
+        influx.write_electricity_price(datetime.now(UTC), price)
