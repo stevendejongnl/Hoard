@@ -2,6 +2,7 @@ import base64
 import io
 import math
 import re
+from collections.abc import Callable
 
 from PIL import Image, ImageDraw
 
@@ -37,100 +38,115 @@ def extract_thumbnail_png(gcode_bytes: bytes, prefer_size: int = 300) -> bytes |
     return best[1] if best else None
 
 
-def render_toolpath_thumbnail(gcode_bytes: bytes, size: int = 300) -> bytes | None:
-    """Render an isometric 3D toolpath preview coloured by layer height."""
-    text = gcode_bytes.decode("ascii", errors="ignore")
+_X_PATTERN = re.compile(r"X([-\d.]+)", re.I)
+_Y_PATTERN = re.compile(r"Y([-\d.]+)", re.I)
+_Z_PATTERN = re.compile(r"Z([-\d.]+)", re.I)
+_EXTRUSION_PATTERN = re.compile(r"E[-\d.]+", re.I)
 
-    # Parse extrusion moves (G1 with E field) — skip travel moves
-    _x = re.compile(r"X([-\d.]+)", re.I)
-    _y = re.compile(r"Y([-\d.]+)", re.I)
-    _z = re.compile(r"Z([-\d.]+)", re.I)
-    _e = re.compile(r"E[-\d.]+", re.I)
+_MAXIMUM_LINES = 12000
+_MINIMUM_POINTS = 20
+_TARGET_POINTS = 4000
+_BACKGROUND_COLOR = (20, 20, 20)
 
-    cx = cy = cz = 0.0
-    points: list[tuple[float, float, float]] = []
+Point = tuple[float, float, float]
+Pixel = tuple[int, int]
 
-    for line in text.splitlines()[:12000]:
+
+def _parse_extrusion_points(gcode_text: str) -> list[Point]:
+    """Collect the position after every extrusion move (G0/G1 with E and X or Y), skipping travel moves."""
+    x = y = z = 0.0
+    points: list[Point] = []
+    for line in gcode_text.splitlines()[:_MAXIMUM_LINES]:
         bare = line.split(";")[0].strip()
         if not bare.upper().startswith(("G0", "G1")):
             continue
-        zm = _z.search(bare)
-        xm = _x.search(bare)
-        ym = _y.search(bare)
-        if zm:
-            cz = float(zm.group(1))
-        if xm:
-            cx = float(xm.group(1))
-        if ym:
-            cy = float(ym.group(1))
-        # Only record actual extrusion moves (not travels)
-        if _e.search(bare) and (xm or ym):
-            points.append((cx, cy, cz))
+        z_match = _Z_PATTERN.search(bare)
+        x_match = _X_PATTERN.search(bare)
+        y_match = _Y_PATTERN.search(bare)
+        if z_match:
+            z = float(z_match.group(1))
+        if x_match:
+            x = float(x_match.group(1))
+        if y_match:
+            y = float(y_match.group(1))
+        if _EXTRUSION_PATTERN.search(bare) and (x_match or y_match):
+            points.append((x, y, z))
+    return points
 
-    if len(points) < 20:
-        return None
 
-    # Thin down to ~4 000 points so rendering stays fast
-    step = max(1, len(points) // 4000)
-    points = points[::step]
-
-    # Isometric projection: yaw 45°, pitch 30°
+def _project_isometric(point: Point) -> tuple[float, float]:
+    """Isometric projection: yaw 45 degrees around the vertical axis, then pitch 30 degrees."""
+    x, y, z = point
     yaw = math.radians(45)
     pitch = math.radians(30)
-    cos_y, sin_y = math.cos(yaw), math.sin(yaw)
-    cos_p, sin_p = math.cos(pitch), math.sin(pitch)
+    rotated_x = x * math.cos(yaw) + z * math.sin(yaw)
+    rotated_z = -x * math.sin(yaw) + z * math.cos(yaw)
+    screen_y = y * math.cos(pitch) - rotated_z * math.sin(pitch)
+    return rotated_x, screen_y
 
-    def iso(x: float, y: float, z: float) -> tuple[float, float]:
-        # Rotate around vertical (Y) axis first
-        x2 = x * cos_y + z * sin_y
-        z2 = -x * sin_y + z * cos_y
-        # Then tilt (rotate around X)
-        sy = y * cos_p - z2 * sin_p
-        return x2, sy
 
-    projected = [iso(x, y, z) for x, y, z in points]
-    sxs = [p[0] for p in projected]
-    sys_ = [p[1] for p in projected]
-    min_sx, max_sx = min(sxs), max(sxs)
-    min_sy, max_sy = min(sys_), max(sys_)
-    rng = max(max_sx - min_sx, max_sy - min_sy) or 1.0
-
+def _build_pixel_mapper(projected: list[tuple[float, float]], size: int) -> Callable[[float, float], Pixel]:
+    xs = [position[0] for position in projected]
+    ys = [position[1] for position in projected]
+    minimum_x, minimum_y = min(xs), min(ys)
+    extent = max(max(xs) - minimum_x, max(ys) - minimum_y) or 1.0
     margin = max(6, size // 14)
-    canvas = size - 2 * margin
-    scale = canvas / rng
+    scale = (size - 2 * margin) / extent
 
-    def to_px(sx: float, sy: float) -> tuple[int, int]:
+    def to_pixel(screen_x: float, screen_y: float) -> Pixel:
         return (
-            int((sx - min_sx) * scale) + margin,
-            size - (int((sy - min_sy) * scale) + margin),
+            int((screen_x - minimum_x) * scale) + margin,
+            size - (int((screen_y - minimum_y) * scale) + margin),
         )
 
-    # Z range for height colour
-    zs = [p[2] for p in points]
-    z_min, z_max = min(zs), max(zs)
-    z_rng = z_max - z_min or 1.0
+    return to_pixel
 
-    img = Image.new("RGB", (size, size), (20, 20, 20))
-    draw = ImageDraw.Draw(img)
 
-    prev_px: tuple[int, int] | None = None
-    prev_z: float = 0.0
-    for (sx, sy), (_, _, pz) in zip(projected, points):
-        px = to_px(sx, sy)
-        # Height-based colour: dark teal at base → bright cyan at top
-        t = (pz - z_min) / z_rng
-        color = (int(t * 34), int(130 + t * 81), int(160 + t * 78))
-        if prev_px and abs(pz - prev_z) < z_rng * 0.3:
-            dx, dy = abs(px[0] - prev_px[0]), abs(px[1] - prev_px[1])
-            if dx < size * 0.35 and dy < size * 0.35:
-                draw.line([prev_px, px], fill=color, width=1)
-        prev_px = px
-        prev_z = pz
+def _height_color(fraction: float) -> tuple[int, int, int]:
+    """Dark teal at the base to bright cyan at the top."""
+    return (int(fraction * 34), int(130 + fraction * 81), int(160 + fraction * 78))
 
-    buf = io.BytesIO()
-    img.save(buf, "PNG", optimize=True)
-    buf.seek(0)
-    return buf.read()
+
+def _draw_toolpath(
+    draw: ImageDraw.ImageDraw,
+    points: list[Point],
+    projected: list[tuple[float, float]],
+    to_pixel: Callable[[float, float], Pixel],
+    size: int,
+) -> None:
+    heights = [point[2] for point in points]
+    lowest = min(heights)
+    height_range = max(heights) - lowest or 1.0
+    previous_pixel: Pixel | None = None
+    previous_height = 0.0
+    for (screen_x, screen_y), height in zip(projected, heights):
+        pixel = to_pixel(screen_x, screen_y)
+        if previous_pixel and _is_connected(previous_pixel, pixel, previous_height, height, height_range, size):
+            draw.line([previous_pixel, pixel], fill=_height_color((height - lowest) / height_range), width=1)
+        previous_pixel = pixel
+        previous_height = height
+
+
+def _is_connected(
+    previous: Pixel, current: Pixel, previous_height: float, height: float, height_range: float, size: int
+) -> bool:
+    if abs(height - previous_height) >= height_range * 0.3:
+        return False
+    return abs(current[0] - previous[0]) < size * 0.35 and abs(current[1] - previous[1]) < size * 0.35
+
+
+def render_toolpath_thumbnail(gcode_bytes: bytes, size: int = 300) -> bytes | None:
+    """Render an isometric 3D toolpath preview coloured by layer height."""
+    points = _parse_extrusion_points(gcode_bytes.decode("ascii", errors="ignore"))
+    if len(points) < _MINIMUM_POINTS:
+        return None
+    points = points[:: max(1, len(points) // _TARGET_POINTS)]  # thin down so rendering stays fast
+    projected = [_project_isometric(point) for point in points]
+    image = Image.new("RGB", (size, size), _BACKGROUND_COLOR)
+    _draw_toolpath(ImageDraw.Draw(image), points, projected, _build_pixel_mapper(projected, size), size)
+    buffer = io.BytesIO()
+    image.save(buffer, "PNG", optimize=True)
+    return buffer.getvalue()
 
 
 def inject_thumbnails(
