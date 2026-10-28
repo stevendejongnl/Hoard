@@ -3,34 +3,34 @@ import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
 
-async function req<T>(path: string, opts?: RequestInit): Promise<T> {
-  const r = await fetch(path, opts)
-  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
-  return r.json() as Promise<T>
+async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
+  const response = await fetch(path, options)
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
+  return response.json() as Promise<T>
 }
 
 // Files
-export const getFiles = () => req<GcodeFile[]>('/api/files')
+export const getFiles = () => fetchJson<GcodeFile[]>('/api/files')
 export const getFileMetadata = (filename: string) =>
-  req<GcodeFile>(`/api/files/metadata?filename=${encodeURIComponent(filename)}`)
+  fetchJson<GcodeFile>(`/api/files/metadata?filename=${encodeURIComponent(filename)}`)
 export const injectThumbnail = (gcodeFilename: string, stlFile: File) => {
-  const fd = new FormData()
-  fd.append('stl_file', stlFile)
-  fd.append('gcode_filename', gcodeFilename)
-  return req<{ status: string; filename: string }>('/api/files/thumbnail/inject', {
+  const formData = new FormData()
+  formData.append('stl_file', stlFile)
+  formData.append('gcode_filename', gcodeFilename)
+  return fetchJson<{ status: string; filename: string }>('/api/files/thumbnail/inject', {
     method: 'POST',
-    body: fd,
+    body: formData,
   })
 }
 
 export const uploadFile = (file: File) => {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), 60_000)
-  const fd = new FormData()
-  fd.append('file', file)
-  return req<{ item: { path: string } }>('/api/files/upload', {
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchJson<{ item: { path: string } }>('/api/files/upload', {
     method: 'POST',
-    body: fd,
+    body: formData,
     signal: controller.signal,
   }).finally(() => clearTimeout(timeout))
 }
@@ -45,60 +45,60 @@ export async function uploadFileChunked(
   const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
 
   try {
-    for (let i = 0; i < totalChunks; i++) {
-      const start = i * CHUNK_SIZE
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE
       const blob = file.slice(start, start + CHUNK_SIZE)
 
-      const fd = new FormData()
-      fd.append('file', blob, file.name)
-      fd.append('upload_id', uploadId)
-      fd.append('filename', file.name)
-      fd.append('chunk_index', String(i))
-      fd.append('total_chunks', String(totalChunks))
+      const formData = new FormData()
+      formData.append('file', blob, file.name)
+      formData.append('upload_id', uploadId)
+      formData.append('filename', file.name)
+      formData.append('chunk_index', String(chunkIndex))
+      formData.append('total_chunks', String(totalChunks))
 
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 120_000)
       try {
-        await req('/api/files/chunks/upload', { method: 'POST', body: fd, signal: controller.signal })
+        await fetchJson('/api/files/chunks/upload', { method: 'POST', body: formData, signal: controller.signal })
       } finally {
         clearTimeout(timeout)
       }
 
-      onProgress?.(i + 1, totalChunks)
+      onProgress?.(chunkIndex + 1, totalChunks)
     }
     return { filename: file.name }
-  } catch (err) {
+  } catch (error) {
     // Clean up partial upload
     fetch(`/api/files/chunks/cancel/${uploadId}`, { method: 'DELETE' }).catch(() => {})
-    throw err
+    throw error
   }
 }
 
 // History
 export const getHistory = (limit = 20, offset = 0) =>
-  req<{ records: PrintRecord[]; total: number }>(`/api/history?limit=${limit}&offset=${offset}`)
+  fetchJson<{ records: PrintRecord[]; total: number }>(`/api/history?limit=${limit}&offset=${offset}`)
 export const assignSpool = (jobId: string, spoolId: number) =>
-  req(`/api/history/${encodeURIComponent(jobId)}/spool`, {
+  fetchJson(`/api/history/${encodeURIComponent(jobId)}/spool`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ spool_id: spoolId }),
   })
 export const recalculateCost = (jobId: string) =>
-  req(`/api/history/${encodeURIComponent(jobId)}/recalculate`, { method: 'POST' })
+  fetchJson(`/api/history/${encodeURIComponent(jobId)}/recalculate`, { method: 'POST' })
 
 export const restoreCost = (jobId: string) =>
-  req(`/api/history/${encodeURIComponent(jobId)}/restore`, { method: 'POST' })
+  fetchJson(`/api/history/${encodeURIComponent(jobId)}/restore`, { method: 'POST' })
 
 // Spools
-export const getSpools = () => req<Spool[]>('/api/spools')
+export const getSpools = () => fetchJson<Spool[]>('/api/spools')
 export const createSpool = (data: Partial<Spool>) =>
-  req<Spool>('/api/spools', {
+  fetchJson<Spool>('/api/spools', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
 export const updateSpool = (id: number, data: Partial<Spool>) =>
-  req<Spool>(`/api/spools/${id}`, {
+  fetchJson<Spool>(`/api/spools/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -123,40 +123,40 @@ export interface Webcam {
   aspect_ratio: string
   target_fps?: number
 }
-export const getWebcams = () => req<Webcam[]>('/api/webcams')
+export const getWebcams = () => fetchJson<Webcam[]>('/api/webcams')
 
 // Control
-export const powerOn = () => req('/api/control/power/on', { method: 'POST' })
-export const powerOff = () => req('/api/control/power/off', { method: 'POST' })
-export const firmwareRestart = () => req('/api/control/firmware_restart', { method: 'POST' })
-export const emergencyStop = () => req('/api/control/emergency_stop', { method: 'POST' })
+export const powerOn = () => fetchJson('/api/control/power/on', { method: 'POST' })
+export const powerOff = () => fetchJson('/api/control/power/off', { method: 'POST' })
+export const firmwareRestart = () => fetchJson('/api/control/firmware_restart', { method: 'POST' })
+export const emergencyStop = () => fetchJson('/api/control/emergency_stop', { method: 'POST' })
 export const startPrint = (filename: string) =>
-  req(`/api/control/print?filename=${encodeURIComponent(filename)}`, { method: 'POST' })
-export const pausePrint = () => req('/api/control/pause', { method: 'POST' })
-export const resumePrint = () => req('/api/control/resume', { method: 'POST' })
-export const cancelPrint = () => req('/api/control/cancel', { method: 'POST' })
+  fetchJson(`/api/control/print?filename=${encodeURIComponent(filename)}`, { method: 'POST' })
+export const pausePrint = () => fetchJson('/api/control/pause', { method: 'POST' })
+export const resumePrint = () => fetchJson('/api/control/resume', { method: 'POST' })
+export const cancelPrint = () => fetchJson('/api/control/cancel', { method: 'POST' })
 
 // Predict
 export const predict = (filename: string, spoolId: number | null, quantity: number) => {
-  const params = new URLSearchParams({ filename, quantity: String(quantity) })
-  if (spoolId !== null) params.set('spool_id', String(spoolId))
-  return req<PredictResult>(`/api/predict?${params}`)
+  const queryParameters = new URLSearchParams({ filename, quantity: String(quantity) })
+  if (spoolId !== null) queryParameters.set('spool_id', String(spoolId))
+  return fetchJson<PredictResult>(`/api/predict?${queryParameters}`)
 }
 
 // Projects
-export const getProjects = () => req<Project[]>('/api/projects')
+export const getProjects = () => fetchJson<Project[]>('/api/projects')
 
 export const createProject = (name: string) =>
-  req<Project>('/api/projects', {
+  fetchJson<Project>('/api/projects', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   })
 
-export const getProject = (id: number) => req<Project>(`/api/projects/${id}`)
+export const getProject = (id: number) => fetchJson<Project>(`/api/projects/${id}`)
 
 export const updateProject = (id: number, data: { name?: string; notes?: string }) =>
-  req<Project>(`/api/projects/${id}`, {
+  fetchJson<Project>(`/api/projects/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -165,19 +165,19 @@ export const updateProject = (id: number, data: { name?: string; notes?: string 
 export const deleteProject = (id: number) => fetch(`/api/projects/${id}`, { method: 'DELETE' })
 
 export const addProjectFile = (projectId: number, data: { type: string; filename: string; label?: string }) =>
-  req<ProjectFile>(`/api/projects/${projectId}/files`, {
+  fetchJson<ProjectFile>(`/api/projects/${projectId}/files`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
 
 export const uploadProjectStl = (projectId: number, file: File, label?: string) => {
-  const fd = new FormData()
-  fd.append('file', file)
-  if (label) fd.append('label', label)
-  return req<ProjectFile>(`/api/projects/${projectId}/files/upload`, {
+  const formData = new FormData()
+  formData.append('file', file)
+  if (label) formData.append('label', label)
+  return fetchJson<ProjectFile>(`/api/projects/${projectId}/files/upload`, {
     method: 'POST',
-    body: fd,
+    body: formData,
   })
 }
 
@@ -185,7 +185,7 @@ export const deleteProjectFile = (projectId: number, fileId: number) =>
   fetch(`/api/projects/${projectId}/files/${fileId}`, { method: 'DELETE' })
 
 export const addProjectLink = (projectId: number, data: { url: string; label?: string }) =>
-  req<ProjectLink>(`/api/projects/${projectId}/links`, {
+  fetchJson<ProjectLink>(`/api/projects/${projectId}/links`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -195,7 +195,7 @@ export const deleteProjectLink = (projectId: number, linkId: number, clearCover 
   fetch(`/api/projects/${projectId}/links/${linkId}?clear_cover=${clearCover}`, { method: 'DELETE' })
 
 export const linkProjectPrint = (projectId: number, data: { job_id: string; project_file_id?: number }) =>
-  req<ProjectPrint>(`/api/projects/${projectId}/prints`, {
+  fetchJson<ProjectPrint>(`/api/projects/${projectId}/prints`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -207,27 +207,28 @@ export const unlinkProjectPrint = (projectId: number, jobId: string) =>
   })
 
 export const refreshProjectPrint = (projectId: number, jobId: string) =>
-  req<ProjectPrint>(`/api/projects/${projectId}/prints/${encodeURIComponent(jobId)}/refresh`, {
+  fetchJson<ProjectPrint>(`/api/projects/${projectId}/prints/${encodeURIComponent(jobId)}/refresh`, {
     method: 'PATCH',
   })
 
 // Print jobs
 export const getPrintJob = (jobId: string) =>
-  req<PrintJob & { photos: PrintPhoto[] } & Partial<PrintRecord>>(`/api/prints/${encodeURIComponent(jobId)}`)
+  fetchJson<PrintJob & { photos: PrintPhoto[] } & Partial<PrintRecord>>(`/api/prints/${encodeURIComponent(jobId)}`)
 
 export const updatePrintJob = (jobId: string, data: Partial<Pick<PrintJob, 'notes' | 'settings'>>) =>
-  req<PrintJob>(`/api/prints/${encodeURIComponent(jobId)}`, {
+  fetchJson<PrintJob>(`/api/prints/${encodeURIComponent(jobId)}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
 
-export const getPrintPhotos = (jobId: string) => req<PrintPhoto[]>(`/api/prints/${encodeURIComponent(jobId)}/photos`)
+export const getPrintPhotos = (jobId: string) =>
+  fetchJson<PrintPhoto[]>(`/api/prints/${encodeURIComponent(jobId)}/photos`)
 
 export const uploadPrintPhoto = (jobId: string, file: File) => {
-  const fd = new FormData()
-  fd.append('file', file)
-  return req<PrintPhoto>(`/api/prints/${encodeURIComponent(jobId)}/photos`, { method: 'POST', body: fd })
+  const formData = new FormData()
+  formData.append('file', file)
+  return fetchJson<PrintPhoto>(`/api/prints/${encodeURIComponent(jobId)}/photos`, { method: 'POST', body: formData })
 }
 
 export const deletePrintPhoto = (jobId: string, photoId: number) =>
@@ -235,4 +236,4 @@ export const deletePrintPhoto = (jobId: string, photoId: number) =>
 
 // Temperatures
 export const getTemperatureHistory = () =>
-  req<{ samples: TemperatureSample[] }>('/api/temperatures/history').then((history) => history.samples)
+  fetchJson<{ samples: TemperatureSample[] }>('/api/temperatures/history').then((history) => history.samples)

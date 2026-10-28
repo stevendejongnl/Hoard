@@ -12,13 +12,13 @@ describe('favicon.svg', () => {
   })
 
   it('is valid SVG with a viewBox, an accent tile and a glyph', () => {
-    const doc = new DOMParser().parseFromString(read('public/favicon.svg'), 'image/svg+xml')
-    expect(doc.querySelector('parsererror')).toBeNull()
-    const svg = doc.documentElement
+    const svgDocument = new DOMParser().parseFromString(read('public/favicon.svg'), 'image/svg+xml')
+    expect(svgDocument.querySelector('parsererror')).toBeNull()
+    const svg = svgDocument.documentElement
     expect(svg.tagName).toBe('svg')
     expect(svg.getAttribute('viewBox')).toBeTruthy()
-    expect(doc.querySelector('rect[rx]')).not.toBeNull()
-    expect(doc.querySelectorAll('path, rect, circle').length).toBeGreaterThan(3)
+    expect(svgDocument.querySelector('rect[rx]')).not.toBeNull()
+    expect(svgDocument.querySelectorAll('path, rect, circle').length).toBeGreaterThan(3)
   })
 
   it('is self-contained: no scripts, no external references', () => {

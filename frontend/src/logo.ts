@@ -43,16 +43,16 @@ const SMALL_MARK =
   '<rect x="55" y="39" width="7" height="15" rx="3" fill="currentColor"/>'
 
 /** Decorative by default; pass a label when the mark is the only thing naming the control. */
-export function hoardMark(size = 24, opts: { label?: string } = {}): TemplateResult {
+export function hoardMark(size = 24, options: { label?: string } = {}): TemplateResult {
   const body = markVariant(size) === 'full' ? fullMark(`hoard-mark-${++maskSeq}`) : SMALL_MARK
-  return opts.label
+  return options.label
     ? html`<svg
         width=${size}
         height=${size}
         viewBox="0 0 64 64"
         fill="none"
         role="img"
-        aria-label=${opts.label}
+        aria-label=${options.label}
         style="flex: none"
       >
         ${unsafeSVG(body)}

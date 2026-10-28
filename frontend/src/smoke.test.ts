@@ -16,10 +16,10 @@ describe('test environment', () => {
   })
 
   it('renders a Lit element into its shadow root', async () => {
-    const el = document.createElement('smoke-hello') as SmokeHello
-    document.body.appendChild(el)
-    await el.updateComplete
-    expect(el.shadowRoot?.querySelector('p')?.textContent).toBe('hello')
-    el.remove()
+    const element = document.createElement('smoke-hello') as SmokeHello
+    document.body.appendChild(element)
+    await element.updateComplete
+    expect(element.shadowRoot?.querySelector('p')?.textContent).toBe('hello')
+    element.remove()
   })
 })

@@ -38,10 +38,10 @@ export class LinkPreviewCard extends LitElement {
     document.removeEventListener('click', this._onOutsideClick, true)
   }
 
-  private _onOutsideClick = (e: Event) => {
+  private _onOutsideClick = (event: Event) => {
     if (!this._visible) return
     if (!this._isTouch()) return // desktop uses mouseleave to hide
-    if (!this.contains(e.target as Node)) {
+    if (!this.contains(event.target as Node)) {
       this._visible = false
     }
   }
@@ -62,17 +62,17 @@ export class LinkPreviewCard extends LitElement {
     }, 150)
   }
 
-  private _onClick = (e: Event) => {
+  private _onClick = (event: Event) => {
     if (!this._isTouch()) return // desktop: don't intercept, let <a> navigate
     if (!this._hasContent()) return // nothing to show, let <a> navigate
-    if (e.composedPath().some((el) => el instanceof Element && el.classList.contains('card'))) return // click inside popup card
-    e.preventDefault()
-    e.stopImmediatePropagation()
+    if (event.composedPath().some((target) => target instanceof Element && target.classList.contains('card'))) return // click inside popup card
+    event.preventDefault()
+    event.stopImmediatePropagation()
     this._visible = !this._visible
   }
 
-  private _open(e: Event) {
-    e.stopPropagation()
+  private _open(event: Event) {
+    event.stopPropagation()
     this._visible = false
     window.open(this.link.url, '_blank', 'noopener')
   }
@@ -202,9 +202,9 @@ export class LinkPreviewCard extends LitElement {
   `
 
   render() {
-    const m = this.link?.meta
-    const ps = m?.print_settings
-    const psEntries = ps ? Object.entries(ps).filter(([, v]) => v) : []
+    const meta = this.link?.meta
+    const printSettings = meta?.print_settings
+    const printSettingEntries = printSettings ? Object.entries(printSettings).filter(([, value]) => value) : []
 
     return html`
       <slot></slot>
@@ -212,25 +212,27 @@ export class LinkPreviewCard extends LitElement {
       ${this._hasContent()
         ? html`
             <div class="card ${this._visible ? 'visible' : ''}">
-              ${m?.image_url
+              ${meta?.image_url
                 ? html`
                     <img
                       class="cover"
-                      src="${m.image_url}"
+                      src="${meta.image_url}"
                       alt=""
-                      @error=${(e: Event) => {
-                        ;(e.target as HTMLElement).style.display = 'none'
+                      @error=${(event: Event) => {
+                        ;(event.target as HTMLElement).style.display = 'none'
                       }}
                     />
                   `
                 : ''}
               <div class="body">
-                ${m?.title ? html`<div class="title">${m.title}</div>` : ''}
-                ${m?.description ? html`<div class="desc">${_stripHtml(m.description)}</div>` : ''}
-                ${psEntries.length > 0
+                ${meta?.title ? html`<div class="title">${meta.title}</div>` : ''}
+                ${meta?.description ? html`<div class="desc">${_stripHtml(meta.description)}</div>` : ''}
+                ${printSettingEntries.length > 0
                   ? html`
                       <div class="chips">
-                        ${psEntries.map(([k, v]) => html` <span class="chip">${_label(k)}: ${v}</span> `)}
+                        ${printSettingEntries.map(
+                          ([key, value]) => html` <span class="chip">${_label(key)}: ${value}</span> `,
+                        )}
                       </div>
                     `
                   : ''}
@@ -263,8 +265,8 @@ const _LABELS: Record<string, string> = {
   weight_g: 'Weight',
   parts: 'Parts',
 }
-function _label(k: string) {
-  return _LABELS[k] ?? k
+function _label(key: string) {
+  return _LABELS[key] ?? key
 }
 
 declare global {
