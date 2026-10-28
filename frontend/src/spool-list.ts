@@ -17,13 +17,15 @@ export interface SpoolForm {
   colorHex: string
   initialWeight: string
   currentWeight: string
-  costPerGram: string
+  totalPrice: string
   notes: string
 }
 
 export type SpoolFormResult = { isValid: true; payload: Partial<Spool> } | { isValid: false; message: string }
 
 const COST_DECIMALS = 3
+const TOTAL_PRICE_DECIMALS = 4
+const COST_PER_GRAM_SIGNIFICANT_DIGITS = 12
 const DEFAULT_INITIAL_WEIGHT = '1000'
 
 export function buildSpoolName(spool: Spool): string {
@@ -37,6 +39,21 @@ export function formatMaterialLabel(material: string): string {
 export function formatCostPerGram(costPerGram: number): string {
   const fixed = costPerGram.toFixed(COST_DECIMALS)
   return Number(fixed) === costPerGram ? fixed : String(costPerGram)
+}
+
+function formatTotalPrice(totalPrice: number): string {
+  return String(Number(totalPrice.toFixed(TOTAL_PRICE_DECIMALS)))
+}
+
+function calculateCostPerGram(totalPrice: number, initialWeight: number): number {
+  return Number((totalPrice / initialWeight).toPrecision(COST_PER_GRAM_SIGNIFICANT_DIGITS))
+}
+
+export function describeCostPerGram(form: SpoolForm): string {
+  const totalPrice = parseNumber(form.totalPrice)
+  const initialWeight = parseNumber(form.initialWeight)
+  if (!(totalPrice >= 0) || !(initialWeight > 0)) return ''
+  return `= ${formatCostPerGram(calculateCostPerGram(totalPrice, initialWeight))} € per gram`
 }
 
 export function calculateRemainingPercent(spool: Spool): number {
@@ -90,7 +107,7 @@ export function createFormFromSpool(spool: Spool | null): SpoolForm {
       colorHex: '',
       initialWeight: DEFAULT_INITIAL_WEIGHT,
       currentWeight: DEFAULT_INITIAL_WEIGHT,
-      costPerGram: '',
+      totalPrice: '',
       notes: '',
     }
   }
@@ -101,7 +118,7 @@ export function createFormFromSpool(spool: Spool | null): SpoolForm {
     colorHex: spool.color_hex ?? '',
     initialWeight: String(spool.initial_weight_g),
     currentWeight: String(spool.current_weight_g),
-    costPerGram: formatCostPerGram(spool.cost_per_gram),
+    totalPrice: formatTotalPrice(spool.cost_per_gram * spool.initial_weight_g),
     notes: spool.notes ?? '',
   }
 }
@@ -113,14 +130,14 @@ function parseNumber(text: string): number {
 function findFormProblem(form: SpoolForm): string | null {
   const initialWeight = parseNumber(form.initialWeight)
   const currentWeight = parseNumber(form.currentWeight)
-  const costPerGram = parseNumber(form.costPerGram)
+  const totalPrice = parseNumber(form.totalPrice)
   if (form.brand.trim() === '') return 'Brand is required'
   if (form.colorHex.trim() !== '' && normalizeHexadecimalColor(form.colorHex) === null) {
     return 'Colour hex must look like #RRGGBB'
   }
   if (!(initialWeight > 0)) return 'Initial weight must be a number above zero'
   if (!(currentWeight >= 0)) return 'Current weight must be a number of zero or more'
-  if (!(costPerGram >= 0)) return 'Cost per gram must be a number of zero or more'
+  if (!(totalPrice >= 0)) return 'Total price must be a number of zero or more'
   return null
 }
 
@@ -136,7 +153,7 @@ export function parseSpoolForm(form: SpoolForm): SpoolFormResult {
       color_hex: normalizeHexadecimalColor(form.colorHex),
       initial_weight_g: Number(form.initialWeight),
       current_weight_g: Number(form.currentWeight),
-      cost_per_gram: Number(form.costPerGram),
+      cost_per_gram: calculateCostPerGram(parseNumber(form.totalPrice), parseNumber(form.initialWeight)),
       notes: form.notes.trim() === '' ? null : form.notes,
     },
   }

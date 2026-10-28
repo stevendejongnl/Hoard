@@ -19,6 +19,7 @@ import {
   calculateRemainingPercent,
   createFormFromSpool,
   createFormFromTagDraft,
+  describeCostPerGram,
   filterSpools,
   formatCostPerGram,
   formatMaterialLabel,
@@ -442,13 +443,27 @@ export class SpoolsPage extends LitElement {
     </div>`
   }
 
+  private renderTotalPriceField(): TemplateResult {
+    return html`<label class="parameter-row">
+      <span class="parameter-label">Total price</span>
+      <span class="cost-per-gram-hint">${describeCostPerGram(this.form)}</span>
+      <span class="value-field"
+        ><input
+          type="text"
+          name="totalPrice"
+          .value=${this.form.totalPrice}
+          @input=${(event: Event) => this.changeField('totalPrice', event)}
+        /><span class="value-unit">€</span></span
+      >
+    </label>`
+  }
+
   private renderWeightAndCostSection(): TemplateResult {
     return html`<div class="section">
       ${this.renderSectionHeader('Weight & cost')}
       <div class="section-body">
         ${this.renderTextField('Initial', 'initialWeight', '', 'g')}
-        ${this.renderTextField('Current', 'currentWeight', '', 'g')}
-        ${this.renderTextField('Cost per gram', 'costPerGram', '', '€')}
+        ${this.renderTextField('Current', 'currentWeight', '', 'g')} ${this.renderTotalPriceField()}
       </div>
     </div>`
   }
