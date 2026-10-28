@@ -1,3 +1,15 @@
+## [1.44.0](https://github.com/stevendejongnl/Hoard/compare/v1.43.0...v1.44.0) (2026-10-28)
+
+### Features
+
+* **projects:** a Print button on each G-code file, with a confirmation ([3f182d9](https://github.com/stevendejongnl/Hoard/commit/3f182d9a85d11d3cc715d45e81f51c24040dffda))
+* **spools:** the form takes a total price and calculates the cost per gram ([9df76f6](https://github.com/stevendejongnl/Hoard/commit/9df76f69eb62d88989d564330ffbb5c54e0e2b51))
+
+### Bug Fixes
+
+* **projects:** the Print button sits to the right on a phone, references follow the boards ([e213f0e](https://github.com/stevendejongnl/Hoard/commit/e213f0e2ef0d4e99d5622a6289e84a332ff79bce))
+* **webcams:** the camera stream is relayed as whole frames, newest first ([af989b8](https://github.com/stevendejongnl/Hoard/commit/af989b8cb414030aec3f7761928e825cf3093e29))
+
 ## [1.43.0](https://github.com/stevendejongnl/Hoard/compare/v1.42.1...v1.43.0) (2026-10-28)
 
 ### Features
