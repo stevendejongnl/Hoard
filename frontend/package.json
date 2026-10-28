@@ -13,6 +13,7 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\"",
     "parity": "cd .. && python3 -m frontend.parity.compare_screens",
+    "parity:targets": "cd .. && python3 -m frontend.parity.check_tap_targets",
     "parity:tests": "cd .. && PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest frontend/parity/tests -q -p no:cacheprovider",
     "parity:references": "cd .. && python3 -m frontend.parity.render_design_references",
     "lint": "eslint \"src/**/*.ts\" --max-warnings 0"
