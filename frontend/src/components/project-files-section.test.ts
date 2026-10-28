@@ -12,6 +12,10 @@ class FakeProjectFiles {
   linkedFilenames: string[] = []
   uploadedNames: string[] = []
   removedIdentifiers: number[] = []
+  printedFilenames: string[] = []
+  confirmations: string[] = []
+  isPrintConfirmed = true
+  printFailure: Error | null = null
 
   listGcodeFiles = async () => this.gcodeFilenames
 
@@ -28,6 +32,16 @@ class FakeProjectFiles {
   removeFile = async (fileIdentifier: number) => {
     this.removedIdentifiers.push(fileIdentifier)
   }
+
+  printFile = async (filename: string) => {
+    if (this.printFailure) throw this.printFailure
+    this.printedFilenames.push(filename)
+  }
+
+  confirm = (message: string) => {
+    this.confirmations.push(message)
+    return this.isPrintConfirmed
+  }
 }
 
 const mountedSections: ProjectFilesSection[] = []
@@ -39,6 +53,8 @@ async function mountSection(project: FakeProjectFiles, files: ProjectFile[]): Pr
   section.linkGcodeFile = project.linkGcodeFile
   section.uploadStl = project.uploadStl
   section.removeFile = project.removeFile
+  section.printFile = project.printFile
+  section.confirm = project.confirm
   document.body.appendChild(section)
   mountedSections.push(section)
   await section.updateComplete
@@ -129,5 +145,54 @@ describe('project-files-section', () => {
     await vi.waitFor(() => expect(changes).toHaveLength(1))
     expect(project.removedIdentifiers).toEqual([1])
     expect(changes[0].map((file) => file.id)).toEqual([2])
+  })
+
+  it('offers a Print button on the gcode files only', async () => {
+    const files = [createFile({ id: 1 }), createFile({ id: 2, type: 'stl', filename: 'gear.stl' })]
+    const section = await mountSection(new FakeProjectFiles(), files)
+    const rows = [...section.querySelectorAll('.file-row')]
+    expect(rows.map((row) => row.querySelector('.file-print') !== null)).toEqual([true, false])
+  })
+
+  it('names the file in the Print button for screen readers', async () => {
+    const section = await mountSection(new FakeProjectFiles(), [createFile({ filename: 'folder/plate.gcode' })])
+    expect(section.querySelector('.file-print')?.getAttribute('aria-label')).toBe('Print plate.gcode')
+  })
+
+  it('asks for confirmation with the file name, then prints the file on the printer', async () => {
+    const project = new FakeProjectFiles()
+    const section = await mountSection(project, [createFile({ filename: 'folder/plate.gcode' })])
+    ;(section.querySelector('.file-print') as HTMLElement).click()
+    await vi.waitFor(() => expect(project.printedFilenames).toEqual(['folder/plate.gcode']))
+    expect(project.confirmations).toEqual(['Start printing plate.gcode?'])
+  })
+
+  it('does not print when the confirmation is declined', async () => {
+    const project = new FakeProjectFiles()
+    project.isPrintConfirmed = false
+    const section = await mountSection(project, [createFile()])
+    ;(section.querySelector('.file-print') as HTMLElement).click()
+    await section.updateComplete
+    expect(project.printedFilenames).toEqual([])
+  })
+
+  it('says that the print started', async () => {
+    const section = await mountSection(new FakeProjectFiles(), [createFile()])
+    ;(section.querySelector('.file-print') as HTMLElement).click()
+    await vi.waitFor(() =>
+      expect(section.querySelector('.print-message')?.textContent).toContain('Started plate.gcode'),
+    )
+  })
+
+  it('says that the print could not start, with the reason', async () => {
+    const project = new FakeProjectFiles()
+    project.printFailure = new Error('Klipper is not ready')
+    const section = await mountSection(project, [createFile()])
+    ;(section.querySelector('.file-print') as HTMLElement).click()
+    await vi.waitFor(() =>
+      expect(section.querySelector('.print-message')?.textContent).toContain(
+        'Could not start plate.gcode: Klipper is not ready',
+      ),
+    )
   })
 })
