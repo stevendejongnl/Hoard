@@ -10,7 +10,7 @@ from fastapi.responses import Response
 from app.config import settings
 from app.gcode_thumbnail import extract_thumbnail_png, inject_thumbnails
 from app.moonraker import moonraker
-from app.thumbnail import render_stl_thumbnails
+from app.thumbnail import render_stl_thumbnails_in_worker
 
 router = APIRouter(prefix="/api/files", tags=["files"])
 
@@ -201,7 +201,7 @@ async def inject_thumbnail(
         raise HTTPException(502, f"Could not download gcode: {exc}") from exc
 
     try:
-        thumbnails = render_stl_thumbnails(stl_bytes)
+        thumbnails = await render_stl_thumbnails_in_worker(stl_bytes)
     except Exception as exc:
         raise HTTPException(422, f"STL render failed: {exc}") from exc
 

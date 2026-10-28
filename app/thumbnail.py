@@ -1,3 +1,4 @@
+import asyncio
 import io
 
 import numpy as np
@@ -86,3 +87,8 @@ def render_stl_thumbnails(stl_bytes: bytes) -> list[tuple[int, int, bytes]]:
     img_small.save(buf_small, "PNG")
 
     return [(32, 32, buf_small.getvalue()), (300, 300, png_large)]
+
+
+async def render_stl_thumbnails_in_worker(stl_bytes: bytes) -> list[tuple[int, int, bytes]]:
+    """Renders on a worker thread: a big model takes seconds, and the event loop must stay free for other requests."""
+    return await asyncio.to_thread(render_stl_thumbnails, stl_bytes)
