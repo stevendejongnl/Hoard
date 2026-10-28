@@ -82,6 +82,11 @@ describe('cost predictor', () => {
     expect(readText(panel, '[data-field="total"]')).toBe('€0.04')
   })
 
+  it('sets the gram unit of the filament apart from its amount, as the design does', async () => {
+    const panel = await createPanel([])
+    expect(readText(panel, '[data-field="filament-time"] .value-unit')).toBe('g')
+  })
+
   it('predicts again for another file', async () => {
     const predictions: { filename: string; spoolId: number | null }[] = []
     const panel = await createPanel(predictions)
