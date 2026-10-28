@@ -1,7 +1,7 @@
 import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
-import { addProjectFile, deleteProjectFile, getFiles, uploadProjectStl } from '../api'
+import { addProjectFile, deleteProjectFile, getFiles, startPrint, uploadProjectStl } from '../api'
 import { renderIcon } from '../icons'
 import type { ProjectFile } from '../types'
 
@@ -9,6 +9,10 @@ const MODEL_FILE_TYPES = '.stl,.3mf,.scad,.step,.stp,.obj,.f3d,.FCStd'
 
 function findBaseName(path: string): string {
   return path.split('/').pop() ?? path
+}
+
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
 }
 
 function describeFileKind(file: ProjectFile): string {
@@ -30,7 +34,11 @@ export class ProjectFilesSection extends LitElement {
   @property({ attribute: false }) removeFile: (fileIdentifier: number) => Promise<unknown> = (fileIdentifier) =>
     deleteProjectFile(this.projectId, fileIdentifier)
 
+  @property({ attribute: false }) printFile: (filename: string) => Promise<unknown> = startPrint
+  @property({ attribute: false }) confirm: (message: string) => boolean = (message) => window.confirm(message)
+
   @state() private isPickerOpen = false
+  @state() private printMessage = ''
   @state() private gcodeFilenames: string[] = []
 
   createRenderRoot() {
@@ -74,11 +82,43 @@ export class ProjectFilesSection extends LitElement {
     this.reportFiles(this.files.filter((file) => file.id !== fileIdentifier))
   }
 
+  private async printGcodeFile(file: ProjectFile): Promise<void> {
+    const name = findBaseName(file.filename)
+    if (!this.confirm(`Start printing ${name}?`)) return
+    this.printMessage = await this.tryPrint(file.filename, name)
+  }
+
+  private async tryPrint(filename: string, name: string): Promise<string> {
+    try {
+      await this.printFile(filename)
+      return `Started ${name}`
+    } catch (error) {
+      return `Could not start ${name}: ${describeError(error)}`
+    }
+  }
+
+  private renderPrintButton(file: ProjectFile): TemplateResult | typeof nothing {
+    if (file.type !== 'gcode') return nothing
+    return html`<button
+      class="button flat small file-print"
+      aria-label="Print ${findBaseName(file.filename)}"
+      @click=${() => this.printGcodeFile(file)}
+    >
+      ${renderIcon('play', 12)}Print
+    </button>`
+  }
+
+  private renderPrintMessage(): TemplateResult | typeof nothing {
+    if (this.printMessage === '') return nothing
+    return html`<div class="muted print-message" role="status">${this.printMessage}</div>`
+  }
+
   private renderFile(file: ProjectFile): TemplateResult {
     return html`<div class="file-row">
       <span class="muted file-icon">${renderIcon('file', 16)}</span>
       <span class="monospace file-name">${file.label ?? findBaseName(file.filename)}</span>
       <span class="muted file-kind">${describeFileKind(file)}</span>
+      ${this.renderPrintButton(file)}
       <button
         class="button flat icon-only small file-remove"
         aria-label="Remove file"
@@ -132,7 +172,7 @@ export class ProjectFilesSection extends LitElement {
           </button>
         </span>
       </div>
-      <div class="panel-body">${this.renderFiles()}</div>
+      <div class="panel-body">${this.renderFiles()}${this.renderPrintMessage()}</div>
       ${this.renderPicker()}
     </section>`
   }
