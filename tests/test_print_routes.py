@@ -6,7 +6,8 @@ from httpx import AsyncClient
 
 from app import db
 from app.config import settings
-from tests.route_fakes import FakeInflux, FakeMoonraker, install_fakes
+from app.routes.dependencies import provide_gcode_meta_reader
+from tests.route_fakes import FakeInflux, FakeMoonraker, install_fakes, override_provider
 
 END_TIME = 1_760_000_000
 JOB = {
@@ -97,21 +98,30 @@ async def test_the_detail_of_a_print_the_printer_does_not_know_is_empty(client: 
     assert (body["filament_g"], body["spool"], body["project"], body["cost_total"]) == (0.0, None, None, None)
 
 
-async def test_the_detail_reads_the_gcode_header_once_and_keeps_it(client: AsyncClient, monkeypatch):
-    moonraker = moonraker_with_job()
-    moonraker.gcode = b"; meta:operator=steven\n"
-    install_fakes(monkeypatch, moonraker=moonraker, influx=FakeInflux())
-    body = (await client.get("/api/prints/a")).json()
-    assert body["gcode_meta"]["operator"] == "steven"
-    assert (await db.get_or_create_print_job("a"))["gcode_meta"]["operator"] == "steven"
-    assert moonraker.downloads == ["part.gcode"]
+async def test_the_detail_reads_the_gcode_metadata_once_and_keeps_it(client: AsyncClient, monkeypatch):
+    asked: list[str] = []
 
+    async def read_gcode_meta(filename: str) -> dict:
+        asked.append(filename)
+        return {"operator": "steven"}
 
-async def test_the_detail_does_not_fail_when_the_gcode_header_cannot_be_read(client: AsyncClient, monkeypatch):
     install_fakes(monkeypatch, moonraker=moonraker_with_job(), influx=FakeInflux())
+    override_provider(monkeypatch, provide_gcode_meta_reader, read_gcode_meta)
+    body = (await client.get("/api/prints/a")).json()
+    assert body["gcode_meta"] == {"operator": "steven"}
+    assert (await db.get_or_create_print_job("a"))["gcode_meta"] == {"operator": "steven"}
+    assert asked == ["part.gcode"]
+
+
+async def test_the_detail_does_not_fail_when_the_gcode_metadata_cannot_be_read(client: AsyncClient, monkeypatch):
+    async def read_gcode_meta(filename: str) -> dict:
+        raise RuntimeError("no header")
+
+    install_fakes(monkeypatch, moonraker=moonraker_with_job(), influx=FakeInflux())
+    override_provider(monkeypatch, provide_gcode_meta_reader, read_gcode_meta)
     response = await client.get("/api/prints/a")
     assert response.status_code == 200
-    assert response.json()["gcode_meta"] == {}
+    assert response.json()["gcode_meta"] is None
 
 
 async def test_updating_a_print_that_has_no_row_yet_stores_nothing(client: AsyncClient):

@@ -11,7 +11,7 @@ from app.switches import SwitchDefinition, configured_switches, find_switch
 
 router = APIRouter(prefix="/api/control", tags=["control"])
 
-CreateClient = Callable[[], httpx.AsyncClient]
+CreateClient = Callable[..., httpx.AsyncClient]
 
 
 def _ha_headers() -> dict[str, str]:
