@@ -104,7 +104,7 @@ async def file_thumbnail(filename: str) -> Response:
             raise HTTPException(404, "No thumbnail path or data")
 
         # Try both with and without "gcodes/" prefix to handle different Moonraker versions
-        async with httpx.AsyncClient() as client:
+        async with moonraker.http_client() as client:
             for url in [
                 f"{settings.moonraker_url}/server/files/gcodes/{rel_path}",
                 f"{settings.moonraker_url}/server/files/{rel_path}",
@@ -153,7 +153,7 @@ async def thumbnail_from_gcode(filename: str) -> Response:
             if inline:
                 img = _b64.b64decode(inline)
             elif rel_path:
-                async with httpx.AsyncClient() as client:
+                async with moonraker.http_client() as client:
                     for url in [
                         f"{settings.moonraker_url}/server/files/gcodes/{rel_path}",
                         f"{settings.moonraker_url}/server/files/{rel_path}",
