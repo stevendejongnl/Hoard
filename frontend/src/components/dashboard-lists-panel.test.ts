@@ -114,14 +114,15 @@ describe('recent prints tab', () => {
     expect(calls.visited).toEqual(['/prints/job-0'])
   })
 
-  it('says so when the history cannot be loaded', async () => {
+  it('says so when the history cannot be loaded, and still offers to print a file', async () => {
     const panel = await createPanel({
       loadHistory: async () => {
         throw new Error('offline')
       },
       printerState: null,
     })
-    expect(panel.querySelector('.list-message')?.textContent).toBe('No prints to show')
+    expect(panel.querySelector('.list-message')?.textContent).toBe('Could not load the prints')
+    expect(panel.querySelector('.print-a-file-button')).not.toBeNull()
   })
 })
 
@@ -192,6 +193,7 @@ describe('dashboard lists that are still loading, or failed to load', () => {
   it('says the prints could not be loaded when the request fails', async () => {
     const panel = await createPanel({ printerState: idleState, loadHistory: fails })
     expect(readMessage(panel)).toBe('Could not load the prints')
+    expect(panel.querySelector('.print-a-file-button')).not.toBeNull()
   })
 
   it('says there are no prints only after an empty answer', async () => {
