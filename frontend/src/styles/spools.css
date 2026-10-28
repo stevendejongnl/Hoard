@@ -66,7 +66,7 @@
   box-sizing: border-box;
 }
 
-.value-field input {
+.spools-layout .value-field input {
   flex: 1;
   width: 0;
   min-width: 0;
@@ -79,11 +79,11 @@
   text-align: right;
 }
 
-.value-field.wide-field {
+.spools-layout .value-field.wide-field {
   min-width: 160px;
 }
 
-.value-field.hex-field {
+.spools-layout .value-field.hex-field {
   min-width: 110px;
 }
 
