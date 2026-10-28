@@ -1,609 +1,572 @@
-import { LitElement, html } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
-import type { PrintRecord, Spool } from '../types'
-import { getHistory, getSpools, assignSpool, injectThumbnail } from '../api'
-import { sseClient } from '../sse'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { assignSpool, getHistory, getProjects, getSpools, linkProjectPrint } from '../api'
+import { renderIcon } from '../icons'
+import {
+  filterPrints,
+  formatPrintCost,
+  formatPrintDate,
+  formatPrintDuration,
+  formatPrintFilament,
+  formatShortPrintDate,
+  sortPrints,
+} from '../print-history-list'
+import type { PrintFilters, PrintSort } from '../print-history-list'
 import { router } from '../router'
-import '../components/cost-breakdown-popup'
+import { sseClient } from '../sse'
+import type { PrintRecord, Spool } from '../types'
 import '../components/print-ready-modal'
+import '../styles/history.css'
 
+type LoadState = 'loading' | 'ready' | 'error'
+type StopFunction = () => void
+type ProjectChoice = { id: number; name: string }
+type HistoryPayload = { records: PrintRecord[]; total: number }
+
+const DESKTOP_PAGE_SIZE = 12
+const PHONE_PAGE_SIZE = 8
+const PHONE_QUERY = '(max-width: 800px)'
+const SECTION_CHEVRON_SIZE = 14
+const SELECT_CHEVRON_SIZE = 12
+const ICON_STROKE_WIDTH = 2.4
+const THUMBNAIL_STROKE_WIDTH = 1.6
+
+const SORT_LABELS: Record<PrintSort, string> = {
+  newest: 'Newest first',
+  oldest: 'Oldest first',
+  'highest-cost': 'Highest cost',
+  longest: 'Longest print',
+}
+
+const NO_FILTERS: PrintFilters = { fileName: '', spoolId: '', projectId: '', status: '' }
+
+function checkPhoneLayout(): boolean {
+  return window.matchMedia?.(PHONE_QUERY).matches ?? false
+}
+
+function describeSpoolName(spool: NonNullable<PrintRecord['spool']>): string {
+  return `${spool.brand ?? ''} ${spool.material ?? ''}`.trim()
+}
+
+function readJobId(record: PrintRecord): string {
+  return record.job_id || record.filename
+}
+
+/** Every print the printer made: a filtered list in the middle and the selected print on the right. */
 @customElement('history-page')
 export class HistoryPage extends LitElement {
+  @property({ attribute: false }) loadHistory: (limit: number, offset: number) => Promise<HistoryPayload> = getHistory
+  @property({ attribute: false }) loadSpools: () => Promise<Spool[]> = getSpools
+  @property({ attribute: false }) loadProjects: () => Promise<ProjectChoice[]> = getProjects
+  @property({ attribute: false }) assignSpoolToPrint: (jobId: string, spoolId: number) => Promise<unknown> = assignSpool
+  @property({ attribute: false }) linkPrintToProject: (projectId: number, jobId: string) => Promise<unknown> = (
+    projectId,
+    jobId,
+  ) => linkProjectPrint(projectId, { job_id: jobId })
+  @property({ attribute: false }) startPrint: (filename: string) => void = (filename) =>
+    document.querySelector<HTMLElement & { tryPrint(name: string): void }>('print-ready-modal')?.tryPrint(filename)
+  @property({ attribute: false }) navigate: (path: string) => void = (path) =>
+    router.navigate(path as Parameters<typeof router.navigate>[0])
+  @property({ attribute: false }) subscribeToHistoryUpdates: (handler: () => void) => StopFunction = (handler) =>
+    sseClient.subscribe((payload) => payload.type === 'history_updated' && handler())
+  @property({ attribute: false }) isPhoneLayout: () => boolean = checkPhoneLayout
+  @property({ type: Number }) pageSize = this.isPhoneLayout() ? PHONE_PAGE_SIZE : DESKTOP_PAGE_SIZE
+
+  @state() private records: PrintRecord[] = []
+  @state() private total = 0
+  @state() private spools: Spool[] = []
+  @state() private projects: ProjectChoice[] = []
+  @state() private loadState: LoadState = 'loading'
+  @state() private filters: PrintFilters = NO_FILTERS
+  @state() private sort: PrintSort = 'newest'
+  @state() private selectedJobId: string | null = null
+  @state() private assigningJobId: string | null = null
+  @state() private isChoosingProject = false
+  @state() private failedThumbnails = new Set<string>()
+
+  private stopListening: StopFunction | null = null
+
   createRenderRoot() {
     return this
   }
 
-  @state() records: PrintRecord[] = []
-  @state() total = 0
-  @state() page = 0
-  @state() loading = true
-  @state() thumbErrors = new Set<string>()
-  @state() thumbGenerating = new Set<string>()
-  @state() spools: Spool[] = []
-  @state() assigningJobId: string | null = null
-  private _unsubscribe: (() => void) | null = null
-
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback()
-    const initialPage = Math.max(
-      0,
-      (parseInt(new URLSearchParams(window.location.search).get('page') ?? '1', 10) || 1) - 1,
-    )
-    this._loadPage(initialPage)
-    getSpools().then((s) => (this.spools = s))
-    this._unsubscribe = sseClient.subscribe((payload) => {
-      if (payload.type === 'history_updated') {
-        this._loadPage(this.page)
-      }
+    void this.reloadFromStart()
+    void this.loadChoices()
+    this.stopListening = this.subscribeToHistoryUpdates(() => void this.reloadLoaded())
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback()
+    this.stopListening?.()
+  }
+
+  private async loadChoices(): Promise<void> {
+    try {
+      this.spools = await this.loadSpools()
+      this.projects = await this.loadProjects()
+    } catch {
+      this.spools = []
+    }
+  }
+
+  private async reloadFromStart(): Promise<void> {
+    await this.loadRecords(this.pageSize, 0, false)
+    this.selectedJobId = this.records[0] ? readJobId(this.records[0]) : null
+  }
+
+  private async reloadLoaded(): Promise<void> {
+    await this.loadRecords(Math.max(this.records.length, this.pageSize), 0, false)
+  }
+
+  private async loadMore(): Promise<void> {
+    await this.loadRecords(this.pageSize, this.records.length, true)
+  }
+
+  private async loadRecords(limit: number, offset: number, isAppending: boolean): Promise<void> {
+    try {
+      const history = await this.loadHistory(limit, offset)
+      this.records = isAppending ? [...this.records, ...history.records] : history.records
+      this.total = history.total
+      this.loadState = 'ready'
+    } catch {
+      this.loadState = 'error'
+    }
+  }
+
+  private findVisiblePrints(): PrintRecord[] {
+    return sortPrints(filterPrints(this.records, this.filters), this.sort)
+  }
+
+  private findSelectedPrint(): PrintRecord | null {
+    return this.records.find((record) => readJobId(record) === this.selectedJobId) ?? null
+  }
+
+  private changeFilter(name: keyof PrintFilters, event: Event): void {
+    this.filters = { ...this.filters, [name]: (event.target as HTMLInputElement | HTMLSelectElement).value }
+  }
+
+  private resetFilters(): void {
+    this.filters = NO_FILTERS
+    this.sort = 'newest'
+  }
+
+  private selectPrint(record: PrintRecord): void {
+    if (this.isPhoneLayout()) {
+      this.navigate(`/prints/${encodeURIComponent(readJobId(record))}`)
+      return
+    }
+    this.selectedJobId = readJobId(record)
+    this.isChoosingProject = false
+  }
+
+  private openSelectedDetails(): void {
+    const selected = this.findSelectedPrint()
+    if (selected) this.navigate(`/prints/${encodeURIComponent(readJobId(selected))}`)
+  }
+
+  private printSelectedAgain(): void {
+    const selected = this.findSelectedPrint()
+    if (selected) this.startPrint(selected.filename)
+  }
+
+  private async assignSpoolChoice(record: PrintRecord, event: Event): Promise<void> {
+    const spoolId = Number((event.target as HTMLSelectElement).value)
+    this.assigningJobId = null
+    if (!spoolId) return
+    await this.assignSpoolToPrint(readJobId(record), spoolId)
+    await this.reloadLoaded()
+  }
+
+  private async linkProjectChoice(record: PrintRecord, event: Event): Promise<void> {
+    const projectId = Number((event.target as HTMLSelectElement).value)
+    this.isChoosingProject = false
+    if (!projectId) return
+    await this.linkPrintToProject(projectId, readJobId(record))
+    await this.reloadLoaded()
+  }
+
+  private listSpoolChoices(): { id: number; name: string }[] {
+    const known = new Map<number, string>()
+    for (const record of this.records) {
+      if (record.spool?.id) known.set(record.spool.id, describeSpoolName(record.spool))
+    }
+    return [...known].map(([id, name]) => ({ id, name }))
+  }
+
+  private listProjectChoices(): ProjectChoice[] {
+    const known = new Map<number, string>()
+    for (const record of this.records) {
+      if (record.project) known.set(record.project.id, record.project.name)
+    }
+    return [...known].map(([id, name]) => ({ id, name }))
+  }
+
+  private renderSectionHeader(title: string): TemplateResult {
+    return html`<div class="section-header">
+      ${renderIcon('chevron-down', SECTION_CHEVRON_SIZE, ICON_STROKE_WIDTH)}${title}
+    </div>`
+  }
+
+  private renderSelect(
+    label: string,
+    shownText: string,
+    options: TemplateResult,
+    onChange: (event: Event) => void,
+  ): TemplateResult {
+    return html`<label class="value-field select-field history-filter-select">
+      <span class="select-text">${shownText}</span>
+      ${renderIcon('chevron-down', SELECT_CHEVRON_SIZE, ICON_STROKE_WIDTH)}
+      <select aria-label=${label} @change=${onChange}>
+        ${options}
+      </select>
+    </label>`
+  }
+
+  private renderSpoolFilter(): TemplateResult {
+    const choices = this.listSpoolChoices()
+    const current = choices.find((choice) => String(choice.id) === this.filters.spoolId)
+    const shownText = this.filters.spoolId === 'none' ? 'No spool' : (current?.name ?? 'All spools')
+    const options = html`<option value="" ?selected=${this.filters.spoolId === ''}>All spools</option>
+      <option value="none" ?selected=${this.filters.spoolId === 'none'}>No spool</option>
+      ${choices.map(
+        (choice) =>
+          html`<option value=${choice.id} ?selected=${String(choice.id) === this.filters.spoolId}>
+            ${choice.name}
+          </option>`,
+      )}`
+    return this.renderSelect('Spool', shownText, options, (event) => this.changeFilter('spoolId', event))
+  }
+
+  private renderProjectFilter(): TemplateResult {
+    const choices = this.listProjectChoices()
+    const current = choices.find((choice) => String(choice.id) === this.filters.projectId)
+    const shownText = this.filters.projectId === 'none' ? 'No project' : (current?.name ?? 'All projects')
+    const options = html`<option value="" ?selected=${this.filters.projectId === ''}>All projects</option>
+      <option value="none" ?selected=${this.filters.projectId === 'none'}>No project</option>
+      ${choices.map(
+        (choice) =>
+          html`<option value=${choice.id} ?selected=${String(choice.id) === this.filters.projectId}>
+            ${choice.name}
+          </option>`,
+      )}`
+    return this.renderSelect('Project', shownText, options, (event) => this.changeFilter('projectId', event))
+  }
+
+  private renderStatusFilter(): TemplateResult {
+    const statuses = [...new Set(this.records.map((record) => record.status ?? ''))].filter(Boolean)
+    const shownText = this.filters.status === '' ? 'All' : this.filters.status
+    const options = html`<option value="" ?selected=${this.filters.status === ''}>All</option>
+      ${statuses.map(
+        (status) => html`<option value=${status} ?selected=${status === this.filters.status}>${status}</option>`,
+      )}`
+    return this.renderSelect('Status', shownText, options, (event) => this.changeFilter('status', event))
+  }
+
+  private renderSortSelect(): TemplateResult {
+    const options = html`${(Object.keys(SORT_LABELS) as PrintSort[]).map(
+      (sort) => html`<option value=${sort} ?selected=${sort === this.sort}>${SORT_LABELS[sort]}</option>`,
+    )}`
+    return this.renderSelect('Sort', SORT_LABELS[this.sort], options, (event) => {
+      this.sort = (event.target as HTMLSelectElement).value as PrintSort
     })
   }
 
-  disconnectedCallback() {
-    super.disconnectedCallback()
-    this._unsubscribe?.()
-    this._unsubscribe = null
+  private renderFilterRow(label: string, select: TemplateResult): TemplateResult {
+    return html`<div class="parameter-row"><span class="parameter-label">${label}</span>${select}</div>`
   }
 
-  private async _loadPage(p: number) {
-    this.loading = true
-    const history = await getHistory(20, p * 20)
-    this.records = history.records
-    this.total = history.total
-    this.page = p
-    this.loading = false
-    const url = new URL(window.location.href)
-    if (p === 0) {
-      url.searchParams.delete('page')
-    } else {
-      url.searchParams.set('page', String(p + 1))
-    }
-    window.history.replaceState({}, '', url.toString())
+  private renderSummaryRow(label: string, key: string, value: number): TemplateResult {
+    return html`<div class="parameter-row">
+      <span class="parameter-label">${label}</span><span class="value-field" data-summary=${key}>${value}</span>
+    </div>`
   }
 
-  private _triggerStlUpload(filename: string) {
-    const input = document.querySelector<HTMLInputElement>('input[data-hist-stl]')
-    if (!input) return
-    input.dataset.target = filename
-    input.click()
+  private renderSearchField(): TemplateResult {
+    return html`<div class="search-field">
+      <span class="search-icon">${renderIcon('search', 14)}</span>
+      <input
+        type="search"
+        placeholder="Filter by file name"
+        aria-label="Filter by file name"
+        .value=${this.filters.fileName}
+        @input=${(event: Event) => this.changeFilter('fileName', event)}
+      />
+    </div>`
   }
 
-  private async _onStlUpload(e: Event) {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-    const target = input.dataset.target
-    if (!file || !target) return
-    input.value = ''
-    this.thumbGenerating = new Set([...this.thumbGenerating, target])
-    try {
-      await injectThumbnail(target, file)
-      this.thumbErrors = new Set([...this.thumbErrors].filter((f) => f !== target))
-    } catch (err) {
-      console.error('STL inject failed', err)
-    } finally {
-      this.thumbGenerating = new Set([...this.thumbGenerating].filter((f) => f !== target))
-      await this._loadPage(this.page)
-    }
-  }
-
-  private _print(filename: string) {
-    const modal = document.querySelector<any>('print-ready-modal')
-    modal?.tryPrint(filename)
-  }
-
-  private fmtDate(iso: string) {
-    return new Date(iso).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short', year: 'numeric' })
-  }
-
-  private fmtDuration(s: number) {
-    const h = Math.floor(s / 3600)
-    const m = Math.floor((s % 3600) / 60)
-    return `${h}h ${m}m`
-  }
-
-  private async _assign(record: PrintRecord, spoolId: number) {
-    const jobId = record.job_id || record.filename
-    await assignSpool(jobId, spoolId)
-    await this._loadPage(this.page)
-  }
-
-  private _spoolTag(record: PrintRecord) {
-    const jobId = record.job_id || record.filename
-    const isAssigning = this.assigningJobId === jobId
-
-    if (isAssigning) {
-      return html`
-        <div style="display:flex;align-items:center;gap:6px">
-          <select
-            style="background:#1a1a1a;border:1px solid #22d3ee28;color:#e0e0e0;border-radius:4px;padding:2px 6px;font-size:11px;outline:none"
-            @change=${async (e: Event) => {
-              const val = Number((e.target as HTMLSelectElement).value)
-              if (!val) {
-                this.assigningJobId = null
-                return
-              }
-              this.assigningJobId = jobId
-              await this._assign(record, val)
-              this.assigningJobId = null
-            }}
-            @blur=${() => {
-              this.assigningJobId = null
-            }}
-          >
-            <option value="">pick spool…</option>
-            ${this.spools.map((s) => html`<option value="${s.id}">${s.brand} ${s.material}</option>`)}
-          </select>
+  private renderFiltersPanel(): TemplateResult {
+    return html`<aside class="history-filters" aria-label="Parameters">
+      <div class="history-filters-body">
+        <div class="section history-search-section">
+          ${this.renderSectionHeader('Search')}
+          <div class="section-body">${this.renderSearchField()}</div>
         </div>
-      `
-    }
+        <div class="section history-filters-section">
+          ${this.renderSectionHeader('Filters')}
+          <div class="section-body history-filter-controls">
+            ${this.renderFilterRow('Spool', this.renderSpoolFilter())}
+            ${this.renderFilterRow('Project', this.renderProjectFilter())}
+            <div class="status-filter-row">${this.renderFilterRow('Status', this.renderStatusFilter())}</div>
+            <div class="sort-filter-row">${this.renderFilterRow('Sort', this.renderSortSelect())}</div>
+          </div>
+        </div>
+        <div class="section history-summary-section">
+          ${this.renderSectionHeader('Summary')}
+          <div class="section-body">
+            ${this.renderSummaryRow('Prints', 'prints', this.total)}
+            ${this.renderSummaryRow('Showing', 'showing', this.findVisiblePrints().length)}
+          </div>
+        </div>
+      </div>
+      <div class="history-filters-footer">
+        <button class="button reset-filters-button" @click=${this.resetFilters}>Reset filters</button>
+      </div>
+    </aside>`
+  }
 
-    if (record.spool) {
-      const s = record.spool
-      const dot = s.color_hex
-        ? html`<span
-            style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${s.color_hex};margin-right:5px;vertical-align:middle;flex-shrink:0"
-          ></span>`
-        : html``
-      return html`<span
-        class="spool-tag spool-tag--assigned"
-        title="Click to reassign"
-        @click=${() => {
-          this.assigningJobId = jobId
-        }}
-        >${dot}${s.brand ?? ''} ${s.material ?? ''}</span
-      >`
-    }
-
-    return html`<span
-      class="spool-tag spool-tag--unassigned"
-      @click=${() => {
-        this.assigningJobId = jobId
-      }}
-      >assign →</span
+  private renderThumbnail(record: PrintRecord, size: number): TemplateResult {
+    const hasFailed = this.failedThumbnails.has(record.filename)
+    const source = `/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(record.filename)}`
+    return html`<span class="thumbnail print-thumbnail"
+      >${hasFailed
+        ? renderIcon('cube', size, THUMBNAIL_STROKE_WIDTH)
+        : html`<img
+            src=${source}
+            alt=""
+            loading="lazy"
+            @error=${() => (this.failedThumbnails = new Set([...this.failedThumbnails, record.filename]))}
+          />`}</span
     >`
   }
 
-  render() {
-    const totalPages = Math.ceil(this.total / 20)
+  private renderAssignSelect(record: PrintRecord): TemplateResult {
+    return html`<select
+      class="assign-spool-select"
+      aria-label="Pick a spool"
+      @click=${(event: Event) => event.stopPropagation()}
+      @change=${(event: Event) => this.assignSpoolChoice(record, event)}
+      @blur=${() => (this.assigningJobId = null)}
+    >
+      <option value="">Pick spool…</option>
+      ${this.spools.map((spool) => html`<option value=${spool.id}>${spool.brand} ${spool.material}</option>`)}
+    </select>`
+  }
 
-    return html`
-      <print-ready-modal></print-ready-modal>
-      <input type="file" accept=".stl" data-hist-stl style="display:none" @change=${this._onStlUpload} />
-      <style>
-        /* ── Base layout ── */
-        .page-wrap {
-          max-width: 940px;
-          margin: 0 auto;
-          padding: 28px;
-        }
-        .page-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 20px;
-        }
-        .page-title {
-          font-size: 18px;
-          font-weight: 600;
-          color: #e0e0e0;
-        }
-        .page-count {
-          color: #555;
-          font-size: 13px;
-        }
+  private renderSpoolCell(record: PrintRecord): TemplateResult {
+    if (this.assigningJobId === readJobId(record)) return this.renderAssignSelect(record)
+    if (!record.spool) {
+      return html`<button
+        class="assign-spool-button"
+        @click=${(event: Event) => {
+          event.stopPropagation()
+          this.assigningJobId = readJobId(record)
+        }}
+      >
+        Assign spool
+      </button>`
+    }
+    return html`<span class="spool-tag"
+      ><span class="spool-dot" style="background: ${record.spool.color_hex ?? 'transparent'}"></span
+      ><span class="history-spool-name">${describeSpoolName(record.spool)}</span></span
+    >`
+  }
 
-        /* ── Spool tags ── */
-        .spool-tag {
-          display: inline-flex;
-          align-items: center;
-          border-radius: 4px;
-          padding: 2px 7px;
-          font-size: 11px;
-          cursor: pointer;
-          min-height: 44px;
-          box-sizing: border-box;
-        }
-        .spool-tag--assigned {
-          background: #1a1a1a;
-          border: 1px solid #222;
-          color: #e0e0e0;
-        }
-        .spool-tag--assigned:hover,
-        .spool-tag--assigned:active {
-          border-color: #444;
-        }
-        .spool-tag--unassigned {
-          background: transparent;
-          border: 1px solid #22d3ee28;
-          color: #22d3ee;
-        }
-        .spool-tag--unassigned:hover,
-        .spool-tag--unassigned:active {
-          border-color: #22d3ee88;
-        }
+  private renderDesktopRow(record: PrintRecord): TemplateResult {
+    const isSelected = readJobId(record) === this.selectedJobId
+    return html`<div
+      class="table-row history-row ${isSelected ? 'selected' : ''}"
+      tabindex="0"
+      @click=${() => this.selectPrint(record)}
+      @keydown=${(event: KeyboardEvent) => event.key === 'Enter' && this.selectPrint(record)}
+    >
+      <span class="print-file">
+        ${this.renderThumbnail(record, 16)}<span class="print-file-name monospace">${record.filename}</span>
+      </span>
+      <span class="muted">${formatPrintDate(record.time)}</span>
+      <span class="monospace print-figure">${formatPrintDuration(record.duration_s)}</span>
+      <span class="monospace print-figure">${formatPrintFilament(record.filament_g)}</span>
+      <span>${this.renderSpoolCell(record)}</span>
+      <span class="monospace print-figure print-total">${formatPrintCost(record.cost_total)}</span>
+    </div>`
+  }
 
-        /* ── Print (▶) button ── */
-        .print-btn {
-          background: transparent;
-          border: 1px solid #222;
-          border-radius: 4px;
-          color: #888;
-          font-size: 10px;
-          padding: 3px 8px;
-          cursor: pointer;
-          min-width: 44px;
-          min-height: 44px;
-          box-sizing: border-box;
-        }
-        .print-btn:hover,
-        .print-btn:active {
-          border-color: #22d3ee28;
-          color: #22d3ee;
-          background: #22d3ee14;
-        }
+  private renderPhoneRow(record: PrintRecord): TemplateResult {
+    const shortDate = formatShortPrintDate(record.time)
+    return html`<div class="history-row phone-row" tabindex="0" @click=${() => this.selectPrint(record)}>
+      ${this.renderThumbnail(record, 22)}
+      <span class="phone-row-text">
+        <span class="print-file-name monospace">${record.filename}</span>
+        <span class="muted phone-row-meta"
+          >${shortDate} · ${formatPrintDuration(record.duration_s)} · ${formatPrintFilament(record.filament_g)}</span
+        >
+        <span class="phone-row-spool">${this.renderSpoolCell(record)}</span>
+      </span>
+      <span class="monospace phone-row-cost">${formatPrintCost(record.cost_total)}</span>
+    </div>`
+  }
 
-        /* ── Pager ── */
-        .pager-row {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-top: 20px;
-        }
-        .pager-btn {
-          background: #1a1a1a;
-          border: 1px solid #222;
-          color: #e0e0e0;
-          border-radius: 6px;
-          padding: 6px 16px;
-          cursor: pointer;
-          font-size: 13px;
-        }
-        .pager-btn:disabled {
-          opacity: 0.3;
-          cursor: default;
-        }
-        .pager-btn:not(:disabled):hover,
-        .pager-btn:not(:disabled):active {
-          border-color: #22d3ee;
-          color: #22d3ee;
-        }
-        .pager-info {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          color: #555;
-          font-size: 13px;
-        }
-        .pager-select {
-          background: #1a1a1a;
-          border: 1px solid #333;
-          color: #e0e0e0;
-          border-radius: 4px;
-          padding: 3px 6px;
-          font-size: 13px;
-          outline: none;
-          cursor: pointer;
-        }
-        .pager-select:focus {
-          border-color: #22d3ee;
-        }
+  private renderRow(record: PrintRecord): TemplateResult {
+    return this.isPhoneLayout() ? this.renderPhoneRow(record) : this.renderDesktopRow(record)
+  }
 
-        /* ── Desktop table ── */
-        .history-table {
-          width: 100%;
-          border-collapse: collapse;
-          font-size: 13px;
-        }
-        .history-table th {
-          text-align: left;
-          color: #555;
-          font-weight: 500;
-          padding: 6px 10px;
-          border-bottom: 1px solid #222;
-          white-space: nowrap;
-        }
-        .history-table td {
-          padding: 9px 10px;
-          border-bottom: 1px solid #1a1a1a;
-          color: #e0e0e0;
-          vertical-align: middle;
-        }
-        .history-table tr:last-child td {
-          border-bottom: none;
-        }
-        .history-table tr:hover td {
-          background: #141414;
-        }
-        .history-table tbody tr {
-          cursor: pointer;
-        }
-        .filename-cell {
-          max-width: 200px;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          color: #aaa;
-          font-family: monospace;
-          font-size: 12px;
-        }
+  private renderStateMessage(): TemplateResult | null {
+    if (this.loadState === 'loading') return html`<div class="state-message">Loading prints…</div>`
+    if (this.loadState === 'error') return html`<div class="state-message">Could not load the print history</div>`
+    if (this.records.length === 0) return html`<div class="state-message">No prints yet</div>`
+    if (this.findVisiblePrints().length === 0) return html`<div class="state-message">No prints match the filters</div>`
+    return null
+  }
 
-        /* ── Mobile cards ── */
-        .card-list {
-          display: none;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .print-card {
-          background: #141414;
-          border: 1px solid #222;
-          border-radius: 8px;
-          padding: 12px 14px;
-          cursor: pointer;
-        }
-        .print-card__top {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-          margin-bottom: 4px;
-        }
-        .print-card__filename {
-          flex: 1;
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          color: #aaa;
-          font-family: monospace;
-          font-size: 12px;
-        }
-        .print-card__meta {
-          color: #666;
-          font-size: 12px;
-          margin-bottom: 8px;
-        }
-        .print-card__bottom {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          gap: 8px;
-        }
-        .print-card__cost {
-          color: #22d3ee;
-          font-weight: 600;
-          font-size: 13px;
-          white-space: nowrap;
-        }
-        .print-card__cost--none {
-          color: #555;
-        }
-
-        /* ── Responsive breakpoints ── */
-        @media (max-width: 600px) {
-          .page-wrap {
-            padding: 16px;
-          }
-          .history-table {
-            display: none;
-          }
-          .card-list {
-            display: flex;
-          }
-          .pager-row {
-            margin-top: 16px;
-          }
-          .pager-btn {
-            padding: 10px 14px;
-          }
-        }
-
-        @media (min-width: 601px) {
-          .card-list {
-            display: none;
-          }
-        }
-      </style>
-
-      <div class="page-wrap">
-        <div class="page-header">
-          <span class="page-title">Print history</span>
-          <span class="page-count">${this.total} prints</span>
-        </div>
-
-        ${this.loading
-          ? html`<div style="color:#555;text-align:center;padding:40px">Loading…</div>`
-          : html`
-              <!-- Desktop table -->
-              <table class="history-table">
-                <thead>
-                  <tr>
-                    <th style="width:44px"></th>
-                    <th>File</th>
-                    <th>Date</th>
-                    <th>Duration</th>
-                    <th>Filament</th>
-                    <th>Spool</th>
-                    <th style="text-align:right">Total</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${this.records.map(
-                    (r) => html`
-                      <tr
-                        @click=${() => {
-                          if (r.job_id) router.navigate(`/prints/${encodeURIComponent(r.job_id)}`)
-                        }}
-                      >
-                        <td style="width:44px;padding-right:8px">
-                          ${this.thumbGenerating.has(r.filename)
-                            ? html`<div
-                                style="width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;color:var(--cyan,#22d3ee);font-size:18px;animation:spin 1s linear infinite"
-                              >
-                                ↻
-                              </div>`
-                            : this.thumbErrors.has(r.filename)
-                              ? html`<button
-                                  title="Add preview from STL"
-                                  style="width:40px;height:40px;border-radius:4px;border:1px dashed #333;background:none;color:#555;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center"
-                                  @mouseover=${(e: Event) => {
-                                    ;(e.target as HTMLElement).style.color = '#22d3ee'
-                                    ;(e.target as HTMLElement).style.borderColor = '#22d3ee'
-                                  }}
-                                  @mouseout=${(e: Event) => {
-                                    ;(e.target as HTMLElement).style.color = '#555'
-                                    ;(e.target as HTMLElement).style.borderColor = '#333'
-                                  }}
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation()
-                                    this._triggerStlUpload(r.filename)
-                                  }}
-                                >
-                                  ⊕
-                                </button>`
-                              : html`<img
-                                  style="width:40px;height:40px;border-radius:4px;object-fit:cover;display:block;background:var(--bg-surface,#1a1a1a)"
-                                  src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(r.filename)}"
-                                  alt=""
-                                  loading="lazy"
-                                  @error=${() => {
-                                    this.thumbErrors = new Set([...this.thumbErrors, r.filename])
-                                  }}
-                                />`}
-                        </td>
-                        <td class="filename-cell" title="${r.filename}">
-                          <div style="display:flex;align-items:center;gap:5px">
-                            <span>${r.filename}</span>
-                            ${(r.photo_count ?? 0) > 0
-                              ? html`<span title="${r.photo_count} photo(s)" style="font-size:10px;opacity:0.7"
-                                  >📷</span
-                                >`
-                              : ''}
-                          </div>
-                          ${r.project
-                            ? html`
-                                <div
-                                  style="margin-top:3px;font-size:10px;color:var(--cyan,#22d3ee);cursor:pointer;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                                  title="${r.project.name}"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation()
-                                    router.navigate(`/projects/${String(r.project!.id)}`)
-                                  }}
-                                >
-                                  📁 ${r.project.name}
-                                </div>
-                              `
-                            : ''}
-                        </td>
-                        <td style="white-space:nowrap">${r.time ? this.fmtDate(r.time) : '—'}</td>
-                        <td style="white-space:nowrap">${this.fmtDuration(r.duration_s)}</td>
-                        <td style="white-space:nowrap">${r.filament_g.toFixed(1)} g</td>
-                        <td>${this._spoolTag(r)}</td>
-                        <td style="white-space:nowrap;text-align:right">
-                          ${r.cost_total != null
-                            ? html`<cost-breakdown-popup
-                                .record=${r}
-                                style="color:#22d3ee;font-weight:600;font-size:13px"
-                                >€${r.cost_total.toFixed(2)}</cost-breakdown-popup
-                              >`
-                            : html`<span style="color:#555">—</span>`}
-                        </td>
-                        <td>
-                          <button class="print-btn" @click=${() => this._print(r.filename)}>▶</button>
-                        </td>
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-
-              <!-- Mobile card list -->
-              <div class="card-list">
-                ${this.records.map(
-                  (r) => html`
-                    <div
-                      class="print-card"
-                      @click=${() => {
-                        if (r.job_id) router.navigate(`/prints/${encodeURIComponent(r.job_id)}`)
-                      }}
-                    >
-                      <div class="print-card__top">
-                        <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
-                          <span class="print-card__filename" title="${r.filename}">
-                            ${r.filename}${(r.photo_count ?? 0) > 0
-                              ? html`&nbsp;<span title="${r.photo_count} photo(s)" style="font-size:10px;opacity:0.7"
-                                    >📷</span
-                                  >`
-                              : ''}
-                          </span>
-                          ${r.project
-                            ? html`
-                                <span
-                                  style="font-size:10px;color:var(--cyan,#22d3ee);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
-                                  title="${r.project.name}"
-                                  @click=${(e: Event) => {
-                                    e.stopPropagation()
-                                    router.navigate(`/projects/${String(r.project!.id)}`)
-                                  }}
-                                  >📁 ${r.project.name}</span
-                                >
-                              `
-                            : ''}
-                        </div>
-                        <button class="print-btn" @click=${() => this._print(r.filename)}>▶</button>
-                      </div>
-                      <div class="print-card__meta">
-                        ${r.time ? this.fmtDate(r.time) : '—'} · ${r.filament_g.toFixed(1)} g ·
-                        ${this.fmtDuration(r.duration_s)}
-                      </div>
-                      <div class="print-card__bottom">
-                        ${this._spoolTag(r)}
-                        <span
-                          class="${r.cost_total != null
-                            ? 'print-card__cost'
-                            : 'print-card__cost print-card__cost--none'}"
-                        >
-                          ${r.cost_total != null
-                            ? html`<cost-breakdown-popup
-                                .record=${r}
-                                style="color:#22d3ee;font-weight:600;font-size:13px"
-                                >€${r.cost_total.toFixed(2)}</cost-breakdown-popup
-                              >`
-                            : html`—`}
-                        </span>
-                      </div>
-                    </div>
-                  `,
-                )}
-              </div>
-
-              <div class="pager-row">
-                <button class="pager-btn" ?disabled=${this.page === 0} @click=${() => this._loadPage(this.page - 1)}>
-                  ← Previous
-                </button>
-                <span class="pager-info">
-                  Page
-                  <select
-                    class="pager-select"
-                    .value="${String(this.page + 1)}"
-                    @change="${(e: Event) => this._loadPage(parseInt((e.target as HTMLSelectElement).value, 10) - 1)}"
-                  >
-                    ${Array.from(
-                      { length: totalPages || 1 },
-                      (_, i) => html` <option value="${i + 1}" ?selected="${i === this.page}">${i + 1}</option> `,
-                    )}
-                  </select>
-                  of ${totalPages || 1}
-                </span>
-                <button
-                  class="pager-btn"
-                  ?disabled=${this.page >= totalPages - 1}
-                  @click=${() => this._loadPage(this.page + 1)}
-                >
-                  Next →
-                </button>
-              </div>
-            `}
+  private renderTable(): TemplateResult {
+    return html`<div class="history-table">
+      <div class="table-row header history-header">
+        <span>File</span><span>Date</span><span>Time</span><span>Filament</span><span>Spool</span
+        ><span class="print-total">Total</span>
       </div>
-    `
+      ${this.renderStateMessage() ??
+      html`<div class="history-rows">${this.findVisiblePrints().map((record) => this.renderRow(record))}</div>`}
+    </div>`
+  }
+
+  private renderFooter(): TemplateResult {
+    const hasMore = this.records.length < this.total
+    return html`<div class="history-footer">
+      <span class="history-footer-count muted">Showing ${this.records.length} of ${this.total}</span>
+      ${hasMore ? html`<button class="button load-more-button" @click=${this.loadMore}>Load more</button>` : nothing}
+    </div>`
+  }
+
+  private renderMain(): TemplateResult {
+    return html`<section class="history-main" aria-label="Main">
+      <div class="history-title-strip">
+        <span class="history-title">Print history</span>
+        <span class="history-count monospace muted">${this.total} prints</span>
+      </div>
+      ${this.renderTable()} ${this.renderFooter()}
+    </section>`
+  }
+
+  private renderDetailRow(label: string, key: string, content: TemplateResult | string): TemplateResult {
+    return html`<div class="parameter-row">
+      <span class="parameter-label">${label}</span><span class="detail-value" data-detail=${key}>${content}</span>
+    </div>`
+  }
+
+  private renderField(label: string, key: string, value: string, unit = '', isAccented = false): TemplateResult {
+    const field = html`<span class="value-field ${isAccented ? 'accented' : ''}" data-detail=${key}
+      >${value}${unit === '' ? nothing : html`<span class="value-unit">${unit}</span>`}</span
+    >`
+    return html`<div class="parameter-row"><span class="parameter-label">${label}</span>${field}</div>`
+  }
+
+  private renderSelectedSpool(record: PrintRecord): TemplateResult | string {
+    if (!record.spool) return '—'
+    return html`<span class="spool-tag"
+      ><span class="spool-dot" style="background: ${record.spool.color_hex ?? 'transparent'}"></span
+      >${describeSpoolName(record.spool)}</span
+    >`
+  }
+
+  private renderSelectedProject(record: PrintRecord): TemplateResult | string {
+    if (!record.project) return '—'
+    const project = record.project
+    return html`<a
+      href="/projects/${project.id}"
+      @click=${(event: Event) => {
+        event.preventDefault()
+        this.navigate(`/projects/${project.id}`)
+      }}
+      >${project.name}</a
+    >`
+  }
+
+  private renderJobSection(record: PrintRecord): TemplateResult {
+    return html`<div class="section">
+      ${this.renderSectionHeader('Job')}
+      <div class="section-body">
+        ${this.renderField('Duration', 'duration', formatPrintDuration(record.duration_s))}
+        ${this.renderField('Filament', 'filament', record.filament_g.toFixed(1), 'g')}
+        ${this.renderDetailRow('Spool', 'spool', this.renderSelectedSpool(record))}
+        ${this.renderDetailRow('Project', 'project', this.renderSelectedProject(record))}
+      </div>
+    </div>`
+  }
+
+  private renderCostSection(record: PrintRecord): TemplateResult {
+    const price = record.avg_eur_per_kwh === null ? '—' : record.avg_eur_per_kwh.toFixed(3)
+    const power = record.avg_watts === null ? '—' : String(Math.round(record.avg_watts))
+    return html`<div class="section">
+      ${this.renderSectionHeader('Cost')}
+      <div class="section-body">
+        ${this.renderField('Filament', 'filament-cost', formatPrintCost(record.cost_filament))}
+        ${this.renderField('Electricity', 'electricity-cost', formatPrintCost(record.cost_electricity))}
+        ${this.renderField('Avg power', 'average-power', power, 'W')}
+        ${this.renderField('Price', 'price', price, '€/kWh')}
+        <div class="parameter-row">
+          <span class="parameter-label"><strong>Total</strong></span>
+          <span class="value-field accented" data-detail="total">${formatPrintCost(record.cost_total)}</span>
+        </div>
+      </div>
+    </div>`
+  }
+
+  private renderProjectChoice(record: PrintRecord): TemplateResult {
+    return html`<select
+      class="add-to-project-select"
+      aria-label="Pick a project"
+      @change=${(event: Event) => this.linkProjectChoice(record, event)}
+    >
+      <option value="">Pick project…</option>
+      ${this.projects.map((project) => html`<option value=${project.id}>${project.name}</option>`)}
+    </select>`
+  }
+
+  private renderDetailsActions(record: PrintRecord): TemplateResult {
+    return html`<div class="history-details-footer">
+      <button class="button primary print-again-button" @click=${this.printSelectedAgain}>
+        ${renderIcon('play', 14)}Print again
+      </button>
+      <div class="history-details-footer-row">
+        <button class="button open-details-button" @click=${this.openSelectedDetails}>Open details</button>
+        ${this.isChoosingProject
+          ? this.renderProjectChoice(record)
+          : html`<button class="button add-to-project-button" @click=${() => (this.isChoosingProject = true)}>
+              ${renderIcon('plus', 14)}Add to project
+            </button>`}
+      </div>
+    </div>`
+  }
+
+  private renderSelectedHeading(record: PrintRecord): TemplateResult {
+    return html`<div class="selected-heading">
+      ${this.renderThumbnail(record, 30)}
+      <span class="selected-heading-text">
+        <span class="selected-print-name monospace">${record.filename}</span>
+        <span class="muted selected-date">${formatPrintDate(record.time)}</span>
+      </span>
+    </div>`
+  }
+
+  private renderDetails(): TemplateResult {
+    const selected = this.findSelectedPrint()
+    return html`<aside class="history-details selected-print" aria-label="Details">
+      <div class="section-header history-details-title">Selected print</div>
+      <div class="history-details-body">
+        ${selected
+          ? html`${this.renderSelectedHeading(selected)} ${this.renderJobSection(selected)}
+            ${this.renderCostSection(selected)}`
+          : nothing}
+      </div>
+      ${selected ? this.renderDetailsActions(selected) : nothing}
+    </aside>`
+  }
+
+  render(): TemplateResult {
+    return html`<print-ready-modal></print-ready-modal>
+      <div class="history-layout">${this.renderFiltersPanel()} ${this.renderMain()} ${this.renderDetails()}</div>`
   }
 }
 

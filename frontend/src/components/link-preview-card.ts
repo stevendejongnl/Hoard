@@ -1,4 +1,5 @@
 import { LitElement, html, css } from 'lit'
+import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import type { ProjectLink } from '../types'
 
@@ -9,8 +10,12 @@ export class LinkPreviewCard extends LitElement {
   private _showTimer = 0
   private _hideTimer = 0
 
+  /** Replaceable so tests, and browsers without media queries, decide what counts as a touch screen. */
+  @property({ attribute: false }) isTouchScreen: () => boolean = () =>
+    window.matchMedia?.('(hover: none)').matches ?? false
+
   private _isTouch() {
-    return window.matchMedia('(hover: none)').matches
+    return this.isTouchScreen()
   }
 
   private _hasContent() {
@@ -34,10 +39,10 @@ export class LinkPreviewCard extends LitElement {
     document.removeEventListener('click', this._onOutsideClick, true)
   }
 
-  private _onOutsideClick = (e: Event) => {
+  private _onOutsideClick = (event: Event) => {
     if (!this._visible) return
     if (!this._isTouch()) return // desktop uses mouseleave to hide
-    if (!this.contains(e.target as Node)) {
+    if (!this.contains(event.target as Node)) {
       this._visible = false
     }
   }
@@ -58,17 +63,17 @@ export class LinkPreviewCard extends LitElement {
     }, 150)
   }
 
-  private _onClick = (e: Event) => {
+  private _onClick = (event: Event) => {
     if (!this._isTouch()) return // desktop: don't intercept, let <a> navigate
     if (!this._hasContent()) return // nothing to show, let <a> navigate
-    if (e.composedPath().some((el) => el instanceof Element && el.classList.contains('card'))) return // click inside popup card
-    e.preventDefault()
-    e.stopImmediatePropagation()
+    if (event.composedPath().some((target) => target instanceof Element && target.classList.contains('card'))) return // click inside popup card
+    event.preventDefault()
+    event.stopImmediatePropagation()
     this._visible = !this._visible
   }
 
-  private _open(e: Event) {
-    e.stopPropagation()
+  private _open(event: Event) {
+    event.stopPropagation()
     this._visible = false
     window.open(this.link.url, '_blank', 'noopener')
   }
@@ -197,52 +202,44 @@ export class LinkPreviewCard extends LitElement {
     }
   `
 
+  private _renderCover(imageUrl: string | undefined): TemplateResult | string {
+    if (!imageUrl) return ''
+    const hideBrokenImage = (event: Event) => {
+      ;(event.target as HTMLElement).style.display = 'none'
+    }
+    return html`<img class="cover" src="${imageUrl}" alt="" @error=${hideBrokenImage} />`
+  }
+
+  private _renderChips(entries: [string, unknown][]): TemplateResult | string {
+    if (entries.length === 0) return ''
+    const chips = entries.map(([key, value]) => html` <span class="chip">${_label(key)}: ${value}</span> `)
+    return html`<div class="chips">${chips}</div>`
+  }
+
+  private _renderCard(): TemplateResult {
+    const meta = this.link?.meta
+    const printSettings = meta?.print_settings
+    const printSettingEntries = printSettings ? Object.entries(printSettings).filter(([, value]) => value) : []
+    return html`<div class="card ${this._visible ? 'visible' : ''}">
+      ${this._renderCover(meta?.image_url)}
+      <div class="body">
+        ${meta?.title ? html`<div class="title">${meta.title}</div>` : ''}
+        ${meta?.description ? html`<div class="desc">${_stripHtml(meta.description)}</div>` : ''}
+        ${this._renderChips(printSettingEntries)}
+      </div>
+      <div class="footer">
+        <button class="open-btn" @click=${this._open}>Open link ↗</button>
+      </div>
+    </div>`
+  }
+
   render() {
-    const m = this.link?.meta
-    const ps = m?.print_settings
-    const psEntries = ps ? Object.entries(ps).filter(([, v]) => v) : []
-
-    return html`
-      <slot></slot>
-
-      ${this._hasContent()
-        ? html`
-            <div class="card ${this._visible ? 'visible' : ''}">
-              ${m?.image_url
-                ? html`
-                    <img
-                      class="cover"
-                      src="${m.image_url}"
-                      alt=""
-                      @error=${(e: Event) => {
-                        ;(e.target as HTMLElement).style.display = 'none'
-                      }}
-                    />
-                  `
-                : ''}
-              <div class="body">
-                ${m?.title ? html`<div class="title">${m.title}</div>` : ''}
-                ${m?.description ? html`<div class="desc">${_stripHtml(m.description)}</div>` : ''}
-                ${psEntries.length > 0
-                  ? html`
-                      <div class="chips">
-                        ${psEntries.map(([k, v]) => html` <span class="chip">${_label(k)}: ${v}</span> `)}
-                      </div>
-                    `
-                  : ''}
-              </div>
-              <div class="footer">
-                <button class="open-btn" @click=${this._open}>Open link ↗</button>
-              </div>
-            </div>
-          `
-        : ''}
-    `
+    return html`<slot></slot> ${this._hasContent() ? this._renderCard() : ''}`
   }
 }
 
-function _stripHtml(html: string): string {
-  return html
+function _stripHtml(markup: string): string {
+  return markup
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/\s+/g, ' ')
@@ -259,8 +256,8 @@ const _LABELS: Record<string, string> = {
   weight_g: 'Weight',
   parts: 'Parts',
 }
-function _label(k: string) {
-  return _LABELS[k] ?? k
+function _label(key: string) {
+  return _LABELS[key] ?? key
 }
 
 declare global {

@@ -1,414 +1,216 @@
-import { LitElement, html } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
-import { marked } from 'marked'
-import type { PrintJob, GcodeMeta } from '../types'
-import { getPrintJob, updatePrintJob } from '../api'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { getPrintJob, restoreCost as restoreCostRequest, updatePrintJob } from '../api'
+import { renderIcon } from '../icons'
+import { formatPrintCost, formatPrintDate, formatPrintDuration } from '../print-history-list'
 import { router } from '../router'
-import '../components/print-settings-editor'
+import type { PrintJob } from '../types'
+import '../components/markdown-editor'
 import '../components/print-photos'
+import '../styles/print-detail.css'
 
-const styles = html`<style>
-  .ppd-wrap {
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .ppd-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  @media (max-width: 600px) {
-    .ppd-wrap {
-      padding: 16px;
-      gap: 12px;
-    }
-    .ppd-stats {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-  .ppd-section {
-    background: var(--surface);
-    border-radius: 8px;
-    padding: 16px;
-    border: 1px solid var(--border);
-  }
-  .ppd-section-title {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--text-muted);
-    margin-bottom: 12px;
-  }
-  .ppd-meta-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 8px;
-  }
-  .ppd-meta-item {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .ppd-meta-label {
-    font-size: 11px;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  .ppd-meta-value {
-    font-size: 14px;
-    font-weight: 500;
-    color: var(--text);
-  }
-  .ppd-meta-link {
-    color: var(--accent);
-    text-decoration: none;
-    font-size: 12px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .ppd-meta-link:hover {
-    text-decoration: underline;
-  }
-</style>`
+type LoadState = 'loading' | 'ready' | 'error'
 
-function _fmtDuration(s: number | null): string {
-  if (!s) return '—'
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  if (h === 0) return `${m}m`
-  if (m === 0) return `${h}h`
-  return `${h}h ${m}m`
+const NO_VALUE = '—'
+const SECTION_CHEVRON_SIZE = 14
+const ICON_STROKE_WIDTH = 2.4
+
+function readJobIdFromRoute(): string {
+  return decodeURIComponent(router.current.split('/')[2] ?? '')
 }
 
-function _fmtFilament(g: number | null): string {
-  if (g == null) return '—'
-  if (g >= 1000) return (g / 1000).toFixed(2) + ' kg'
-  return g.toFixed(0) + ' g'
+function describeNumber(value: number | null | undefined, unit: string): string {
+  return value === null || value === undefined ? NO_VALUE : `${value}${unit}`
 }
 
-function _fmtDate(time: string | null): string {
-  if (!time) return '—'
-  try {
-    return new Date(time).toLocaleDateString('nl-NL', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    })
-  } catch {
-    return time
-  }
-}
-
+/** One finished print: its facts and slicer settings, its photos and notes, and what it cost. */
 @customElement('print-detail-page')
 export class PrintDetailPage extends LitElement {
+  @property({ attribute: false }) readJobId: () => string = readJobIdFromRoute
+  @property({ attribute: false }) loadJob: (jobId: string) => Promise<PrintJob> = getPrintJob
+  @property({ attribute: false }) saveNotes: (jobId: string, notes: string) => Promise<unknown> = (jobId, notes) =>
+    updatePrintJob(jobId, { notes })
+  @property({ attribute: false }) restoreCost: (jobId: string) => Promise<Partial<PrintJob>> = (jobId) =>
+    restoreCostRequest(jobId) as Promise<Partial<PrintJob>>
+  @property({ attribute: false }) startPrint: (filename: string) => void = (filename) =>
+    document.querySelector<HTMLElement & { tryPrint(name: string): void }>('print-ready-modal')?.tryPrint(filename)
+  @property({ attribute: false }) navigate: (path: string) => void = (path) =>
+    router.navigate(path as Parameters<typeof router.navigate>[0])
+
+  @state() private job: PrintJob | null = null
+  @state() private loadState: LoadState = 'loading'
+  @state() private isRestoring = false
+
   createRenderRoot() {
     return this
   }
 
-  @state() job: PrintJob | null = null
-  @state() loading = true
-  @state() error = false
-
-  // Notes state
-  @state() private _notesEditing = false
-  @state() private _notesDraft = ''
-  @state() private _notesSaved = ''
-  @state() private _notesSaving = false
-  @state() private _recalculating = false
-
-  connectedCallback() {
+  connectedCallback(): void {
     super.connectedCallback()
-    const id = router.printJobId
-    if (id) this._load(id)
-    else this.error = true
+    void this.load()
   }
 
-  private async _load(jobId: string) {
-    this.loading = true
+  private async load(): Promise<void> {
     try {
-      this.job = await getPrintJob(jobId)
-      this._notesSaved = this.job.notes ?? ''
-      this._notesDraft = this._notesSaved
+      this.job = await this.loadJob(this.readJobId())
+      this.loadState = 'ready'
     } catch {
-      this.error = true
-    } finally {
-      this.loading = false
+      this.loadState = 'error'
     }
   }
 
-  private _stat(label: string, value: string) {
-    return html`
-      <div
-        style="background: #1a1a1a; border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 3px;"
-      >
-        <span style="font-size: 10px; color: #555;">${label}</span>
-        <span style="font-size: 18px; font-weight: 600; color: #e0e0e0;">${value}</span>
-      </div>
-    `
-  }
-
-  // ── Recalculate ───────────────────────────────────────────────────────────
-
-  private async _recalculate() {
-    if (!this.job || this._recalculating) return
-    this._recalculating = true
+  private async restore(): Promise<void> {
+    if (!this.job || this.isRestoring) return
+    this.isRestoring = true
     try {
-      const res = await fetch(`/api/history/${encodeURIComponent(this.job.job_id)}/restore`, { method: 'POST' })
-      if (res.ok) {
-        const data = await res.json()
-        this.job = { ...this.job, ...data }
-      }
+      this.job = { ...this.job, ...(await this.restoreCost(this.job.job_id)) }
     } finally {
-      this._recalculating = false
+      this.isRestoring = false
     }
   }
 
-  // ── Notes ─────────────────────────────────────────────────────────────────
-
-  private _startNotesEdit() {
-    this._notesDraft = this._notesSaved
-    this._notesEditing = true
-    this.updateComplete.then(() => {
-      const ta = this.querySelector<HTMLTextAreaElement>('textarea[data-notes]')
-      if (!ta) return
-      ta.focus()
-      ta.selectionStart = ta.selectionEnd = ta.value.length
-      ta.style.height = ta.scrollHeight + 'px'
-    })
+  private renderSectionHeader(title: string): TemplateResult {
+    return html`<div class="section-header">
+      ${renderIcon('chevron-down', SECTION_CHEVRON_SIZE, ICON_STROKE_WIDTH)}${title}
+    </div>`
   }
 
-  private async _saveNotes() {
-    if (!this.job) return
-    this._notesEditing = false
-    const prev = this._notesSaved
-    this._notesSaved = this._notesDraft
-    this._notesSaving = true
-    try {
-      await updatePrintJob(this.job.job_id, { notes: this._notesDraft })
-      if (this.job) this.job = { ...this.job, notes: this._notesDraft }
-    } catch {
-      this._notesSaved = prev
-      this._notesDraft = prev
-    } finally {
-      this._notesSaving = false
-    }
+  private renderField(label: string, name: string, value: string, unit = ''): TemplateResult {
+    const unitText = html`<span class="value-unit">${unit}</span>`
+    return html`<div class="parameter-row">
+      <span class="parameter-label">${label}</span
+      ><span class="value-field" data-field=${name}>${value}${unitText}</span>
+    </div>`
   }
 
-  // ── Gcode Meta ───────────────────────────────────────────────────────────
+  private renderDetailRow(label: string, name: string, content: TemplateResult | string): TemplateResult {
+    return html`<div class="parameter-row">
+      <span class="parameter-label">${label}</span><span class="detail-value" data-field=${name}>${content}</span>
+    </div>`
+  }
 
-  private _renderGcodeMeta() {
-    const meta = this.job?.gcode_meta
-    if (!meta || !Object.values(meta).some((v) => v != null && v !== '')) return html``
+  private renderProjectLink(job: PrintJob): TemplateResult | string {
+    if (!job.project) return NO_VALUE
+    const project = job.project
+    return html`<a
+      href="/projects/${project.id}"
+      @click=${(event: Event) => {
+        event.preventDefault()
+        this.navigate(`/projects/${project.id}`)
+      }}
+      >${project.name}</a
+    >`
+  }
 
-    const labelMap: Record<string, string> = {
-      layer_height: 'Layer height',
-      first_layer_height: 'First layer',
-      filament_weight_g: 'Filament weight',
-      estimated_time_s: 'Estimated time',
-      nozzle_diameter: 'Nozzle',
-      filament_type: 'Filament type',
-      nozzle_temp: 'Nozzle temp',
-      bed_temp: 'Bed temp',
-      slicer: 'Slicer',
-      slicer_version: 'Slicer version',
-      layer_count: 'Layers',
-      object_height: 'Object height',
-      source_url: 'Source',
-      project_name: 'Project',
-    }
+  private renderFacts(job: PrintJob): TemplateResult {
+    const spoolName = job.spool ? `${job.spool.brand ?? ''} ${job.spool.material ?? ''}`.trim() : NO_VALUE
+    return html`<div class="section">
+      ${this.renderSectionHeader('Job')}
+      <div class="section-body">
+        ${this.renderField('Duration', 'duration', formatPrintDuration(job.duration_s ?? 0))}
+        ${this.renderField('Filament', 'filament', (job.filament_g ?? 0).toFixed(1), 'g')}
+        ${this.renderDetailRow('Spool', 'spool', spoolName)}
+        ${this.renderDetailRow('Project', 'project', this.renderProjectLink(job))}
+      </div>
+    </div>`
+  }
 
-    const formatValue = (key: string, val: string | number): string => {
-      if (key === 'layer_height' || key === 'first_layer_height' || key === 'nozzle_diameter') return `${val} mm`
-      if (key === 'filament_weight_g') return `${val} g`
-      if (key === 'estimated_time_s') {
-        const s = Number(val)
-        const h = Math.floor(s / 3600)
-        const m = Math.floor((s % 3600) / 60)
-        return h > 0 ? `${h}h ${m}m` : `${m}m`
-      }
-      if (key === 'nozzle_temp' || key === 'bed_temp') return `${val}°C`
-      if (key === 'object_height') return `${val} mm`
-      return String(val)
-    }
+  private renderSlicer(job: PrintJob): TemplateResult | typeof nothing {
+    const meta = job.gcode_meta
+    if (!meta) return nothing
+    return html`<div class="section">
+      ${this.renderSectionHeader('Slicer')}
+      <div class="section-body">
+        ${this.renderField('Layer height', 'layer-height', describeNumber(meta.layer_height, ''), 'mm')}
+        ${this.renderField('Nozzle', 'nozzle', describeNumber(meta.nozzle_diameter, ''), 'mm')}
+        ${this.renderField('Filament type', 'filament-type', meta.filament_type ?? NO_VALUE)}
+        ${this.renderField('Nozzle temp', 'nozzle-temperature', describeNumber(meta.nozzle_temp, ''), '°C')}
+        ${this.renderField('Bed temp', 'bed-temperature', describeNumber(meta.bed_temp, ''), '°C')}
+      </div>
+    </div>`
+  }
 
-    const entries = Object.entries(meta).filter(([, v]) => v != null && v !== '')
-
-    return html`
-      <div class="ppd-section">
-        <div class="ppd-section-title">Slicer Info</div>
-        <div class="ppd-meta-grid">
-          ${entries.map(([key, val]) => {
-            const label = labelMap[key] ?? key.replace(/_/g, ' ')
-            const display = formatValue(key, val as string | number)
-            if (key === 'source_url' && String(val).startsWith('http')) {
-              return html`<div class="ppd-meta-item">
-                <span class="ppd-meta-label">${label}</span
-                ><a href="${val}" target="_blank" rel="noopener" class="ppd-meta-value ppd-meta-link">${val}</a>
-              </div>`
-            }
-            return html`<div class="ppd-meta-item">
-              <span class="ppd-meta-label">${label}</span><span class="ppd-meta-value">${display}</span>
-            </div>`
-          })}
+  private renderCost(job: PrintJob): TemplateResult {
+    const price =
+      job.avg_eur_per_kwh === null || job.avg_eur_per_kwh === undefined ? NO_VALUE : job.avg_eur_per_kwh.toFixed(3)
+    const power = job.avg_watts === null || job.avg_watts === undefined ? NO_VALUE : String(Math.round(job.avg_watts))
+    return html`<div class="section">
+      ${this.renderSectionHeader('Cost')}
+      <div class="section-body">
+        ${this.renderField('Filament', 'filament-cost', formatPrintCost(job.cost_filament ?? null))}
+        ${this.renderField('Electricity', 'electricity-cost', formatPrintCost(job.cost_electricity ?? null))}
+        ${this.renderField('Avg power', 'average-power', power, 'W')}
+        ${this.renderField('Price', 'price', price, '€/kWh')}
+        <div class="parameter-row">
+          <span class="parameter-label"><strong>Total</strong></span>
+          <span class="value-field accented" data-field="total">${formatPrintCost(job.cost_total ?? null)}</span>
         </div>
       </div>
-    `
+    </div>`
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
-
-  render() {
-    if (this.loading) return html`<div style="padding: 40px; text-align: center; color: #555;">Loading…</div>`
-    if (this.error || !this.job)
-      return html`<div style="padding: 40px; text-align: center; color: #555;">Print job not found.</div>`
-
-    const j = this.job
-    const spoolLabel = j.spool
-      ? [j.spool.brand, j.spool.material].filter(Boolean).join(' ')
-      : j.spool_id
-        ? `spool #${j.spool_id}`
-        : '—'
-
-    return html`
-      ${styles}
-      <div class="ppd-wrap">
-        <!-- breadcrumb -->
-        <div style="display: flex; align-items: center; gap: 6px; font-size: 10px; color: #555;">
-          <span style="cursor: pointer;" @click=${() => router.navigate('/history')}>← history</span>
-          ${j.project
-            ? html`
-                <span>·</span>
-                <span
-                  style="cursor: pointer; color: #22d3ee;"
-                  @click=${() => router.navigate(`/projects/${j.project!.id}` as `/projects/${string}`)}
-                  >${j.project.name}</span
-                >
-              `
-            : ''}
-        </div>
-
-        <!-- header: filename + date -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
-          <span style="font-size: 18px; font-weight: 600; color: #e0e0e0; word-break: break-word;">${j.filename}</span>
-          <span style="font-size: 11px; color: #555; white-space: nowrap; flex-shrink: 0; padding-top: 4px;"
-            >${_fmtDate(j.time ?? null)}</span
-          >
-        </div>
-
-        <!-- stats -->
-        <div class="ppd-stats">
-          ${this._stat('duration', _fmtDuration(j.duration_s ?? null))}
-          ${this._stat('cost', j.cost_total != null ? '€' + j.cost_total.toFixed(2) : '—')}
-          ${this._stat('filament', _fmtFilament(j.filament_g ?? null))} ${this._stat('spool', spoolLabel)}
-        </div>
-
-        <!-- cost breakdown -->
-        ${j.cost_filament != null || j.cost_electricity != null || j.avg_watts != null || j.avg_eur_per_kwh != null
-          ? html`
-              <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; position: relative;">
-                <button
-                  style="position: absolute; top: -28px; right: 0; background: transparent; border: none; color: #444; font-size: 11px; cursor: pointer; padding: 2px 4px;"
-                  title="Recalculate costs"
-                  ?disabled=${this._recalculating}
-                  @click=${this._recalculate}
-                >
-                  ${this._recalculating ? '…' : '↻ recalc'}
-                </button>
-                ${[
-                  { label: 'filament cost', value: j.cost_filament != null ? '€' + j.cost_filament.toFixed(2) : '—' },
-                  {
-                    label: 'electricity',
-                    value: j.cost_electricity != null ? '€' + j.cost_electricity.toFixed(2) : '—',
-                  },
-                  { label: 'avg watts', value: j.avg_watts != null ? j.avg_watts + 'w' : '—' },
-                  { label: '€/kWh', value: j.avg_eur_per_kwh != null ? '€' + j.avg_eur_per_kwh.toFixed(3) : '—' },
-                ].map(
-                  ({ label, value }) => html`
-                    <div
-                      style="background: #141414; border: 1px solid #1e1e1e; border-radius: 6px; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px;"
-                    >
-                      <span style="font-size: 10px; color: #555;">${label}</span>
-                      <span style="font-size: 14px; color: #aaa;">${value}</span>
-                    </div>
-                  `,
-                )}
-              </div>
-            `
-          : html`
-              <div style="text-align: right;">
-                <button
-                  style="background: transparent; border: none; color: #444; font-size: 11px; cursor: pointer; padding: 2px 4px;"
-                  title="Recalculate costs"
-                  ?disabled=${this._recalculating}
-                  @click=${this._recalculate}
-                >
-                  ${this._recalculating ? '…' : '↻ recalc'}
-                </button>
-              </div>
-            `}
-
-        <!-- gcode meta -->
-        ${this._renderGcodeMeta()}
-
-        <!-- print settings -->
-        <print-settings-editor .settings=${j.settings} .jobId=${j.job_id}></print-settings-editor>
-
-        <!-- photos -->
-        <print-photos
-          .jobId=${j.job_id}
-          .photos=${j.photos ?? []}
-          @photos-changed=${(e: CustomEvent) => {
-            if (this.job) this.job = { ...this.job, photos: e.detail.photos }
-          }}
-        ></print-photos>
-
-        <!-- notes -->
-        ${this._notesEditing
-          ? html`
-              <div style="background: #1a1a1a; border: 1px solid #22d3ee44; border-radius: 8px; padding: 16px;">
-                <div
-                  style="font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;"
-                >
-                  Notes
-                </div>
-                <textarea
-                  data-notes
-                  style="width: 100%; background: transparent; border: none; color: #ccc; font-size: 12px; line-height: 1.7; resize: none; outline: none; font-family: var(--font); min-height: 80px; box-sizing: border-box;"
-                  .value=${this._notesDraft}
-                  @input=${(e: Event) => {
-                    const ta = e.target as HTMLTextAreaElement
-                    this._notesDraft = ta.value
-                    ta.style.height = 'auto'
-                    ta.style.height = ta.scrollHeight + 'px'
-                  }}
-                  @blur=${this._saveNotes}
-                ></textarea>
-              </div>
-            `
-          : html`
-              <div
-                style="background: #1a1a1a; border: 1px solid #222; border-radius: 8px; padding: 16px; cursor: text;"
-                @click=${this._startNotesEdit}
-              >
-                <div
-                  style="font-size: 10px; color: #555; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em;"
-                >
-                  Notes
-                </div>
-                ${this._notesSaved
-                  ? html`<div class="md-prose" .innerHTML=${marked.parse(this._notesSaved) as string}></div>`
-                  : html`<div style="font-size: 12px; color: #333; font-style: italic;">Click to add notes…</div>`}
-                <div style="margin-top: 8px; font-size: 9px; color: #333;">click to edit</div>
-              </div>
-            `}
+  private renderMain(job: PrintJob): TemplateResult {
+    return html`<section class="detail-main" aria-label="Main">
+      <div class="detail-title-strip">
+        <button class="button small flat back-button" @click=${() => this.navigate('/history')}>
+          ${renderIcon('chevron-left', 14)}History
+        </button>
+        <span class="detail-file monospace">${job.filename}</span>
+        <span class="detail-date muted">${formatPrintDate(job.time ?? null)}</span>
       </div>
-    `
+      <div class="detail-scroll">
+        <div class="section">
+          ${this.renderSectionHeader('Photos')}
+          <div class="section-body detail-photos">
+            <print-photos .jobId=${job.job_id} .photos=${job.photos}></print-photos>
+          </div>
+        </div>
+        <div class="detail-notes">
+          <markdown-editor
+            value=${job.notes ?? ''}
+            .saveNotes=${(notes: string) => this.saveNotes(job.job_id, notes)}
+          ></markdown-editor>
+        </div>
+      </div>
+    </section>`
+  }
+
+  private renderActions(job: PrintJob): TemplateResult {
+    return html`<div class="detail-footer">
+      <button class="button primary print-again-button" @click=${() => this.startPrint(job.filename ?? '')}>
+        ${renderIcon('play', 14)}Print again
+      </button>
+      <button class="button restore-cost-button" ?disabled=${this.isRestoring} @click=${this.restore}>
+        ${renderIcon('refresh', 14)}Restore cost
+      </button>
+    </div>`
+  }
+
+  private renderState(message: string): TemplateResult {
+    return html`<div class="state-message">${message}</div>`
+  }
+
+  render(): TemplateResult {
+    if (this.loadState === 'loading') return this.renderState('Loading print…')
+    const job = this.job
+    if (this.loadState === 'error' || !job) return this.renderState('Could not load this print')
+    return html`<div class="detail-layout">
+      <aside class="detail-facts" aria-label="Parameters">
+        <div class="detail-facts-body">${this.renderFacts(job)} ${this.renderSlicer(job)}</div>
+      </aside>
+      ${this.renderMain(job)}
+      <aside class="detail-cost" aria-label="Details">
+        <div class="section-header detail-cost-title">Cost</div>
+        <div class="detail-cost-body">${this.renderCost(job)}</div>
+        ${this.renderActions(job)}
+      </aside>
+    </div>`
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'print-detail-page': PrintDetailPage
   }
 }

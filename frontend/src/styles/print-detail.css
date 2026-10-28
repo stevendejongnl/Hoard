@@ -1,0 +1,230 @@
+/* One print: facts and slicer settings on the left, photos and notes in the middle, the cost on the right. */
+
+.app-content > print-detail-page {
+  display: flex;
+}
+
+.detail-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 320px;
+}
+
+.detail-facts,
+.detail-cost {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel-color);
+}
+
+.detail-facts {
+  border-right: 1px solid var(--border-color);
+}
+
+.detail-cost {
+  border-left: 1px solid var(--border-color);
+}
+
+.detail-facts-body,
+.detail-cost-body {
+  flex: 1;
+  overflow: hidden;
+}
+
+.detail-layout .section-body {
+  padding: 8px 0;
+}
+
+.detail-layout .value-field {
+  box-sizing: border-box;
+}
+
+.detail-cost-title {
+  background: var(--chrome-color);
+  min-height: 40px;
+}
+
+.detail-value {
+  font-size: 13px;
+}
+
+.detail-footer {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.detail-layout .parameter-label strong {
+  color: var(--text-color);
+}
+
+.detail-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--well-color);
+}
+
+.detail-title-strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 16px 0 8px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detail-file {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.detail-date {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.detail-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--panel-color);
+}
+
+.detail-layout .detail-photos {
+  padding: 12px;
+}
+
+.detail-notes {
+  padding: 16px;
+}
+
+@media (max-width: 800px) {
+  .detail-layout {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .detail-facts,
+  .detail-cost {
+    border: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .detail-main {
+    display: block;
+  }
+}
+
+/* Photos */
+.photo-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.photo-tile,
+.add-photo-tile {
+  position: relative;
+  box-sizing: border-box;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+}
+
+.photo-tile {
+  cursor: zoom-in;
+}
+
+.photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.add-photo-tile {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--muted-text-color);
+  cursor: pointer;
+}
+
+.add-photo-tile:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.photo-source {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  font: 400 11px var(--monospace-family);
+  color: var(--secondary-text-color);
+  pointer-events: none;
+}
+
+.delete-photo-button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+}
+
+.photo-tile:hover .delete-photo-button,
+.photo-tile:focus-within .delete-photo-button {
+  display: inline-flex;
+}
+
+@media (hover: none) {
+  .delete-photo-button {
+    display: inline-flex;
+  }
+}
+
+.photo-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.8);
+  cursor: zoom-out;
+}
+
+.photo-lightbox img {
+  max-width: 90vw;
+  max-height: 90vh;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* The back button of the title strip is drawn tighter than a small button */
+.detail-layout .back-button {
+  padding: 0 8px;
+  font-size: 13px;
+}

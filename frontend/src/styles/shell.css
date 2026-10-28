@@ -1,0 +1,359 @@
+/* The frame around every page: top bar, status bar and the phone tab bar. Written from the design. */
+
+.top-navigation {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  height: 48px;
+  padding: 0 12px 0 16px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.top-navigation .brand {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font: 700 15px var(--font-family);
+  letter-spacing: 0.02em;
+  color: #fff;
+  text-decoration: none;
+}
+
+.top-navigation .brand-mark {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  background: var(--accent);
+  color: var(--text-on-accent);
+  display: grid;
+  place-items: center;
+}
+
+.top-navigation nav {
+  display: flex;
+}
+
+.top-navigation .navigation-tab {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 18px;
+  color: var(--secondary-text-color);
+  text-decoration: none;
+  font: 600 14px var(--font-family);
+  letter-spacing: 0.02em;
+  border-bottom: 3px solid transparent;
+}
+
+.top-navigation .navigation-tab:hover {
+  color: #fff;
+}
+
+.top-navigation .navigation-tab[aria-current='page'] {
+  color: #fff;
+  border-bottom-color: var(--accent);
+}
+
+.top-navigation-actions {
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The phone's tab bar: only shown at phone width, where the top bar tabs are hidden. */
+bottom-tabs {
+  display: none;
+}
+
+.bottom-tabs {
+  display: flex;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-tab {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--muted-text-color);
+  text-decoration: none;
+  font: 600 12px var(--font-family);
+  border-top: 3px solid transparent;
+}
+
+.bottom-tab[aria-current='page'] {
+  color: #fff;
+  border-top-color: var(--accent);
+}
+
+.bottom-tab[aria-current='page'] svg {
+  color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  bottom-tabs {
+    display: block;
+  }
+
+  .top-navigation nav {
+    display: none;
+  }
+}
+
+/* The strip along the bottom of the desktop layout. */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  height: 26px;
+  padding: 0 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+  font: 400 12px var(--monospace-family);
+  color: var(--muted-text-color);
+}
+
+.status-bar .status-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-bar .connection-light {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ok-color);
+}
+
+.status-bar .connection-light.disconnected {
+  background: var(--danger-color);
+}
+
+.status-bar-version {
+  margin-left: auto;
+}
+
+@media (max-width: 800px) {
+  status-bar {
+    display: none;
+  }
+}
+
+/* The frame of the app: top bar, page, status bar, phone tab bar. */
+printer-app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-content > * {
+  flex: 1;
+  min-height: 0;
+  display: block;
+}
+
+@media (max-width: 800px) {
+  .app-content {
+    overflow-y: auto;
+  }
+}
+
+/* Top bar: the brand area holds the mark and name, plus the phone-only title and back arrow. */
+.top-navigation .brand-area {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+}
+
+.top-navigation .phone-title,
+.top-navigation .phone-back {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .top-navigation {
+    display: flex;
+    gap: 8px;
+    height: 52px;
+    padding: 0 8px 0 16px;
+  }
+
+  .top-navigation .brand-name,
+  .top-navigation .search-button,
+  .top-navigation .emergency-stop .label {
+    display: none;
+  }
+
+  .top-navigation .phone-title {
+    display: inline;
+    margin-left: 10px;
+    font: 700 16px var(--font-family);
+    color: var(--text-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-navigation .phone-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin-left: -12px;
+    color: var(--text-color);
+  }
+
+  .top-navigation .has-back .brand {
+    display: none;
+  }
+
+  .top-navigation .has-back .phone-title {
+    margin-left: 8px;
+  }
+
+  .top-navigation-actions {
+    margin-left: auto;
+  }
+
+  .top-navigation .button.emergency-stop {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .top-navigation .button.emergency-stop svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* The accent picker opens from the version text, so the status bar looks like the design at rest. */
+status-bar {
+  display: block;
+  position: relative;
+}
+
+.status-bar-version {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.status-bar-version:hover {
+  color: var(--text-color);
+}
+
+.appearance-popover {
+  position: absolute;
+  right: 12px;
+  bottom: 30px;
+  z-index: 20;
+  width: 240px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--panel-color);
+  border: 1px solid var(--strong-border-color);
+  border-radius: 2px;
+  font: 400 13px var(--font-family);
+  color: var(--text-color);
+}
+
+.appearance-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.appearance-row .accent-color {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  background: var(--well-color);
+  cursor: pointer;
+}
+
+.appearance-row .accent-text {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  background: var(--well-color);
+  color: var(--text-color);
+  font: 400 14px var(--monospace-family);
+}
+
+.appearance-row .appearance-done {
+  margin-left: auto;
+}
+
+.appearance-error {
+  color: var(--danger-color);
+  font-size: 12px;
+}
+
+@media (max-width: 800px) {
+  status-bar {
+    display: none;
+  }
+}
+
+/* The dashboard's phone header is drawn with a wider right edge and a smaller stop icon than the other pages. */
+@media (max-width: 800px) {
+  top-navigation[route='/'] .top-navigation {
+    padding: 0 12px 0 16px;
+  }
+
+  top-navigation[route='/'] .top-navigation .phone-title {
+    font-size: 15px;
+  }
+
+  top-navigation[route='/'] .top-navigation .button.emergency-stop svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* The bell sits in the top bar only where push can work, and takes no room otherwise */
+push-toggle {
+  display: contents;
+}
+
+.push-button.subscribed {
+  color: var(--accent);
+}
+
+@media (max-width: 800px) {
+  .top-navigation .push-button {
+    width: 44px;
+    min-height: 44px;
+  }
+}

@@ -1,517 +1,173 @@
-import { LitElement, html, css } from 'lit'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
+import { getFiles, uploadFile } from '../api'
+import { filterFiles, formatFileSize } from '../file-list'
+import { renderIcon } from '../icons'
+import { formatPrintDuration, formatPrintFilament } from '../print-history-list'
 import type { GcodeFile } from '../types'
-import { getFiles, uploadFile, injectThumbnail } from '../api'
+import '../styles/files.css'
 
-function fmtDuration(s: number): string {
-  const h = Math.floor(s / 3600)
-  const m = Math.floor((s % 3600) / 60)
-  return `${h}h ${m}m`
-}
+type LoadState = 'loading' | 'ready' | 'error'
 
-function fmtSize(bytes: number): string {
-  if (bytes >= 1024 * 1024) {
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-  }
-  return `${Math.round(bytes / 1024)} KB`
-}
+const NO_VALUE = '—'
 
+/** A dialog with the files on the printer: search, pick one, or upload a new one. */
 @customElement('file-browser-modal')
 export class FileBrowserModal extends LitElement {
-  static styles = css`
-    :host {
-      display: contents;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      backdrop-filter: blur(2px);
-    }
-
-    .overlay.hidden {
-      display: none;
-    }
-
-    .modal {
-      background: var(--bg-modal, #161616);
-      border: 1px solid var(--border, #222);
-      border-radius: 10px;
-      width: 620px;
-      max-height: 75vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .modal-header {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px 12px;
-      border-bottom: 1px solid var(--border, #222);
-      flex-shrink: 0;
-    }
-
-    .modal-title {
-      font-size: 12px;
-      font-weight: 300;
-      color: #fff;
-      margin: 0;
-    }
-
-    .close-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted, #555);
-      font-size: 16px;
-      cursor: pointer;
-      padding: 0 2px;
-      line-height: 1;
-    }
-
-    .close-btn:hover {
-      color: var(--text, #e0e0e0);
-    }
-
-    .search-bar {
-      padding: 12px 20px;
-      flex-shrink: 0;
-      border-bottom: 1px solid var(--border, #222);
-    }
-
-    .search-input {
-      width: 100%;
-      background: var(--bg-surface, #1a1a1a);
-      border: 1px solid var(--border, #222);
-      border-radius: 4px;
-      padding: 8px 12px;
-      color: var(--text, #e0e0e0);
-      font-size: 11px;
-      box-sizing: border-box;
-      outline: none;
-    }
-
-    .search-input:focus {
-      border-color: var(--cyan, #22d3ee);
-    }
-
-    .file-list {
-      flex: 1;
-      overflow-y: auto;
-      min-height: 0;
-    }
-
-    .loading {
-      padding: 24px 20px;
-      color: var(--text-muted, #555);
-      font-size: 11px;
-      text-align: center;
-    }
-
-    .file-item {
-      display: grid;
-      grid-template-columns: 44px 1fr auto auto;
-      gap: 12px;
-      align-items: center;
-      padding: 8px 20px;
-      border-bottom: 1px solid var(--border-sub, #1a1a1a);
-      cursor: pointer;
-    }
-
-    .file-thumb {
-      width: 44px;
-      height: 44px;
-      border-radius: 4px;
-      object-fit: cover;
-      background: var(--bg-surface, #1a1a1a);
-      display: block;
-      flex-shrink: 0;
-    }
-
-    .file-thumb-placeholder {
-      width: 44px;
-      height: 44px;
-      border-radius: 4px;
-      background: var(--bg-surface, #1a1a1a);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text-muted, #555);
-      font-size: 18px;
-      flex-shrink: 0;
-      position: relative;
-    }
-
-    .thumb-gen-btn {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: none;
-      border: 1px dashed var(--border, #333);
-      border-radius: 4px;
-      color: var(--text-muted, #555);
-      font-size: 18px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition:
-        color 0.15s,
-        border-color 0.15s;
-    }
-
-    .thumb-gen-btn:hover {
-      color: var(--cyan, #22d3ee);
-      border-color: var(--cyan, #22d3ee);
-    }
-
-    .thumb-generating {
-      width: 44px;
-      height: 44px;
-      border-radius: 4px;
-      background: var(--bg-surface, #1a1a1a);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: var(--cyan, #22d3ee);
-      font-size: 18px;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .file-item:hover {
-      background: var(--bg-surface, #1a1a1a);
-    }
-
-    .file-item.selected {
-      background: var(--cyan-dim, #22d3ee14);
-    }
-
-    .file-name {
-      font-size: 11px;
-      color: var(--text, #e0e0e0);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .file-sub {
-      font-size: 10px;
-      color: var(--text-muted, #555);
-      margin-top: 2px;
-    }
-
-    .file-size {
-      font-size: 10px;
-      color: var(--text-muted, #555);
-      white-space: nowrap;
-    }
-
-    .file-date {
-      font-size: 10px;
-      color: var(--text-muted, #555);
-      white-space: nowrap;
-    }
-
-    .modal-footer {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 20px;
-      border-top: 1px solid var(--border, #222);
-      flex-shrink: 0;
-      gap: 8px;
-    }
-
-    .footer-left {
-      font-size: 10px;
-      color: var(--text-muted, #555);
-      min-width: 0;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      flex: 1;
-    }
-
-    .footer-right {
-      display: flex;
-      flex-direction: row;
-      gap: 8px;
-      flex-shrink: 0;
-    }
-
-    .btn-ghost {
-      background: none;
-      border: 1px solid var(--border, #222);
-      border-radius: 4px;
-      color: var(--text-muted, #555);
-      font-size: 11px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-
-    .btn-ghost:hover {
-      color: var(--text, #e0e0e0);
-      border-color: var(--text-dim, #333);
-    }
-
-    .btn-ghost-dashed {
-      background: none;
-      border: 1px dashed var(--border, #222);
-      border-radius: 4px;
-      color: var(--text-muted, #555);
-      font-size: 11px;
-      padding: 6px 12px;
-      cursor: pointer;
-    }
-
-    .btn-ghost-dashed:hover {
-      color: var(--text, #e0e0e0);
-      border-color: var(--text-dim, #333);
-    }
-
-    .btn-primary {
-      background: var(--cyan, #22d3ee);
-      border: none;
-      border-radius: 4px;
-      color: #000;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 6px 14px;
-      cursor: pointer;
-    }
-
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-
-    .btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-
-    input[type='file'] {
-      position: absolute;
-      width: 0;
-      height: 0;
-      opacity: 0;
-      pointer-events: none;
-    }
-  `
-
   @property({ type: Boolean }) open = false
-  @state() files: GcodeFile[] = []
-  @state() search = ''
-  @state() selected: string | null = null
-  @state() loading = true
-  @state() thumbErrors = new Set<string>()
-  @state() thumbGenerating = new Set<string>()
-  @state() thumbVersion = new Map<string, number>()
+  /** the file that is selected when the dialog opens */
+  @property({ type: String }) initialSelection: string | null = null
+  @property({ attribute: false }) loadFiles: () => Promise<GcodeFile[]> = getFiles
+  @property({ attribute: false }) uploadFile: (file: File) => Promise<unknown> = uploadFile
 
-  connectedCallback() {
-    super.connectedCallback()
-    this._loadFiles()
+  @state() private files: GcodeFile[] = []
+  @state() private loadState: LoadState = 'loading'
+  @state() private searchText = ''
+  @state() private selectedName: string | null = null
+
+  createRenderRoot() {
+    return this
   }
 
-  updated(changedProps: Map<string, unknown>) {
-    if (changedProps.has('open') && this.open) {
-      this.search = ''
-      this.selected = null
+  updated(changed: Map<string, unknown>): void {
+    if (changed.has('open') && this.open) {
+      this.selectedName = this.initialSelection
+      void this.reload()
     }
   }
 
-  private async _loadFiles() {
-    this.loading = true
-    this.thumbErrors = new Set()
+  private async reload(): Promise<void> {
     try {
-      this.files = await getFiles()
-    } finally {
-      this.loading = false
+      this.files = await this.loadFiles()
+      this.loadState = 'ready'
+    } catch {
+      this.loadState = 'error'
     }
   }
 
-  private get _filteredFiles(): GcodeFile[] {
-    const q = this.search.toLowerCase()
-    return this.files.filter((f) => f.filename?.toLowerCase().includes(q))
-  }
-
-  private _close() {
+  private close(): void {
     this.open = false
+    this.searchText = ''
+    this.selectedName = null
     this.dispatchEvent(new CustomEvent('close', { bubbles: true, composed: true }))
   }
 
-  private _confirm() {
-    if (!this.selected) return
+  private confirmSelection(): void {
+    if (!this.selectedName) return
     this.dispatchEvent(
-      new CustomEvent('file-selected', {
-        detail: { filename: this.selected },
-        bubbles: true,
-        composed: true,
-      }),
+      new CustomEvent('file-selected', { detail: { filename: this.selectedName }, bubbles: true, composed: true }),
     )
-    this._close()
+    this.close()
   }
 
-  private async _onUpload(e: Event) {
-    const input = e.target as HTMLInputElement
+  private async upload(event: Event): Promise<void> {
+    const input = event.target as HTMLInputElement
     const file = input.files?.[0]
     if (!file) return
     try {
-      await uploadFile(file)
-      await this._loadFiles()
-    } catch (err) {
-      console.error('Upload failed', err)
-    }
-    input.value = ''
-  }
-
-  private _onOverlayClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) {
-      this._close()
+      await this.uploadFile(file)
+      await this.reload()
+    } catch {
+      this.loadState = 'error'
     }
   }
 
-  private _triggerUpload() {
-    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[data-gcode-upload]')
-    input?.click()
+  private renderRow(file: GcodeFile): TemplateResult {
+    const isSelected = file.filename === this.selectedName
+    return html`<div
+      class="table-row browser-file-row ${isSelected ? 'selected' : ''}"
+      tabindex="0"
+      @click=${() => (this.selectedName = file.filename)}
+      @keydown=${(event: KeyboardEvent) => event.key === 'Enter' && (this.selectedName = file.filename)}
+    >
+      <span class="browser-browser-file-name-cell"
+        ><span class="thumbnail">${renderIcon('cube', 16, 1.6)}</span
+        ><span class="monospace browser-file-name">${file.filename}</span></span
+      >
+      <span class="muted">${formatFileSize(file.size)}</span>
+      <span class="monospace browser-file-figure"
+        >${file.estimated_time ? formatPrintDuration(file.estimated_time) : NO_VALUE}</span
+      >
+      <span class="monospace browser-file-figure"
+        >${file.filament_weight_total ? formatPrintFilament(file.filament_weight_total) : NO_VALUE}</span
+      >
+    </div>`
   }
 
-  private _triggerThumbUpload(filename: string) {
-    const input = this.shadowRoot?.querySelector<HTMLInputElement>('input[data-stl-upload]')
-    if (!input) return
-    input.dataset.target = filename
-    input.click()
-  }
-
-  private async _onThumbUpload(e: Event) {
-    const input = e.target as HTMLInputElement
-    const file = input.files?.[0]
-    const target = input.dataset.target
-    if (!file || !target) return
-    input.value = ''
-
-    this.thumbGenerating = new Set([...this.thumbGenerating, target])
-    try {
-      await injectThumbnail(target, file)
-      this.thumbErrors = new Set([...this.thumbErrors].filter((f) => f !== target))
-      const v = new Map(this.thumbVersion)
-      v.set(target, Date.now())
-      this.thumbVersion = v
-    } catch (err) {
-      console.error('Thumbnail inject failed', err)
-    } finally {
-      this.thumbGenerating = new Set([...this.thumbGenerating].filter((f) => f !== target))
+  private renderMessage(): TemplateResult | null {
+    if (this.loadState === 'loading') return html`<div class="state-message">Loading files…</div>`
+    if (this.loadState === 'error') return html`<div class="state-message">Could not load the files</div>`
+    if (this.files.length === 0) return html`<div class="state-message">No files on the printer</div>`
+    if (filterFiles(this.files, this.searchText).length === 0) {
+      return html`<div class="state-message">No files match the search</div>`
     }
+    return null
   }
 
-  render() {
-    // Don't render modal content at all when closed — avoids 180 thumbnail requests on page load
-    if (!this.open) return html`<div class="overlay hidden"></div>`
-
-    const filtered = this._filteredFiles
-
-    return html`
-      <div class="overlay" @click=${this._onOverlayClick}>
-        <div class="modal">
-          <div class="modal-header">
-            <span class="modal-title">Klipper files</span>
-            <button class="close-btn" @click=${this._close}>×</button>
-          </div>
-
-          <div class="search-bar">
-            <input
-              class="search-input"
-              type="text"
-              placeholder="Search files…"
-              .value=${this.search}
-              @input=${(e: InputEvent) => {
-                this.search = (e.target as HTMLInputElement).value
-              }}
-            />
-          </div>
-
-          <div class="file-list">
-            ${this.loading
-              ? html`<div class="loading">Loading…</div>`
-              : filtered.map(
-                  (f) => html`
-                    <div
-                      class="file-item ${this.selected === f.filename ? 'selected' : ''}"
-                      @click=${() => {
-                        this.selected = f.filename
-                      }}
-                    >
-                      ${this.thumbGenerating.has(f.filename)
-                        ? html`<div class="thumb-generating">↻</div>`
-                        : this.thumbErrors.has(f.filename)
-                          ? html` <div class="file-thumb-placeholder">
-                              <button
-                                class="thumb-gen-btn"
-                                title="Generate preview from STL"
-                                @click=${(e: Event) => {
-                                  e.stopPropagation()
-                                  this._triggerThumbUpload(f.filename)
-                                }}
-                              >
-                                ⊕
-                              </button>
-                            </div>`
-                          : html`<img
-                              class="file-thumb"
-                              src="/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(
-                                f.filename,
-                              )}${this.thumbVersion.has(f.filename) ? '&v=' + this.thumbVersion.get(f.filename) : ''}"
-                              alt=""
-                              @error=${() => {
-                                this.thumbErrors = new Set([...this.thumbErrors, f.filename])
-                              }}
-                            />`}
-                      <div>
-                        <div class="file-name">${f.filename}</div>
-                        <div class="file-sub">
-                          ${f.filament_weight_total ? f.filament_weight_total.toFixed(1) + ' g' : ''}
-                          ${f.estimated_time ? fmtDuration(f.estimated_time) : ''}
-                        </div>
-                      </div>
-                      <div class="file-size">${fmtSize(f.size)}</div>
-                      <div class="file-date">
-                        ${new Date(f.modified * 1000).toLocaleDateString('nl-NL', {
-                          day: 'numeric',
-                          month: 'short',
-                        })}
-                      </div>
-                    </div>
-                  `,
-                )}
-          </div>
-
-          <div class="modal-footer">
-            <div class="footer-left">${this.selected ? this.selected : 'No file selected'}</div>
-            <div class="footer-right">
-              <input type="file" accept=".gcode" data-gcode-upload @change=${this._onUpload} />
-              <input type="file" accept=".stl" data-stl-upload @change=${this._onThumbUpload} />
-              <button class="btn-ghost-dashed" @click=${this._triggerUpload}>↑ upload new</button>
-              <button class="btn-ghost" @click=${this._close}>cancel</button>
-              <button class="btn-primary" ?disabled=${!this.selected} @click=${this._confirm}>select</button>
-            </div>
-          </div>
-        </div>
+  private renderTable(): TemplateResult {
+    return html`<div class="table-row header browser-file-header">
+        <span>File</span><span>Size</span><span>Time</span><span>Filament</span>
       </div>
-    `
+      ${this.renderMessage() ??
+      html`<div class="browser-browser-file-rows">
+        ${filterFiles(this.files, this.searchText).map((file) => this.renderRow(file))}
+      </div>`}`
+  }
+
+  private renderTitle(): TemplateResult {
+    return html`<div class="section-header files-title">
+      Files
+      <span class="actions">
+        <label class="button upload-button"
+          >Upload<input type="file" accept=".gcode,.g" hidden @change=${this.upload}
+        /></label>
+      </span>
+    </div>`
+  }
+
+  private renderSearchRow(): TemplateResult {
+    const changeSearchText = (event: Event) => (this.searchText = (event.target as HTMLInputElement).value)
+    return html`<div class="files-search-row">
+      <input
+        class="files-search"
+        type="search"
+        placeholder="Filter by file name"
+        aria-label="Filter by file name"
+        .value=${this.searchText}
+        @input=${changeSearchText}
+      />
+    </div>`
+  }
+
+  private renderFooter(): TemplateResult {
+    return html`<div class="files-footer">
+      <button class="button cancel-button" @click=${this.close}>Cancel</button>
+      <button
+        class="button primary select-file-button"
+        ?disabled=${this.selectedName === null}
+        @click=${this.confirmSelection}
+      >
+        Select
+      </button>
+    </div>`
+  }
+
+  render(): TemplateResult | typeof nothing {
+    if (!this.open) return nothing
+    const keepOpen = (event: Event) => event.stopPropagation()
+    return html`<div class="files-overlay" @click=${this.close}>
+      <div class="files-dialog" role="dialog" aria-label="Files" @click=${keepOpen}>
+        ${this.renderTitle()} ${this.renderSearchRow()}
+        <div class="files-table">${this.renderTable()}</div>
+        ${this.renderFooter()}
+      </div>
+    </div>`
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    'file-browser-modal': FileBrowserModal
   }
 }

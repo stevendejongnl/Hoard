@@ -1,287 +1,195 @@
-import { LitElement, html, css } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
-import type { Power, PrinterState } from '../types'
+import { LitElement, html, nothing } from 'lit'
+import type { TemplateResult } from 'lit'
+import { customElement, property, state } from 'lit/decorators.js'
+import { firmwareRestart, getSpools, powerOn, startPrint } from '../api'
+import { renderIcon } from '../icons'
 import { sseClient } from '../sse'
-import { startPrint, powerOn, firmwareRestart } from '../api'
+import { buildSpoolName } from '../spool-list'
+import type { Power, Spool } from '../types'
+import '../styles/print-ready.css'
 
-// Power plug → Pi boots → Moonraker starts → Klipper connects
-type Step =
-  | 'needs-power' // plug is off
-  | 'waiting-power' // plug turned on, waiting for Pi/Moonraker to come up
-  | 'needs-firmware' // power on, Klipper not yet connected
-  | 'waiting-klippy' // firmware restart sent, waiting for standby
-  | 'error'
+type StopFunction = () => void
+type Step = 'confirm' | 'needs-power' | 'waiting-power' | 'needs-firmware' | 'waiting-klippy' | 'error'
+type Payload = { type: string; data: unknown }
 
+const RETRY_MILLISECONDS = 5000
+
+function repeatWithInterval(callback: () => void): StopFunction {
+  const interval = setInterval(callback, RETRY_MILLISECONDS)
+  return () => clearInterval(interval)
+}
+
+/** Asks for a last confirmation before a print starts, and helps to get the printer ready when it is not. */
 @customElement('print-ready-modal')
 export class PrintReadyModal extends LitElement {
-  @state() private _open = false
-  @state() private _filename = ''
-  @state() private _step: Step = 'needs-power'
-  @state() private _busy = false
-  @state() private _power: Power | null = null
+  @property({ attribute: false }) loadSpools: () => Promise<Spool[]> = getSpools
+  @property({ attribute: false }) requestStart: (filename: string) => Promise<unknown> = startPrint
+  @property({ attribute: false }) requestPowerOn: () => Promise<unknown> = powerOn
+  @property({ attribute: false }) requestFirmwareRestart: () => Promise<unknown> = firmwareRestart
+  @property({ attribute: false }) subscribeToPayloads: (handler: (payload: Payload) => void) => StopFunction = (
+    handler,
+  ) => sseClient.subscribe(handler)
+  @property({ attribute: false }) repeatEvery: (callback: () => void) => StopFunction = repeatWithInterval
 
-  private _unsub: (() => void) | null = null
-  private _retryTimer: ReturnType<typeof setInterval> | null = null
+  @state() private isOpen = false
+  @state() private filename = ''
+  @state() private step: Step = 'confirm'
+  @state() private isBusy = false
+  @state() private power: Power | null = null
+  @state() private spoolName = ''
 
-  connectedCallback() {
+  private stopListening: StopFunction | null = null
+  private stopRetrying: StopFunction | null = null
+
+  createRenderRoot() {
+    return this
+  }
+
+  connectedCallback(): void {
     super.connectedCallback()
-    this._unsub = sseClient.subscribe((payload) => {
-      if (payload.type === 'power') {
-        this._power = payload.data
-        // Plug came on → advance to firmware step
-        if (this._step === 'waiting-power' && payload.data.switch === 'on') {
-          this._step = 'needs-firmware'
-        }
-      }
-      if (payload.type === 'printer_state') {
-        // Klipper became ready → start the print
-        if (this._step === 'waiting-klippy' && payload.data.state === 'standby') {
-          this._doStartPrint()
-        }
-      }
-    })
+    this.stopListening = this.subscribeToPayloads((payload) => this.receive(payload))
+    document.addEventListener('keydown', this.handleKey)
   }
 
-  disconnectedCallback() {
+  disconnectedCallback(): void {
     super.disconnectedCallback()
-    this._unsub?.()
-    this._stopRetry()
+    this.stopListening?.()
+    this.stopRetrying?.()
+    document.removeEventListener('keydown', this.handleKey)
   }
 
-  private _startRetry() {
-    this._stopRetry()
-    this._retryTimer = setInterval(() => this._doStartPrint(), 5000)
+  private handleKey = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape' && this.isOpen) this.close()
   }
 
-  private _stopRetry() {
-    if (this._retryTimer) {
-      clearInterval(this._retryTimer)
-      this._retryTimer = null
+  private receive(payload: Payload): void {
+    if (payload.type === 'power') this.receivePower(payload.data as Power)
+    if (payload.type === 'printer_state' && this.step === 'waiting-klippy') {
+      if ((payload.data as { state: string }).state === 'standby') void this.start()
     }
   }
 
-  async tryPrint(filename: string) {
+  private receivePower(power: Power): void {
+    this.power = power
+    const isWaitingForPower = this.step === 'waiting-power' || this.step === 'needs-power'
+    if (isWaitingForPower && power.switch === 'on') this.step = 'needs-firmware'
+  }
+
+  /** Opens the confirmation for a file. */
+  async tryPrint(filename: string): Promise<void> {
+    this.filename = filename
+    this.step = 'confirm'
+    this.isOpen = true
+    const spools = await this.loadSpools().catch(() => [])
+    const active = spools.find((spool) => spool.active)
+    this.spoolName = active ? buildSpoolName(active) : 'No spool in use'
+  }
+
+  private close(): void {
+    this.stopRetrying?.()
+    this.stopRetrying = null
+    this.isOpen = false
+    this.isBusy = false
+  }
+
+  private async start(): Promise<void> {
+    if (this.isBusy) return
+    this.isBusy = true
     try {
-      await startPrint(filename)
-      this._emit()
+      await this.requestStart(this.filename)
+      this.close()
+      this.dispatchEvent(new CustomEvent('print-started', { bubbles: true, composed: true }))
     } catch {
-      this._filename = filename
-      this._open = true
-      const powerOff = !this._power || this._power.switch !== 'on'
-      this._step = powerOff ? 'needs-power' : 'needs-firmware'
+      this.isBusy = false
+      if (this.step === 'confirm') this.step = this.power?.switch === 'on' ? 'needs-firmware' : 'needs-power'
     }
   }
 
-  private async _powerOn() {
-    this._busy = true
+  private async switchPowerOn(): Promise<void> {
+    this.isBusy = true
     try {
-      await powerOn()
-      this._step = 'waiting-power'
+      await this.requestPowerOn()
+      this.step = 'waiting-power'
     } catch {
-      this._step = 'error'
-    } finally {
-      this._busy = false
+      this.step = 'error'
     }
+    this.isBusy = false
   }
 
-  private async _firmwareRestart() {
-    this._busy = true
+  private async restartFirmware(): Promise<void> {
+    this.isBusy = true
     try {
-      await firmwareRestart()
-      this._step = 'waiting-klippy'
-      this._startRetry()
+      await this.requestFirmwareRestart()
+      this.step = 'waiting-klippy'
+      this.stopRetrying = this.repeatEvery(() => void this.start())
     } catch {
-      this._step = 'error'
-    } finally {
-      this._busy = false
+      this.step = 'error'
     }
+    this.isBusy = false
   }
 
-  private async _doStartPrint() {
-    if (this._busy) return
-    this._busy = true
-    try {
-      await startPrint(this._filename)
-      this._stopRetry()
-      this._open = false
-      this._emit()
-    } catch {
-      // Not ready yet — keep retrying silently
-    } finally {
-      this._busy = false
-    }
+  private renderCheck(name: string, text: string): TemplateResult {
+    return html`<div class="ready-check" data-check=${name}>
+      <span class="ready-check-mark">${renderIcon('play', 12)}</span>${text}
+    </div>`
   }
 
-  private _emit() {
-    this.dispatchEvent(new CustomEvent('print-started', { bubbles: true, composed: true }))
-  }
-
-  private _close() {
-    this._stopRetry()
-    this._open = false
-    this._step = 'needs-power'
-    this._busy = false
-  }
-
-  render() {
-    if (!this._open) return html``
-    return html`
-      <div class="overlay" @click=${(e: Event) => e.target === e.currentTarget && this._close()}>
-        <div class="modal">
-          <div class="modal-header">
-            <span class="title">Start print</span>
-            <button class="close" @click=${this._close}>×</button>
-          </div>
-          <div class="body">
-            <div class="filename">${this._filename}</div>
-            ${this._renderStep()}
-          </div>
-        </div>
+  private renderConfirm(): TemplateResult {
+    return html`<div class="ready-body">
+        <div class="muted ready-label">File</div>
+        <div class="monospace ready-file">${this.filename}</div>
+        ${this.renderCheck('spool', `Spool: ${this.spoolName}`)} ${this.renderCheck('bed', 'Bed is clear')}
       </div>
-    `
+      <div class="ready-footer">
+        <button class="button cancel-button" @click=${this.close}>Cancel</button>
+        <button class="button primary start-button" @click=${this.start}>Start print</button>
+      </div>`
   }
 
-  private _renderStep() {
-    switch (this._step) {
-      case 'needs-power':
-        return html`
-          <p class="msg">Printer is off. Power it on first.</p>
-          <button class="btn-primary" ?disabled=${this._busy} @click=${this._powerOn}>
-            ${this._busy ? 'Powering on…' : '⚡ Power on'}
-          </button>
-        `
-      case 'waiting-power':
-        return html`
-          <p class="msg waiting">Waiting for printer to power on…</p>
-          <div class="spinner">↻</div>
-        `
-      case 'needs-firmware':
-        return html`
-          <p class="msg">Printer is powered on. Connect firmware to continue.</p>
-          <button class="btn-primary" ?disabled=${this._busy} @click=${this._firmwareRestart}>
-            ${this._busy ? 'Connecting…' : '↻ Connect firmware'}
-          </button>
-        `
-      case 'waiting-klippy':
-        return html`
-          <p class="msg waiting">Firmware connecting, waiting for Klipper…</p>
-          <div class="spinner">↻</div>
-        `
-      case 'error':
-        return html`
-          <p class="msg error">Something went wrong. Check the printer.</p>
-          <button class="btn-ghost" @click=${this._close}>Close</button>
-        `
-    }
+  private renderStepContent(text: string, button: TemplateResult | typeof nothing): TemplateResult {
+    return html`<div class="ready-body"><div class="ready-step">${text}</div></div>
+      <div class="ready-footer">
+        <button class="button cancel-button" @click=${this.close}>Cancel</button>${button}
+      </div>`
   }
 
-  static styles = css`
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 200;
-      backdrop-filter: blur(2px);
+  private renderStep(): TemplateResult {
+    const disabled = this.isBusy
+    if (this.step === 'needs-power') {
+      return this.renderStepContent(
+        'Printer power is off.',
+        html`<button class="button primary power-on-button" ?disabled=${disabled} @click=${this.switchPowerOn}>
+          Turn on power
+        </button>`,
+      )
     }
-    .modal {
-      background: var(--bg-modal, #161616);
-      border: 1px solid var(--border, #222);
-      border-radius: 10px;
-      width: 340px;
-      overflow: hidden;
+    if (this.step === 'waiting-power') return this.renderStepContent('Waiting for the printer to start…', nothing)
+    if (this.step === 'needs-firmware') {
+      return this.renderStepContent(
+        'Klipper is not connected.',
+        html`<button class="button primary restart-button" ?disabled=${disabled} @click=${this.restartFirmware}>
+          Restart firmware
+        </button>`,
+      )
     }
-    .modal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 18px 12px;
-      border-bottom: 1px solid var(--border, #222);
-    }
-    .title {
-      font-size: 12px;
-      font-weight: 300;
-      color: #fff;
-    }
-    .close {
-      background: none;
-      border: none;
-      color: var(--text-muted, #555);
-      font-size: 16px;
-      cursor: pointer;
-    }
-    .close:hover {
-      color: var(--text, #e0e0e0);
-    }
-    .body {
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-    .filename {
-      font-size: 11px;
-      color: var(--text-muted, #555);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .msg {
-      font-size: 12px;
-      color: var(--text, #e0e0e0);
-      margin: 0;
-    }
-    .msg.waiting {
-      color: var(--cyan, #22d3ee);
-    }
-    .msg.error {
-      color: #f87171;
-    }
-    .spinner {
-      font-size: 24px;
-      color: var(--cyan, #22d3ee);
-      text-align: center;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-    .btn-primary {
-      background: var(--cyan, #22d3ee);
-      border: none;
-      border-radius: 4px;
-      color: #000;
-      font-size: 11px;
-      font-weight: 500;
-      padding: 8px 16px;
-      cursor: pointer;
-      width: 100%;
-    }
-    .btn-primary:hover {
-      opacity: 0.9;
-    }
-    .btn-primary:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
-    .btn-ghost {
-      background: none;
-      border: 1px solid var(--border, #222);
-      border-radius: 4px;
-      color: var(--text-muted, #555);
-      font-size: 11px;
-      padding: 8px 16px;
-      cursor: pointer;
-      width: 100%;
-    }
-    .btn-ghost:hover {
-      color: var(--text, #e0e0e0);
-    }
-  `
+    if (this.step === 'waiting-klippy') return this.renderStepContent('Waiting for Klipper to become ready…', nothing)
+    return this.renderStepContent('Could not reach the printer.', nothing)
+  }
+
+  render(): TemplateResult | typeof nothing {
+    if (!this.isOpen) return nothing
+    return html`<div class="ready-overlay" @click=${this.close}>
+      <div
+        class="ready-dialog"
+        role="dialog"
+        aria-label="Start print"
+        @click=${(event: Event) => event.stopPropagation()}
+      >
+        <div class="section-header ready-title">Start print</div>
+        ${this.step === 'confirm' ? this.renderConfirm() : this.renderStep()}
+      </div>
+    </div>`
+  }
 }
 
 declare global {

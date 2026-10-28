@@ -3,8 +3,8 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
   const rawData = atob(base64)
   const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; i++) {
-    outputArray[i] = rawData.charCodeAt(i)
+  for (let index = 0; index < rawData.length; index++) {
+    outputArray[index] = rawData.charCodeAt(index)
   }
   return outputArray
 }
@@ -15,25 +15,25 @@ export function pushSupported(): boolean {
 
 export async function getPushSubscription(): Promise<PushSubscription | null> {
   if (!pushSupported()) return null
-  const reg = await navigator.serviceWorker.ready
-  return reg.pushManager.getSubscription()
+  const registration = await navigator.serviceWorker.ready
+  return registration.pushManager.getSubscription()
 }
 
 export async function isPushConfigured(): Promise<boolean> {
-  const res = await fetch('/api/push/vapid-public-key').then((r) => r.json())
-  return Boolean(res.key)
+  const response = await fetch('/api/push/vapid-public-key').then((reply) => reply.json())
+  return Boolean(response.key)
 }
 
 export async function subscribeToPush(): Promise<void> {
-  const perm = await Notification.requestPermission()
-  if (perm !== 'granted') throw new Error('permission denied')
-  const keyRes = await fetch('/api/push/vapid-public-key').then((r) => r.json())
-  const reg = await navigator.serviceWorker.ready
-  const sub = await reg.pushManager.subscribe({
+  const permission = await Notification.requestPermission()
+  if (permission !== 'granted') throw new Error('permission denied')
+  const keyResponse = await fetch('/api/push/vapid-public-key').then((reply) => reply.json())
+  const registration = await navigator.serviceWorker.ready
+  const subscription = await registration.pushManager.subscribe({
     userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(keyRes.key) as BufferSource,
+    applicationServerKey: urlBase64ToUint8Array(keyResponse.key) as BufferSource,
   })
-  const json = sub.toJSON()
+  const json = subscription.toJSON()
   await fetch('/api/push/subscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -42,14 +42,14 @@ export async function subscribeToPush(): Promise<void> {
 }
 
 export async function unsubscribeFromPush(): Promise<void> {
-  const sub = await getPushSubscription()
-  if (!sub) return
+  const subscription = await getPushSubscription()
+  if (!subscription) return
   await fetch('/api/push/unsubscribe', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ endpoint: sub.endpoint }),
+    body: JSON.stringify({ endpoint: subscription.endpoint }),
   })
-  await sub.unsubscribe()
+  await subscription.unsubscribe()
 }
 
 export function registerServiceWorker(): void {

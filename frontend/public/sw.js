@@ -55,7 +55,7 @@ self.addEventListener('fetch', (e) => {
 
 self.addEventListener('push', (e) => {
   const data = e.data ? e.data.json() : {};
-  const title = data.title || 'Printer';
+  const title = data.title || 'Hoard';
   e.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || '',

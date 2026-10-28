@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -20,6 +21,7 @@ class SpoolCreate(BaseModel):
     current_weight_g: float
     notes: str | None = None
     active: bool = False
+    tag_id: str | None = None
 
 
 class SpoolUpdate(BaseModel):
@@ -32,6 +34,7 @@ class SpoolUpdate(BaseModel):
     current_weight_g: float | None = None
     notes: str | None = None
     active: bool | None = None
+    tag_id: str | None = None
 
 
 @router.get("")
@@ -39,9 +42,20 @@ async def list_spools() -> list[dict[str, Any]]:
     return await cache.get_or_set("spools:list", db.list_spools, ttl=1800)
 
 
+@router.get("/by-tag/{tag_id}")
+async def find_spool_by_tag(tag_id: str) -> dict[str, Any]:
+    spool = await db.find_spool_by_tag(tag_id)
+    if not spool:
+        raise HTTPException(404, "No spool has this tag")
+    return spool
+
+
 @router.post("", status_code=201)
 async def create_spool(body: SpoolCreate) -> dict[str, Any]:
-    result = await db.create_spool(body.model_dump())
+    try:
+        result = await db.create_spool(body.model_dump())
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(409, "Another spool already has this tag") from exc
     await cache.invalidate("spools:list")
     return result
 
@@ -51,7 +65,12 @@ async def update_spool(spool_id: int, body: SpoolUpdate) -> dict[str, Any]:
     data = {k: v for k, v in body.model_dump().items() if v is not None}
     if not data:
         raise HTTPException(422, "No fields to update")
-    result = await db.update_spool(spool_id, data)
+    if body.tag_id == "":
+        data["tag_id"] = None
+    try:
+        result = await db.update_spool(spool_id, data)
+    except sqlite3.IntegrityError as exc:
+        raise HTTPException(409, "Another spool already has this tag") from exc
     if not result:
         raise HTTPException(404, "Spool not found")
     if "cost_per_gram" in data:
