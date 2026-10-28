@@ -133,6 +133,22 @@ def provide(fake):
     return lambda: fake
 
 
+def override_provider(monkeypatch, provider, value) -> None:
+    monkeypatch.setitem(app.dependency_overrides, provider, provide(value))
+
+
+def printer_files_client_factory(files: dict[str, tuple[bytes, str]]):
+    """A factory of HTTP clients that serve the given files of the printer: url path -> (content, content type)."""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        found = files.get(request.url.path)
+        if found is None:
+            return httpx.Response(404)
+        return httpx.Response(200, content=found[0], headers={"content-type": found[1]})
+
+    return lambda: httpx.AsyncClient(transport=httpx.MockTransport(respond))
+
+
 def install_fakes(monkeypatch, **fakes) -> None:
     """Hand the fakes to the app in place of the real collaborators."""
     for name, fake in fakes.items():
