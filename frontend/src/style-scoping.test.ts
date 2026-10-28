@@ -28,3 +28,11 @@ describe('buttons of every element', () => {
     expect(readStyles('components')).toContain('box-sizing: border-box;\n  letter-spacing: normal;')
   })
 })
+
+describe('empty units of the spool fields', () => {
+  it('take no room on desktop and keep their gap on the phone sheet', () => {
+    const styles = readStyles('spools')
+    expect(styles).toContain('.spools-layout .value-unit:empty {\n  display: none;')
+    expect(styles).toContain('.spools-layout .value-unit:empty {\n    display: inline;')
+  })
+})

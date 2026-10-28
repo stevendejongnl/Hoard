@@ -518,3 +518,14 @@
   margin-left: 12px;
   font-size: 12px;
 }
+
+/* The desktop fields end flush with their text, the phone sheet reserves the gap of an empty unit */
+.spools-layout .value-unit:empty {
+  display: none;
+}
+
+@media (max-width: 800px) {
+  .spools-layout .value-unit:empty {
+    display: inline;
+  }
+}
