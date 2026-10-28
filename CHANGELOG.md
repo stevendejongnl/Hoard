@@ -1,3 +1,13 @@
+## [1.45.0](https://github.com/stevendejongnl/Hoard/compare/v1.44.0...v1.45.0) (2026-10-28)
+
+### Features
+
+* **camera:** the last frame stays visible while the stream is stalled, and the stream goes back to live ([afb73c9](https://github.com/stevendejongnl/Hoard/commit/afb73c989ea55aceaeb84808af07265bfc6288dc))
+
+### Documentation
+
+* the README says a G-code file can be printed from a project ([fb447de](https://github.com/stevendejongnl/Hoard/commit/fb447de4ea0a70961f2bc5758e501b652f2f47a6))
+
 ## [1.44.0](https://github.com/stevendejongnl/Hoard/compare/v1.43.0...v1.44.0) (2026-10-28)
 
 ### Features
