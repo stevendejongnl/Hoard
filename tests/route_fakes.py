@@ -23,6 +23,8 @@ class FakeMoonraker:
         self.metadata: Any = {}
         self.files: Any = []
         self.failure: Exception | None = None
+        self.gcode: bytes | None = None
+        self.downloads: list[str] = []
 
     def _client_base(self) -> str:
         return "http://printer.test"
@@ -50,6 +52,15 @@ class FakeMoonraker:
         if self.failure:
             raise self.failure
         return self.files
+
+    async def download_file(self, filename: str) -> bytes:
+        self.downloads.append(filename)
+        if self.gcode is None:
+            raise httpx.ConnectError("no such file")
+        return self.gcode
+
+    async def download_file_partial(self, filename: str, size: int = 131072) -> bytes:
+        return await self.download_file(filename)
 
     async def get_file_metadata(self, filename: str) -> Any:
         if self.failure:
