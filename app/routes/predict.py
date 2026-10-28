@@ -1,10 +1,12 @@
 import math
 from datetime import UTC, datetime, timedelta
+from types import ModuleType
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
-from app import db, ha
-from app.moonraker import moonraker
+from app.moonraker import MoonrakerClient
+from app.routes.dependencies import Database, HomeAssistant, Moonraker
 
 router = APIRouter(prefix="/api/predict", tags=["predict"])
 
@@ -26,53 +28,55 @@ def _filament_grams(meta: dict) -> float:
     return 0.0
 
 
-@router.get("")
-async def predict(filename: str, spool_id: int | None = None, quantity: int = 1) -> dict:
-    # Gcode metadata from Moonraker (slicer-provided)
+async def _read_metadata(moonraker: MoonrakerClient, filename: str) -> dict:
     try:
-        meta = await moonraker.get_file_metadata(filename)
+        return await moonraker.get_file_metadata(filename)
     except Exception as exc:
         raise HTTPException(502, f"Moonraker metadata error: {exc}") from exc
 
-    filament_g = _filament_grams(meta)
-    estimated_time_s = float(meta.get("estimated_time") or 0)
-    layer_count = meta.get("layer_count")
 
-    # Spool cost
-    cost_per_gram = 0.0
-    material = None
-    if spool_id is not None:
-        spools = await db.list_spools()
-        spool = next((s for s in spools if s["id"] == spool_id), None)
-        if spool:
-            cost_per_gram = spool["cost_per_gram"]
-            material = spool["material"]
-    else:
-        active = await db.get_active_spool()
-        if active:
-            cost_per_gram = active["cost_per_gram"]
-            material = active["material"]
-            spool_id = active["id"]
+async def _pick_spool(database: ModuleType, spool_id: int | None) -> dict[str, Any] | None:
+    """The spool asked for, else the active one."""
+    if spool_id is None:
+        return await database.get_active_spool()
+    return next((spool for spool in await database.list_spools() if spool["id"] == spool_id), None)
 
-    # Energy: use recent 27h time-weighted avg
-    avg_price = await ha.avg_price_hours(27)
-    avg_watts = _FALLBACK_WATTS  # actual draw from HA smart plug history average
 
-    # Try to get recent print avg watts for a better estimate
+async def _estimate_average_watts(home_assistant: ModuleType) -> float:
+    """The recent 27h time-weighted average of the power sensor, the default when there is none."""
     try:
         end = datetime.now(UTC)
-        start = end - timedelta(hours=27)
-        recent_watts = await ha.avg_power_over(start, end)
-        if recent_watts > 5:
-            avg_watts = recent_watts
+        recent_watts = await home_assistant.avg_power_over(end - timedelta(hours=27), end)
     except Exception:
-        pass
+        return _FALLBACK_WATTS
+    return recent_watts if recent_watts > 5 else _FALLBACK_WATTS
 
-    estimated_h = estimated_time_s / 3600
+
+@router.get("")
+async def predict(
+    filename: str,
+    moonraker: Moonraker,
+    database: Database,
+    home_assistant: HomeAssistant,
+    spool_id: int | None = None,
+    quantity: int = 1,
+) -> dict:
+    meta = await _read_metadata(moonraker, filename)
+    filament_g = _filament_grams(meta)
+    estimated_time_s = float(meta.get("estimated_time") or 0)
+
+    spool = await _pick_spool(database, spool_id)
+    cost_per_gram = spool["cost_per_gram"] if spool else 0.0
+    material = spool["material"] if spool else None
+    if spool_id is None and spool:
+        spool_id = spool["id"]
+
+    avg_price = await home_assistant.avg_price_hours(27)
+    avg_watts = await _estimate_average_watts(home_assistant)
+
     cost_filament = round(filament_g * cost_per_gram * quantity, 4)
-    energy_kwh = avg_watts * estimated_h * quantity / 1000
+    energy_kwh = avg_watts * (estimated_time_s / 3600) * quantity / 1000
     cost_electricity = round(energy_kwh * avg_price, 4)
-    cost_total = round(cost_filament + cost_electricity, 4)
 
     return {
         "filename": filename,
@@ -81,10 +85,10 @@ async def predict(filename: str, spool_id: int | None = None, quantity: int = 1)
         "material": material,
         "filament_g": round(filament_g * quantity, 2),
         "estimated_time_s": estimated_time_s * quantity,
-        "layer_count": layer_count,
+        "layer_count": meta.get("layer_count"),
         "avg_watts": round(avg_watts, 1),
         "avg_eur_per_kwh": round(avg_price, 4),
         "cost_filament": cost_filament,
         "cost_electricity": cost_electricity,
-        "cost_total": cost_total,
+        "cost_total": round(cost_filament + cost_electricity, 4),
     }

@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 
-from app import db, push_client
+from app import push_client
+from app.routes.dependencies import Database
 
 router = APIRouter(prefix="/api/push", tags=["push"])
 
@@ -21,12 +22,12 @@ async def vapid_public_key() -> dict[str, str]:
 
 
 @router.post("/subscribe")
-async def subscribe(sub: PushSubscriptionIn) -> dict[str, str]:
-    await db.add_push_subscription(sub.endpoint, sub.keys["p256dh"], sub.keys["auth"])
+async def subscribe(sub: PushSubscriptionIn, database: Database) -> dict[str, str]:
+    await database.add_push_subscription(sub.endpoint, sub.keys["p256dh"], sub.keys["auth"])
     return {"status": "ok"}
 
 
 @router.post("/unsubscribe")
-async def unsubscribe(sub: PushUnsubscribeIn) -> dict[str, str]:
-    await db.remove_push_subscription(sub.endpoint)
+async def unsubscribe(sub: PushUnsubscribeIn, database: Database) -> dict[str, str]:
+    await database.remove_push_subscription(sub.endpoint)
     return {"status": "ok"}
