@@ -45,7 +45,7 @@ const SECONDS_PER_MINUTE = 60
 const LINE_DECIMALS = 1
 
 function isExactlyBetweenTenths(value: number): boolean {
-  return Number.isInteger(value * 20) && !Number.isInteger(value * 10)
+  return Number.isInteger(value * 4) && !Number.isInteger(value * 2)
 }
 
 /** Writes a coordinate with one decimal; an exact tie goes to the even tenth, as the design's numbers do. */

@@ -420,7 +420,7 @@ cost-predictor-panel .section-header {
   cursor: pointer;
 }
 
-.predictor-total-label {
+.dashboard-layout .predictor-total-label {
   font-weight: 600;
   color: var(--text-color);
 }
