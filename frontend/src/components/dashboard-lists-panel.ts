@@ -9,6 +9,7 @@ import { buildSpoolName } from '../spool-list'
 import type { PrintRecord, PrinterState, Spool } from '../types'
 
 type ListTab = 'recent' | 'spools'
+type LoadState = 'loading' | 'ready' | 'error'
 type HistoryPayload = { records: PrintRecord[]; total: number }
 
 const RECENT_PRINT_COUNT = 4
@@ -36,6 +37,8 @@ export class DashboardListsPanel extends LitElement {
   @state() private tab: ListTab = 'recent'
   @state() private records: PrintRecord[] = []
   @state() private spools: Spool[] = []
+  @state() private recordsState: LoadState = 'loading'
+  @state() private spoolsState: LoadState = 'loading'
 
   createRenderRoot() {
     return this
@@ -47,15 +50,24 @@ export class DashboardListsPanel extends LitElement {
   }
 
   private async loadLists(): Promise<void> {
+    await Promise.all([this.loadRecords(), this.loadSpoolList()])
+  }
+
+  private async loadRecords(): Promise<void> {
     try {
       this.records = (await this.loadHistory(RECENT_PRINT_COUNT, 0)).records
+      this.recordsState = 'ready'
     } catch {
-      this.records = []
+      this.recordsState = 'error'
     }
+  }
+
+  private async loadSpoolList(): Promise<void> {
     try {
       this.spools = await this.loadSpools()
+      this.spoolsState = 'ready'
     } catch {
-      this.spools = []
+      this.spoolsState = 'error'
     }
   }
 
@@ -111,14 +123,22 @@ export class DashboardListsPanel extends LitElement {
     this.dispatchEvent(new CustomEvent('open-file-browser', { detail: { purpose: 'print' }, bubbles: true }))
   }
 
+  private renderListMessage(message: string): TemplateResult {
+    return html`<div class="list-message">${message}</div>`
+  }
+
+  private renderPrintAction(message: string): TemplateResult {
+    return html`${this.renderListMessage(message)}
+      <div class="list-message-action">
+        <button class="button print-a-file-button" @click=${this.openFileBrowser}>Print a file…</button>
+      </div>`
+  }
+
   private renderRecentPrints(): TemplateResult {
     const hasPrints = this.isPrintActive() || this.records.length > 0
-    if (!hasPrints) {
-      return html`<div class="list-message">No prints to show</div>
-        <div class="list-message-action">
-          <button class="button print-a-file-button" @click=${this.openFileBrowser}>Print a file…</button>
-        </div>`
-    }
+    if (!hasPrints && this.recordsState === 'loading') return this.renderListMessage('Loading prints…')
+    if (!hasPrints && this.recordsState === 'error') return this.renderPrintAction('Could not load the prints')
+    if (!hasPrints) return this.renderPrintAction('No prints to show')
     return html`${this.renderCurrentPrint()}${this.records.map((record) => this.renderRecord(record))}`
   }
 
@@ -128,6 +148,13 @@ export class DashboardListsPanel extends LitElement {
       ${this.renderListText(buildSpoolName(spool), `${spool.current_weight_g} g left`)}
       ${spool.active ? html`<span class="in-use-tag">IN USE</span>` : ''}
     </div>`
+  }
+
+  private renderSpools(): TemplateResult | TemplateResult[] {
+    if (this.spoolsState === 'loading') return this.renderListMessage('Loading spools…')
+    if (this.spoolsState === 'error') return this.renderListMessage('Could not load the spools')
+    if (this.spools.length === 0) return this.renderListMessage('No spools yet')
+    return this.spools.map((spool) => this.renderSpool(spool))
   }
 
   private renderTab(tab: ListTab, label: string): TemplateResult {
@@ -146,9 +173,7 @@ export class DashboardListsPanel extends LitElement {
     return html`<div class="list-tabs" role="tablist" aria-label="Lists">
         ${this.renderTab('recent', 'Recent prints')} ${this.renderTab('spools', 'Spools')}
       </div>
-      <div class="list-body">
-        ${this.tab === 'recent' ? this.renderRecentPrints() : this.spools.map((spool) => this.renderSpool(spool))}
-      </div>`
+      <div class="list-body">${this.tab === 'recent' ? this.renderRecentPrints() : this.renderSpools()}</div>`
   }
 }
 
