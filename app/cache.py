@@ -5,23 +5,20 @@ from typing import Any
 
 import redis.asyncio as aioredis
 
-from app.config import settings
-
 log = logging.getLogger(__name__)
 
 _redis: aioredis.Redis | None = None
 
 
 async def init(
-    url: str | None = None,
+    url: str,
     connect: Callable[..., aioredis.Redis] = aioredis.from_url,
 ) -> None:
     global _redis
-    redis_url = settings.redis_url if url is None else url
     try:
-        _redis = connect(redis_url, decode_responses=True)
+        _redis = connect(url, decode_responses=True)
         await _redis.ping()
-        log.info("cache: Redis connected at %s", redis_url)
+        log.info("cache: Redis connected at %s", url)
     except Exception as exc:
         log.warning("cache: Redis unavailable, caching disabled: %s", exc)
         _redis = None
