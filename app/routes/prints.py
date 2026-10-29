@@ -5,7 +5,6 @@ import time
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 from pathlib import Path
-from types import ModuleType
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, UploadFile
@@ -13,6 +12,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.config import settings
+from app.db import Database as SqliteDatabase
 from app.influx import InfluxClient
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import Cache, Database, GcodeMetaReader, Influx, Moonraker
@@ -91,7 +91,7 @@ def _describe_job(job_id: str, job: dict[str, Any]) -> dict[str, Any]:
 
 
 async def _get_job_stats(
-    moonraker: MoonrakerClient, influx: InfluxClient, database: ModuleType, job_id: str
+    moonraker: MoonrakerClient, influx: InfluxClient, database: SqliteDatabase, job_id: str
 ) -> dict[str, Any]:
     """Fetch stats for a single job from Moonraker + InfluxDB + SQLite."""
     job = await _read_job(moonraker, job_id)
@@ -109,7 +109,7 @@ async def _get_job_stats(
 
 async def _lazy_load_gcode_meta(
     moonraker: MoonrakerClient,
-    database: ModuleType,
+    database: SqliteDatabase,
     read_gcode_meta: GcodeMetaFunction,
     job_id: str,
     job_row: dict[str, Any],
@@ -139,7 +139,7 @@ async def _read_job_quietly(moonraker: MoonrakerClient, job_id: str) -> dict[str
 async def _build_print_detail(
     moonraker: MoonrakerClient,
     influx: InfluxClient,
-    database: ModuleType,
+    database: SqliteDatabase,
     read_gcode_meta: GcodeMetaFunction,
     job_id: str,
 ) -> dict[str, Any]:

@@ -6,8 +6,8 @@ from typing import Any
 
 from pywebpush import WebPushException, webpush
 
-from app import db
 from app.config import settings
+from app.db import default_database
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class PushNotifier:
 
     def __init__(
         self,
-        database: Any = db,
+        database: Any = default_database,
         send_message: Callable[..., Any] = webpush,
         app_settings: Any = settings,
     ) -> None:

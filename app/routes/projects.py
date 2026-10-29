@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from app.config import settings
+from app.db import Database as SqliteDatabase
 from app.enrichment import fetch_og
 from app.influx import InfluxClient
 from app.moonraker import MoonrakerClient
@@ -67,7 +68,7 @@ async def _invalidate_project(cache: ModuleType, project_id: int, *extra_keys: s
     await cache.invalidate("projects:list", f"project:{project_id}", *extra_keys)
 
 
-async def _require_project(database: ModuleType, project_id: int) -> dict[str, Any]:
+async def _require_project(database: SqliteDatabase, project_id: int) -> dict[str, Any]:
     project = await database.get_project(project_id)
     if not project:
         raise HTTPException(404, "Project not found")
@@ -180,7 +181,7 @@ async def _enrich_link(
     project_id: int,
     link_id: int,
     url: str,
-    database: ModuleType | None = None,
+    database: SqliteDatabase | None = None,
     cache: ModuleType | None = None,
 ) -> None:
     database = database or provide_database()
@@ -197,7 +198,7 @@ async def _enrich_link(
         await _invalidate_project(cache, project_id)
 
 
-async def enrich_existing_links(database: ModuleType | None = None, cache: ModuleType | None = None) -> None:
+async def enrich_existing_links(database: SqliteDatabase | None = None, cache: ModuleType | None = None) -> None:
     """Backfill enrichment for links added before this feature. Runs once at startup."""
     database = database or provide_database()
     cache = cache or provide_cache()
@@ -260,7 +261,7 @@ async def link_print(
     return result
 
 
-async def _store_print_stats(database: ModuleType, project_id: int, job_id: str, stats: PrintStats) -> None:
+async def _store_print_stats(database: SqliteDatabase, project_id: int, job_id: str, stats: PrintStats) -> None:
     async with database._conn() as connection:
         await connection.execute(
             """UPDATE project_prints

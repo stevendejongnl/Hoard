@@ -8,8 +8,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from app import cache, db, home_assistant
+from app import cache, home_assistant
 from app.config import settings
+from app.db import default_database
 from app.gcode_meta import extract_gcode_meta
 from app.influx import influx
 from app.moonraker import moonraker
@@ -82,7 +83,7 @@ class PrintRecorder:
         influx_client: Any = influx,
         event_hub: Any = hub,
         home_assistant: Any = home_assistant,
-        database: Any = db,
+        database: Any = default_database,
         cache_store: Any = cache,
         gcode_meta_extractor: Callable[[str], Awaitable[dict | None]] = extract_gcode_meta,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,

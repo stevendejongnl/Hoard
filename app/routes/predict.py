@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import APIRouter, HTTPException
 
+from app.db import Database as SqliteDatabase
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import Database, HomeAssistant, Moonraker
 
@@ -35,7 +36,7 @@ async def _read_metadata(moonraker: MoonrakerClient, filename: str) -> dict:
         raise HTTPException(502, f"Moonraker metadata error: {exc}") from exc
 
 
-async def _pick_spool(database: ModuleType, spool_id: int | None) -> dict[str, Any] | None:
+async def _pick_spool(database: SqliteDatabase, spool_id: int | None) -> dict[str, Any] | None:
     """The spool asked for, else the active one."""
     if spool_id is None:
         return await database.get_active_spool()
