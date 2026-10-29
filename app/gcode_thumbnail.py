@@ -25,23 +25,23 @@ def extract_thumbnail_png(gcode_bytes: bytes, prefer_size: int = 300) -> bytes |
         re.DOTALL,
     )
     best: tuple[int, bytes] | None = None
-    for m in pattern.finditer(header):
-        w = int(m.group(1))
-        raw = m.group(3)
-        b64 = "".join(line.lstrip("; ").rstrip("\r\n") for line in raw.splitlines())
+    for match in pattern.finditer(header):
+        width = int(match.group(1))
+        raw = match.group(3)
+        encoded = "".join(line.lstrip("; ").rstrip("\r\n") for line in raw.splitlines())
         try:
-            data = base64.b64decode(b64)
+            data = base64.b64decode(encoded)
         except Exception:
             continue
-        if best is None or abs(w - prefer_size) < abs(best[0] - prefer_size):
-            best = (w, data)
+        if best is None or abs(width - prefer_size) < abs(best[0] - prefer_size):
+            best = (width, data)
     return best[1] if best else None
 
 
-_X_PATTERN = re.compile(r"X([-\d.]+)", re.I)
-_Y_PATTERN = re.compile(r"Y([-\d.]+)", re.I)
-_Z_PATTERN = re.compile(r"Z([-\d.]+)", re.I)
-_EXTRUSION_PATTERN = re.compile(r"E[-\d.]+", re.I)
+_X_PATTERN = re.compile(r"X([-\d.]+)", re.IGNORECASE)
+_Y_PATTERN = re.compile(r"Y([-\d.]+)", re.IGNORECASE)
+_Z_PATTERN = re.compile(r"Z([-\d.]+)", re.IGNORECASE)
+_EXTRUSION_PATTERN = re.compile(r"E[-\d.]+", re.IGNORECASE)
 
 _MAXIMUM_LINES = 12000
 _MINIMUM_POINTS = 20
@@ -57,19 +57,19 @@ def _parse_extrusion_points(gcode_text: str) -> list[Point]:
     x = y = z = 0.0
     points: list[Point] = []
     for line in gcode_text.splitlines()[:_MAXIMUM_LINES]:
-        bare = line.split(";")[0].strip()
-        if not bare.upper().startswith(("G0", "G1")):
+        command = line.split(";")[0].strip()
+        if not command.upper().startswith(("G0", "G1")):
             continue
-        z_match = _Z_PATTERN.search(bare)
-        x_match = _X_PATTERN.search(bare)
-        y_match = _Y_PATTERN.search(bare)
+        z_match = _Z_PATTERN.search(command)
+        x_match = _X_PATTERN.search(command)
+        y_match = _Y_PATTERN.search(command)
         if z_match:
             z = float(z_match.group(1))
         if x_match:
             x = float(x_match.group(1))
         if y_match:
             y = float(y_match.group(1))
-        if _EXTRUSION_PATTERN.search(bare) and (x_match or y_match):
+        if _EXTRUSION_PATTERN.search(command) and (x_match or y_match):
             points.append((x, y, z))
     return points
 
@@ -86,10 +86,10 @@ def _project_isometric(point: Point) -> tuple[float, float]:
 
 
 def _build_pixel_mapper(projected: list[tuple[float, float]], size: int) -> Callable[[float, float], Pixel]:
-    xs = [position[0] for position in projected]
-    ys = [position[1] for position in projected]
-    minimum_x, minimum_y = min(xs), min(ys)
-    extent = max(max(xs) - minimum_x, max(ys) - minimum_y) or 1.0
+    x_positions = [position[0] for position in projected]
+    y_positions = [position[1] for position in projected]
+    minimum_x, minimum_y = min(x_positions), min(y_positions)
+    extent = max(max(x_positions) - minimum_x, max(y_positions) - minimum_y) or 1.0
     margin = max(6, size // 14)
     scale = (size - 2 * margin) / extent
 
@@ -154,11 +154,11 @@ def inject_thumbnails(
     thumbnails: list[tuple[int, int, bytes]],
 ) -> bytes:
     """Prepend Cura-format thumbnail comments to gcode bytes."""
-    out = io.StringIO()
-    for w, h, png in thumbnails:
-        b64 = base64.b64encode(png).decode("ascii")
-        out.write(f"; thumbnail begin {w}x{h} {len(b64)}\n")
-        for i in range(0, len(b64), 78):
-            out.write(f"; {b64[i : i + 78]}\n")
-        out.write("; thumbnail end\n;\n")
-    return out.getvalue().encode("ascii") + gcode_bytes
+    output = io.StringIO()
+    for width, height, png in thumbnails:
+        encoded = base64.b64encode(png).decode("ascii")
+        output.write(f"; thumbnail begin {width}x{height} {len(encoded)}\n")
+        for offset in range(0, len(encoded), 78):
+            output.write(f"; {encoded[offset : offset + 78]}\n")
+        output.write("; thumbnail end\n;\n")
+    return output.getvalue().encode("ascii") + gcode_bytes

@@ -9,18 +9,18 @@ from stl.mesh import Mesh
 def _build_rotation() -> np.ndarray:
     yaw = np.radians(45)
     pitch = np.radians(35)
-    cy, sy = np.cos(yaw), np.sin(yaw)
-    cp, sp = np.cos(pitch), np.sin(pitch)
-    Ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
-    Rx = np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]])
-    return Rx @ Ry
+    cos_yaw, sin_yaw = np.cos(yaw), np.sin(yaw)
+    cos_pitch, sin_pitch = np.cos(pitch), np.sin(pitch)
+    yaw_rotation = np.array([[cos_yaw, 0, sin_yaw], [0, 1, 0], [-sin_yaw, 0, cos_yaw]])
+    pitch_rotation = np.array([[1, 0, 0], [0, cos_pitch, -sin_pitch], [0, sin_pitch, cos_pitch]])
+    return pitch_rotation @ yaw_rotation
 
 
-_R = _build_rotation()
+_ROTATION = _build_rotation()
 _LIGHT = np.array([0.4, 0.6, 1.0])
 _LIGHT /= np.linalg.norm(_LIGHT)
 _BASE_COLOR = np.array([34.0, 211.0, 238.0])  # cyan #22d3ee
-_BG = (20, 20, 20)
+_BACKGROUND = (20, 20, 20)
 
 
 def _face_brightness(vertices: np.ndarray) -> np.ndarray:
@@ -30,12 +30,12 @@ def _face_brightness(vertices: np.ndarray) -> np.ndarray:
     normals = np.cross(first_edge, second_edge).astype(float)
     lengths = np.linalg.norm(normals, axis=1, keepdims=True)
     normals /= np.where(lengths < 1e-10, 1.0, lengths)
-    return np.clip((normals @ _R.T) @ _LIGHT, 0.0, 1.0)
+    return np.clip((normals @ _ROTATION.T) @ _LIGHT, 0.0, 1.0)
 
 
 def _rotate_into_view(vertices: np.ndarray) -> np.ndarray:
     center = vertices.reshape(-1, 3).mean(axis=0)
-    centered = (vertices - center).reshape(-1, 3) @ _R.T
+    centered = (vertices - center).reshape(-1, 3) @ _ROTATION.T
     return centered.reshape(-1, 3, 3)
 
 
@@ -60,7 +60,7 @@ def render_stl_thumbnail(stl_bytes: bytes, size: int = 300) -> bytes:
     brightness = _face_brightness(vertices)
     low, scale, offset_x, offset_y = _fit_to_canvas(projected, size)
 
-    image = Image.new("RGB", (size, size), _BG)
+    image = Image.new("RGB", (size, size), _BACKGROUND)
     draw = ImageDraw.Draw(image)
     for index in np.argsort(rotated[..., 2].mean(1)):  # back to front
         shade = 0.15 + 0.85 * float(brightness[index])
@@ -83,12 +83,12 @@ def render_stl_thumbnails(stl_bytes: bytes) -> list[tuple[int, int, bytes]]:
     """Returns [(32,32,png), (300,300,png)] for Cura-format embedding."""
     png_large = render_stl_thumbnail(stl_bytes, 300)
 
-    img = Image.open(io.BytesIO(png_large))
-    img_small = img.resize((32, 32), Image.Resampling.LANCZOS)
-    buf_small = io.BytesIO()
-    img_small.save(buf_small, "PNG")
+    large_image = Image.open(io.BytesIO(png_large))
+    small_image = large_image.resize((32, 32), Image.Resampling.LANCZOS)
+    small_buffer = io.BytesIO()
+    small_image.save(small_buffer, "PNG")
 
-    return [(32, 32, buf_small.getvalue()), (300, 300, png_large)]
+    return [(32, 32, small_buffer.getvalue()), (300, 300, png_large)]
 
 
 async def render_stl_thumbnails_in_worker(stl_bytes: bytes) -> list[tuple[int, int, bytes]]:

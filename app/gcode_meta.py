@@ -19,10 +19,10 @@ def parse_custom_meta(gcode_bytes: bytes) -> dict[str, str]:
     header = gcode_bytes[:65536].decode("ascii", errors="ignore")
     result: dict[str, str] = {}
     for line in header.splitlines():
-        m = re.match(r";\s*meta:([A-Za-z0-9_]+)=(.+)", line)
-        if m:
-            key = m.group(1).strip()
-            value = m.group(2).strip()
+        match = re.match(r";\s*meta:([A-Za-z0-9_]+)=(.+)", line)
+        if match:
+            key = match.group(1).strip()
+            value = match.group(2).strip()
             if value:
                 result[key] = value
     return result

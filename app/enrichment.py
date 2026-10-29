@@ -95,10 +95,10 @@ async def _fetch_printables(url: str, client_factory: ClientFactory = httpx.Asyn
     }
 
 
-def _find_open_graph_property(html: str, prop: str) -> str | None:
+def _find_open_graph_property(html: str, property_name: str) -> str | None:
     for pattern in [
-        rf'<meta[^>]+property=["\']og:{prop}["\'][^>]+content=["\']([^"\']*)["\']',
-        rf'<meta[^>]+content=["\']([^"\']*)["\'][^>]+property=["\']og:{prop}["\']',
+        rf'<meta[^>]+property=["\']og:{property_name}["\'][^>]+content=["\']([^"\']*)["\']',
+        rf'<meta[^>]+content=["\']([^"\']*)["\'][^>]+property=["\']og:{property_name}["\']',
     ]:
         match = re.search(pattern, html, re.IGNORECASE)
         if match:
