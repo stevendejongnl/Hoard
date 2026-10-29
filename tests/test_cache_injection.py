@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from app import cache
 
 
@@ -103,3 +105,8 @@ async def test_init_disables_caching_when_the_connection_fails():
 
     await cache.init(url="redis://example:1", connect=connect)
     assert cache._redis is None
+
+
+async def test_init_needs_the_url_and_does_not_read_it_from_the_settings():
+    with pytest.raises(TypeError):
+        await cache.init(connect=lambda url, **options: FakeRedis())
