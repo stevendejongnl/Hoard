@@ -61,12 +61,14 @@ async def _write_cached(client: aioredis.Redis | None, key: str, value: Any, ttl
         log.warning("cache: set failed for %s: %s", key, exc)
 
 
-async def get_or_set(key: str, fn: Callable[[], Awaitable[Any]], ttl: int, client: aioredis.Redis | None = None) -> Any:
+async def get_or_set(
+    key: str, load: Callable[[], Awaitable[Any]], ttl: int, client: aioredis.Redis | None = None
+) -> Any:
     active_client = _client_or_default(client)
     hit, cached = await _read_cached(active_client, key)
     if hit:
         return cached
-    result = await fn()
+    result = await load()
     await _write_cached(active_client, key, result, ttl)
     return result
 
