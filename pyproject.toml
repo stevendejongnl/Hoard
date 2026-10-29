@@ -1,6 +1,6 @@
 [project]
 name = "hoard"
-version = "1.46.0"
+version = "1.46.1"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",
