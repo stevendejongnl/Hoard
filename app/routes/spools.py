@@ -1,12 +1,12 @@
 import asyncio
 import sqlite3
 from collections.abc import Callable, Coroutine
-from types import ModuleType
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
+from app.db import Database as SqliteDatabase
 from app.recorder import _recalculate_spool_prints
 from app.routes.dependencies import Cache, Database
 
@@ -80,7 +80,7 @@ def _collect_spool_changes(body: SpoolUpdate) -> dict[str, Any]:
     return changes
 
 
-async def _store_spool_changes(database: ModuleType, spool_id: int, changes: dict[str, Any]) -> dict[str, Any]:
+async def _store_spool_changes(database: SqliteDatabase, spool_id: int, changes: dict[str, Any]) -> dict[str, Any]:
     try:
         result = await database.update_spool(spool_id, changes)
     except sqlite3.IntegrityError as exc:

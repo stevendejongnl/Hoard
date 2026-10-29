@@ -11,7 +11,9 @@ from typing import Annotated, Any
 import httpx
 from fastapi import Depends
 
-from app import cache, db, home_assistant
+from app import cache, home_assistant
+from app.db import Database as SqliteDatabase
+from app.db import default_database
 from app.gcode_meta import extract_gcode_meta
 from app.influx import InfluxClient, influx
 from app.moonraker import MoonrakerClient, moonraker
@@ -30,8 +32,8 @@ def provide_home_assistant() -> ModuleType:
     return home_assistant
 
 
-def provide_database() -> ModuleType:
-    return db
+def provide_database() -> SqliteDatabase:
+    return default_database
 
 
 def provide_cache() -> ModuleType:
@@ -60,7 +62,7 @@ def provide_printer_client_factory(
 Moonraker = Annotated[MoonrakerClient, Depends(provide_moonraker)]
 Influx = Annotated[InfluxClient, Depends(provide_influx)]
 HomeAssistant = Annotated[ModuleType, Depends(provide_home_assistant)]
-Database = Annotated[ModuleType, Depends(provide_database)]
+Database = Annotated[SqliteDatabase, Depends(provide_database)]
 Cache = Annotated[ModuleType, Depends(provide_cache)]
 GcodeMetaReader = Annotated[Callable[[str], Awaitable[dict[str, Any]]], Depends(provide_gcode_meta_reader)]
 ThumbnailStore = Annotated[ThumbnailCache, Depends(provide_thumbnail_cache)]

@@ -8,6 +8,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
+from app.db import Database as SqliteDatabase
 from app.influx import InfluxClient
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import Cache, Database, HomeAssistant, Influx, Moonraker
@@ -128,7 +129,7 @@ def _apply_cost(record: dict[str, Any], cost: dict[str, Any]) -> None:
 
 
 async def _attach_relations(
-    database: ModuleType,
+    database: SqliteDatabase,
     record: dict[str, Any],
     costs: dict[tuple[str, int], dict[str, Any]],
     end_timestamp: int,
@@ -144,7 +145,7 @@ async def _attach_relations(
         record["project"] = {"id": project["id"], "name": project["name"]}
 
 
-async def _attach_detail_counts(database: ModuleType, records: list[dict[str, Any]]) -> None:
+async def _attach_detail_counts(database: SqliteDatabase, records: list[dict[str, Any]]) -> None:
     detail_counts = await database.get_print_detail_counts([record["job_id"] for record in records])
     for record in records:
         counts = detail_counts.get(record["job_id"], {"has_detail": False, "photo_count": 0})
@@ -153,7 +154,7 @@ async def _attach_detail_counts(database: ModuleType, records: list[dict[str, An
 
 
 async def _build_page(
-    moonraker: MoonrakerClient, influx: InfluxClient, database: ModuleType, limit: int, offset: int
+    moonraker: MoonrakerClient, influx: InfluxClient, database: SqliteDatabase, limit: int, offset: int
 ) -> dict[str, Any]:
     jobs = await _fetch_jobs(moonraker, limit, offset)
     total = await _fetch_total(moonraker, offset, jobs)
@@ -260,7 +261,7 @@ async def _write_costs(
 async def _recalculate_costs(
     moonraker: MoonrakerClient,
     influx: InfluxClient,
-    database: ModuleType,
+    database: SqliteDatabase,
     home_assistant: ModuleType,
     job_id: str,
     spool: dict[str, Any],
@@ -287,7 +288,7 @@ async def _recalculate_costs(
     )
 
 
-async def _find_spool(database: ModuleType, spool_id: int) -> dict[str, Any] | None:
+async def _find_spool(database: SqliteDatabase, spool_id: int) -> dict[str, Any] | None:
     return next((spool for spool in await database.list_spools() if spool["id"] == spool_id), None)
 
 
@@ -337,7 +338,7 @@ async def recalculate_cost(
     return await assign_spool(job_id, body, moonraker, influx, database, cache, home_assistant)
 
 
-async def _read_spool_pricing(database: ModuleType, job_id: str) -> tuple[int | None, str | None, float]:
+async def _read_spool_pricing(database: SqliteDatabase, job_id: str) -> tuple[int | None, str | None, float]:
     """Spool id, material and cost per gram of the spool of a print; no spool costs nothing."""
     existing = await database.get_print_spool(job_id)
     spool_id = existing["spool_id"] if existing else None

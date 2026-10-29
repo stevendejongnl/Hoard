@@ -1,8 +1,8 @@
-from types import ModuleType
 from typing import Any
 
 from fastapi import APIRouter
 
+from app.db import Database as SqliteDatabase
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import Database, Moonraker
 
@@ -39,7 +39,7 @@ async def _search_history(moonraker: MoonrakerClient, query: str) -> list[dict[s
         return []
 
 
-async def _search_spools(database: ModuleType, query: str) -> list[dict[str, Any]]:
+async def _search_spools(database: SqliteDatabase, query: str) -> list[dict[str, Any]]:
     spools = await database.list_spools()
     matching = [
         spool
@@ -51,7 +51,7 @@ async def _search_spools(database: ModuleType, query: str) -> list[dict[str, Any
     return matching[:10]
 
 
-async def _search_projects(database: ModuleType, query: str) -> list[dict[str, Any]]:
+async def _search_projects(database: SqliteDatabase, query: str) -> list[dict[str, Any]]:
     projects = await database.list_projects()
     matching = [
         project

@@ -4,6 +4,7 @@ import mimetypes
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
@@ -77,18 +78,26 @@ async def _stop_background_tasks(cancellable_tasks: list[asyncio.Task]) -> None:
     await cache.close()
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await db.init_db(settings.database_path)
-    await cache.init()
+def create_lifespan(app_settings: Any = settings):
+    """The start and the stop of the app, with the settings it reads passed in."""
 
-    server_sent_events.register_ws_handlers()
-    recorder.register_ws_handlers()
-    cancellable_tasks = _start_background_tasks()
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        await db.init_db(app_settings.database_path)
+        await cache.init(app_settings.redis_url)
 
-    log.info("Hoard started, db=%s", settings.database_path)
-    yield
-    await _stop_background_tasks(cancellable_tasks)
+        server_sent_events.register_ws_handlers()
+        recorder.register_ws_handlers()
+        cancellable_tasks = _start_background_tasks()
+
+        log.info("Hoard started, db=%s", app_settings.database_path)
+        yield
+        await _stop_background_tasks(cancellable_tasks)
+
+    return lifespan
+
+
+lifespan = create_lifespan()
 
 
 app = FastAPI(title="Hoard", lifespan=lifespan)
