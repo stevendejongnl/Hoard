@@ -262,7 +262,7 @@ async def link_print(
 
 
 async def _store_print_stats(database: SqliteDatabase, project_id: int, job_id: str, stats: PrintStats) -> None:
-    async with database._conn() as connection:
+    async with database.open_connection() as connection:
         await connection.execute(
             """UPDATE project_prints
                SET duration_s = ?, filament_g = ?, cost_total = ?
