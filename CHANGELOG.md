@@ -1,3 +1,12 @@
+## [1.46.1](https://github.com/stevendejongnl/Hoard/compare/v1.46.0...v1.46.1) (2026-10-29)
+
+### Code Refactoring
+
+* **core:** full names in the cache, enrichment, G-code and thumbnail modules ([4c93f7f](https://github.com/stevendejongnl/Hoard/commit/4c93f7f55755da5589acc5ca59ce490d0611b4a0))
+* **db:** full names for the connection, cursors and loop variables ([3ed3b75](https://github.com/stevendejongnl/Hoard/commit/3ed3b7576e4160f889a82acb11b5eef2255ca821))
+* **db:** the database is a Database object that is injected ([7a6dbc9](https://github.com/stevendejongnl/Hoard/commit/7a6dbc9389393ed607ebfa16e940b406800b8f8a))
+* **main:** the app is built by create_app from the settings it is given ([781ab98](https://github.com/stevendejongnl/Hoard/commit/781ab9844a7b4c4231c9c249d014da2b4ac4192f))
+
 ## [1.46.0](https://github.com/stevendejongnl/Hoard/compare/v1.45.1...v1.46.0) (2026-10-28)
 
 ### Features
