@@ -2,6 +2,7 @@ import asyncio
 import logging
 import mimetypes
 import os
+from collections.abc import Callable
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
@@ -17,7 +18,7 @@ from app.mcp.api_request import InProcessApi
 from app.mcp.catalog import build_tool_definitions
 from app.mcp.endpoint import create_mcp_router
 from app.mcp.server import McpServer
-from app.mcp.tokens import parse_registered_clients
+from app.mcp.tokens import McpClient, parse_registered_clients
 from app.moonraker import moonraker
 from app.routes import (
     chunks,
@@ -97,43 +98,47 @@ def create_lifespan(app_settings: Any = settings):
     return lifespan
 
 
-lifespan = create_lifespan()
+_ROUTERS = (
+    control.router,
+    chunks.router,
+    files.router,
+    webcams.router,
+    history.router,
+    predict.router,
+    spools.router,
+    search.router,
+    projects.router,
+    prints.router,
+    push.router,
+    temperatures.router,
+)
+
+# Real files of the built frontend (PWA manifest, sw.js, icons) are served as they are, every other path gets
+# index.html for client-side routing. These files must not be cached, so a new release reaches the browser.
+_NO_CACHE_FILES = {"sw.js", "manifest.webmanifest", "index.html"}
 
 
-app = FastAPI(title="Hoard", lifespan=lifespan)
+def _create_mcp_server_provider(app: FastAPI) -> Callable[[], McpServer]:
+    """The MCP server of `app`, built on the first request, when every route of the app is in place."""
+    servers: list[McpServer] = []
 
-app.include_router(control.router)
-app.include_router(chunks.router)
-app.include_router(files.router)
-app.include_router(webcams.router)
-app.include_router(history.router)
-app.include_router(predict.router)
-app.include_router(spools.router)
-app.include_router(search.router)
-app.include_router(projects.router)
-app.include_router(prints.router)
-app.include_router(push.router)
-app.include_router(temperatures.router)
+    def provide_mcp_server() -> McpServer:
+        if not servers:
+            servers.append(McpServer(build_tool_definitions(app.openapi()), InProcessApi(app), version=_APP_VERSION))
+        return servers[0]
+
+    return provide_mcp_server
 
 
-def create_mcp_server() -> McpServer:
-    return McpServer(build_tool_definitions(app.openapi()), InProcessApi(app), version=_APP_VERSION)
+def _create_client_reader(app_settings: Any) -> Callable[[], dict[str, McpClient]]:
+    """Reads the registered MCP clients on every request, so a changed setting counts at once."""
+
+    def read_registered_clients() -> dict[str, McpClient]:
+        return parse_registered_clients(app_settings.mcp_clients)
+
+    return read_registered_clients
 
 
-_mcp_server: McpServer | None = None
-
-
-def get_mcp_server() -> McpServer:
-    global _mcp_server
-    if _mcp_server is None:
-        _mcp_server = create_mcp_server()
-    return _mcp_server
-
-
-app.include_router(create_mcp_router(get_mcp_server, lambda: parse_registered_clients(settings.mcp_clients)))
-
-
-@app.get("/api/version")
 async def version():
     return {"version": _APP_VERSION}
 
@@ -149,7 +154,6 @@ async def _event_stream(request: Request, queue: asyncio.Queue[str]):
         hub.unsubscribe(queue)
 
 
-@app.get("/stream")
 async def stream(request: Request):
     return StreamingResponse(
         _event_stream(request, hub.subscribe()),
@@ -158,17 +162,31 @@ async def stream(request: Request):
     )
 
 
-# Serve built frontend — real files (PWA manifest/sw.js/icons) served as-is,
-# everything else falls back to index.html for client-side routing.
-_static = Path(settings.static_dir)
-_NO_CACHE_FILES = {"sw.js", "manifest.webmanifest", "index.html"}
-if _static.exists():
-    app.mount("/assets", StaticFiles(directory=str(_static / "assets")), name="assets")
+def _mount_static_site(app: FastAPI, static_directory: Path) -> None:
+    if not (static_directory / "index.html").is_file():
+        return
+    app.mount("/assets", StaticFiles(directory=str(static_directory / "assets")), name="assets")
 
-    @app.get("/{full_path:path}")
     async def spa(full_path: str):
-        candidate = (_static / full_path).resolve()
-        if candidate.is_relative_to(_static.resolve()) and candidate.is_file():
+        candidate = (static_directory / full_path).resolve()
+        if candidate.is_relative_to(static_directory.resolve()) and candidate.is_file():
             headers = {"Cache-Control": "no-cache"} if candidate.name in _NO_CACHE_FILES else None
             return FileResponse(candidate, headers=headers)
-        return FileResponse(str(_static / "index.html"), headers={"Cache-Control": "no-cache"})
+        return FileResponse(str(static_directory / "index.html"), headers={"Cache-Control": "no-cache"})
+
+    app.add_api_route("/{full_path:path}", spa, methods=["GET"])
+
+
+def create_app(app_settings: Any = settings) -> FastAPI:
+    """The Hoard app: its routes, the MCP endpoint and the built frontend, from the settings it is given."""
+    app = FastAPI(title="Hoard", lifespan=create_lifespan(app_settings))
+    for router in _ROUTERS:
+        app.include_router(router)
+    app.include_router(create_mcp_router(_create_mcp_server_provider(app), _create_client_reader(app_settings)))
+    app.add_api_route("/api/version", version, methods=["GET"])
+    app.add_api_route("/stream", stream, methods=["GET"])
+    _mount_static_site(app, Path(app_settings.static_dir))
+    return app
+
+
+app = create_app()
