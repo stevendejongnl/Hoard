@@ -1,11 +1,11 @@
 import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
-import { getPrintJob, restoreCost as restoreCostRequest, updatePrintJob } from '../api'
+import { getPrintJob, getProjects, linkProjectPrint, restoreCost as restoreCostRequest, updatePrintJob } from '../api'
 import { renderIcon } from '../icons'
 import { formatPrintCost, formatPrintDate, formatPrintDuration } from '../print-history-list'
 import { router } from '../router'
-import type { PrintJob } from '../types'
+import type { PrintJob, Project } from '../types'
 import '../components/markdown-editor'
 import '../components/print-photos'
 import '../styles/print-detail.css'
@@ -24,6 +24,8 @@ function describeNumber(value: number | null | undefined, unit: string): string 
   return value === null || value === undefined ? NO_VALUE : `${value}${unit}`
 }
 
+type ProjectChoice = Pick<Project, 'id' | 'name'>
+
 /** One finished print: its facts and slicer settings, its photos and notes, and what it cost. */
 @customElement('print-detail-page')
 export class PrintDetailPage extends LitElement {
@@ -33,6 +35,11 @@ export class PrintDetailPage extends LitElement {
     updatePrintJob(jobId, { notes })
   @property({ attribute: false }) restoreCost: (jobId: string) => Promise<Partial<PrintJob>> = (jobId) =>
     restoreCostRequest(jobId) as Promise<Partial<PrintJob>>
+  @property({ attribute: false }) loadProjects: () => Promise<ProjectChoice[]> = getProjects
+  @property({ attribute: false }) linkPrintToProject: (projectId: number, jobId: string) => Promise<unknown> = (
+    projectId,
+    jobId,
+  ) => linkProjectPrint(projectId, { job_id: jobId })
   @property({ attribute: false }) startPrint: (filename: string) => void = (filename) =>
     document.querySelector<HTMLElement & { tryPrint(name: string): void }>('print-ready-modal')?.tryPrint(filename)
   @property({ attribute: false }) navigate: (path: string) => void = (path) =>
@@ -41,6 +48,8 @@ export class PrintDetailPage extends LitElement {
   @state() private job: PrintJob | null = null
   @state() private loadState: LoadState = 'loading'
   @state() private isRestoring = false
+  @state() private isChoosingProject = false
+  @state() private projects: ProjectChoice[] = []
 
   createRenderRoot() {
     return this
@@ -68,6 +77,19 @@ export class PrintDetailPage extends LitElement {
     } finally {
       this.isRestoring = false
     }
+  }
+
+  private async chooseProject(): Promise<void> {
+    this.projects = await this.loadProjects()
+    this.isChoosingProject = true
+  }
+
+  private async linkChosenProject(job: PrintJob, event: Event): Promise<void> {
+    const projectId = Number((event.target as HTMLSelectElement).value)
+    this.isChoosingProject = false
+    if (!projectId) return
+    await this.linkPrintToProject(projectId, job.job_id)
+    await this.load()
   }
 
   private renderSectionHeader(title: string): TemplateResult {
@@ -184,7 +206,25 @@ export class PrintDetailPage extends LitElement {
       <button class="button restore-cost-button" ?disabled=${this.isRestoring} @click=${this.restore}>
         ${renderIcon('refresh', 14)}Restore cost
       </button>
+      ${this.isChoosingProject ? this.renderProjectChoice(job) : this.renderAddToProjectButton()}
     </div>`
+  }
+
+  private renderAddToProjectButton(): TemplateResult {
+    return html`<button class="button add-to-project-button" @click=${this.chooseProject}>
+      ${renderIcon('plus', 14)}Add to project
+    </button>`
+  }
+
+  private renderProjectChoice(job: PrintJob): TemplateResult {
+    return html`<select
+      class="add-to-project-select"
+      aria-label="Pick a project"
+      @change=${(event: Event) => this.linkChosenProject(job, event)}
+    >
+      <option value="">Pick project…</option>
+      ${this.projects.map((project) => html`<option value=${project.id}>${project.name}</option>`)}
+    </select>`
   }
 
   private renderState(message: string): TemplateResult {
