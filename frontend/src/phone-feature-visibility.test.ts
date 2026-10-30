@@ -26,6 +26,14 @@ describe('features on phone', () => {
     expect(readStyles('project-detail.css')).not.toMatch(/\.file-kind \{\s*display: none/)
   })
 
+  it('keeps the totals of the projects', () => {
+    expect(readStyles('projects.css')).not.toMatch(/\.totals-section,?[^{}]*\{\s*display: none/)
+  })
+
+  it('keeps the summary of the spools', () => {
+    expect(readStyles('spools.css')).not.toMatch(/\.summary-section,?[^{}]*\{\s*display: none/)
+  })
+
   it('gives a file name in the file browser its own line', () => {
     expect(readStyles('files.css')).toMatch(
       /@media \(max-width: 800px\)[\s\S]*\.browser-browser-file-name-cell[^}]*grid-column: 1 \/ -1/,
