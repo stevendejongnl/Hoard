@@ -31,6 +31,7 @@ The screenshots are taken from the app filled with sample data (`python3 -m fron
 - **Search.** A command palette over prints, projects and spools (`/`).
 - **Notifications.** Web push when a print finishes or fails.
 - **Appearance.** One accent colour, set by hex in the status bar.
+- Shows what the printer's host and control boards report on a System page, whatever the hardware is, with the active faults and a history of them. Under-voltage shows on a host that reports it. Rows and sections can be hidden.
 
 ## What it expects
 
