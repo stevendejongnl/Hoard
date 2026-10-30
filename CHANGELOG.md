@@ -1,3 +1,10 @@
+## [1.46.2](https://github.com/stevendejongnl/Hoard/compare/v1.46.1...v1.46.2) (2026-10-30)
+
+### Bug Fixes
+
+* **pwa:** make the app installable from Chrome on Android ([e758375](https://github.com/stevendejongnl/Hoard/commit/e75837557794ffdd1441c704b88955f92ecad8fe))
+* **pwa:** notifications badge the status bar with a monochrome mark ([ebfafab](https://github.com/stevendejongnl/Hoard/commit/ebfafab00ab26f7acb131e90fecd856bf1f87f24))
+
 ## [1.46.1](https://github.com/stevendejongnl/Hoard/compare/v1.46.0...v1.46.1) (2026-10-29)
 
 ### Code Refactoring
