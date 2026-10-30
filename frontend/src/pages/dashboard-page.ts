@@ -185,6 +185,11 @@ export class DashboardPage extends LitElement {
         .now=${this.now}
         .timeZone=${this.timeZone}
       ></printer-parameter-panel>
+      <dashboard-lists-panel
+        .printerState=${this.printerState}
+        .currentPrintWeightGrams=${this.filamentWeightGrams}
+      ></dashboard-lists-panel>
+      <cost-predictor-panel></cost-predictor-panel>
     </div>`
   }
 

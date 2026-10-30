@@ -370,7 +370,8 @@ dashboard-lists-panel {
   border: 2px solid var(--strong-border-color);
 }
 
-.dashboard-side .in-use-tag {
+.dashboard-side .in-use-tag,
+.dashboard-phone .in-use-tag {
   padding: 2px 8px;
   border-radius: 2px;
   background: var(--selection-tint);
@@ -418,7 +419,8 @@ cost-predictor-panel .section-header {
   padding: 0 12px;
 }
 
-.dashboard-layout .predictor-body {
+.dashboard-layout .predictor-body,
+.dashboard-phone .predictor-body {
   padding: 8px 0 12px;
 }
 
@@ -435,7 +437,8 @@ cost-predictor-panel .section-header {
   cursor: pointer;
 }
 
-.dashboard-layout .predictor-total-label {
+.dashboard-layout .predictor-total-label,
+.dashboard-phone .predictor-total-label {
   font-weight: 600;
   color: var(--text-color);
 }
@@ -568,8 +571,17 @@ cost-predictor-panel .section-header {
     border-top: 1px solid var(--border-color);
   }
 
-  .dashboard-phone .parameter-body {
+  .dashboard-phone .parameter-body,
+  .dashboard-phone .list-body {
     overflow: visible;
+  }
+
+  .dashboard-phone dashboard-lists-panel {
+    flex: none;
+  }
+
+  .dashboard-phone .list-tab {
+    min-height: 44px;
   }
 
   .dashboard-phone .parameter-row:has(.power-switch) {
