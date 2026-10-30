@@ -1,6 +1,6 @@
 // Served from the root (not /assets/sw.js) so its scope covers the whole
 // origin - a worker scoped to /assets/ can never control real page requests.
-const CACHE = 'hoard-v1';
+const CACHE = 'hoard-v2';
 const APP_SHELL = ['/'];
 
 self.addEventListener('install', (e) => {
@@ -31,24 +31,29 @@ self.addEventListener('fetch', (e) => {
   if (url.pathname.startsWith('/assets/')) {
     e.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE).then((c) => c.put(request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put(request, clone));
+        }
         return res;
       }))
     );
     return;
   }
 
-  // HTML shell: network-first, fall back to cache when offline
-  if (request.headers.get('accept')?.includes('text/html')) {
+  // HTML shell: network-first, fall back to cache when offline. Every route is the same SPA shell, so a
+  // navigation to a page that was never cached still gets the cached '/' instead of a browser error page.
+  if (request.mode === 'navigate' || request.headers.get('accept')?.includes('text/html')) {
     e.respondWith(
       fetch(request)
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE).then((c) => c.put(request, clone));
+          if (res.ok) {
+            const clone = res.clone();
+            caches.open(CACHE).then((c) => c.put(request, clone));
+          }
           return res;
         })
-        .catch(() => caches.match(request))
+        .catch(() => caches.match(request).then((cached) => cached || caches.match('/')))
     );
   }
 });
