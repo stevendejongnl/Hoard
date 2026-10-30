@@ -1,5 +1,6 @@
 from httpx import AsyncClient
 
+from app.db import default_database
 from tests.route_fakes import FakeMoonraker, install_fakes
 
 
@@ -49,4 +50,27 @@ async def test_a_host_that_does_not_answer_is_reported(client: AsyncClient, monk
     }
     install_fakes(monkeypatch, moonraker=FakeMoonraker(answers))
     body = (await client.get("/api/system")).json()
-    assert body == {"reachable": False, "sections": []}
+    assert body["reachable"] is False
+    assert body["sections"] == []
+    assert [fault["key"] for fault in body["active_faults"]] == ["host.unreachable"]
+
+
+async def test_the_route_returns_the_active_faults_and_the_history(client: AsyncClient, monkeypatch):
+    printer = create_printer()
+    printer.answers["/printer/info"] = {"state": "shutdown", "state_message": "Timer too close"}
+    install_fakes(monkeypatch, moonraker=printer)
+    await default_database.record_system_faults(
+        [{"key": "host.under_voltage", "severity": "error", "source": "Host", "title": "Under-voltage", "detail": ""}],
+        now=100,
+    )
+    body = (await client.get("/api/system")).json()
+    assert [fault["key"] for fault in body["active_faults"]] == ["klipper.shutdown"]
+    assert [fault["key"] for fault in body["fault_history"]] == ["host.under_voltage"]
+
+
+async def test_hidden_rows_are_saved_on_the_server(client: AsyncClient, monkeypatch):
+    install_fakes(monkeypatch, moonraker=create_printer())
+    response = await client.put("/api/system/hidden", json={"keys": ["host.uptime", "fans"]})
+    assert response.status_code == 200
+    body = (await client.get("/api/system")).json()
+    assert sorted(body["hidden"]) == ["fans", "host.uptime"]
