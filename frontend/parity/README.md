@@ -36,6 +36,7 @@ The references and the screenshots are taken under the same conditions (`browser
 
 - `references/`: the reference images, rendered from the design boards. They are what the app is compared with.
 - `top_bar_crops.py`: the header with the notification bell, compared as a crop of its board.
+- `scrolled_screens.py`: phone screens that continue below the fold, compared at a fixed scroll position.
 - `showcase_screens.py` and `take_screenshots.py`: the screenshots of the README.
 - `fixture_data.py`: the data the design shows, in the shapes the API returns.
 - `mock_backend.py`: serves that data as JSON and as a server-sent events stream.
