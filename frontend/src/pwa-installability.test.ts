@@ -31,3 +31,9 @@ describe('pwa installability', () => {
     expect(worker).toContain("caches.match('/')")
   })
 })
+
+describe('push notifications', () => {
+  it('badge the status bar with the monochrome mark, not the full color icon', () => {
+    expect(readPublicFile('sw.js')).toContain("badge: '/pwa-badge-96.png'")
+  })
+})

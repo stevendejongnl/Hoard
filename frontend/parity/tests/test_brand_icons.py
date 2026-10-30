@@ -44,3 +44,10 @@ def test_manifest_points_its_maskable_icon_at_the_maskable_file():
     manifest = json.loads((PUBLIC_DIRECTORY / "manifest.webmanifest").read_text())
     maskable = [icon for icon in manifest["icons"] if icon.get("purpose") == "maskable"]
     assert [icon["src"] for icon in maskable] == ["/pwa-maskable-512.png"]
+
+
+def test_notification_badge_is_the_white_mark_on_transparency():
+    image = Image.open(PUBLIC_DIRECTORY / "pwa-badge-96.png").convert("RGBA")
+    assert image.size == (96, 96)
+    assert image.getpixel((0, 0))[3] == 0
+    assert {pixel[:3] for pixel in image.getdata() if pixel[3] == 255} == {(255, 255, 255)}
