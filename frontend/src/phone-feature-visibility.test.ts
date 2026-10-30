@@ -15,6 +15,17 @@ describe('features on phone', () => {
     expect(readStyles('dashboard.css')).not.toMatch(/\.camera-buttons \{\s*display: none/)
   })
 
+  it('keeps the status filter, the summary and the reset button of the history', () => {
+    const styles = readStyles('history.css')
+    expect(styles).not.toMatch(/\.status-filter-row,?[^{}]*\{\s*display: none/)
+    expect(styles).not.toMatch(/\.history-summary-section,?[^{}]*\{\s*display: none/)
+    expect(styles).not.toMatch(/\.history-filters-footer,?[^{}]*\{\s*display: none/)
+  })
+
+  it('keeps the kind of a project file', () => {
+    expect(readStyles('project-detail.css')).not.toMatch(/\.file-kind \{\s*display: none/)
+  })
+
   it('gives a file name in the file browser its own line', () => {
     expect(readStyles('files.css')).toMatch(
       /@media \(max-width: 800px\)[\s\S]*\.browser-browser-file-name-cell[^}]*grid-column: 1 \/ -1/,
