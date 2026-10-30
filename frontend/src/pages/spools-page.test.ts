@@ -57,7 +57,7 @@ async function createSpoolsPage(
     calls.deleted.push(id)
     return { ok: true, status: 200 }
   }
-  page.confirmAction = (message) => {
+  page.confirmAction = async (message) => {
     calls.confirmations.push(message)
     return true
   }
@@ -357,7 +357,7 @@ describe('deleting', () => {
 
   it('keeps the spool when the confirmation is declined', async () => {
     const calls = createCalls()
-    const page = await createSpoolsPage(calls, { confirmAction: () => false })
+    const page = await createSpoolsPage(calls, { confirmAction: async () => false })
     await click(page, 'button[aria-label="Delete spool"]')
     expect(calls.deleted).toEqual([])
   })

@@ -14,7 +14,7 @@ interface Calls {
 async function createTopNavigation(options: { confirmation: boolean; stopFails?: boolean }) {
   const calls: Calls = { confirmations: [], stops: 0, failures: [] }
   const element = document.createElement('top-navigation') as TopNavigation
-  element.confirmEmergencyStop = (message) => {
+  element.confirmEmergencyStop = async (message) => {
     calls.confirmations.push(message)
     return options.confirmation
   }

@@ -62,7 +62,7 @@ class FakeProjectApi {
     this.removedLinks.push([linkIdentifier, clearCover])
   }
 
-  confirm = (message: string) => {
+  confirm = async (message: string) => {
     this.confirmedMessages.push(message)
     return this.confirmAnswer
   }

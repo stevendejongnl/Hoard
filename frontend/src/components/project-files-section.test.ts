@@ -38,7 +38,7 @@ class FakeProjectFiles {
     this.printedFilenames.push(filename)
   }
 
-  confirm = (message: string) => {
+  confirm = async (message: string) => {
     this.confirmations.push(message)
     return this.isPrintConfirmed
   }

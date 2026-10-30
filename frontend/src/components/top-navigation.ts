@@ -17,6 +17,7 @@ import { router } from '../router'
 import './search-modal'
 import './push-toggle'
 import type { SearchModal } from './search-modal'
+import { askForConfirmation } from './confirmation-dialog'
 
 type NavigateFunction = (path: string) => void
 
@@ -34,8 +35,7 @@ export class TopNavigation extends LitElement {
   /** the printer state from the stream: printing, paused, error, standby, ... */
   @property({ type: String }) printerState = ''
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
-  @property({ attribute: false }) confirmEmergencyStop: (message: string) => boolean = (message) =>
-    window.confirm(message)
+  @property({ attribute: false }) confirmEmergencyStop: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) stopEmergency: () => Promise<unknown> = () => emergencyStop()
   @property({ attribute: false }) reportFailure: (message: string) => void = (message) => window.alert(message)
   @property({ attribute: false }) openSearch: () => void = () => this.openSearchModal()
@@ -49,7 +49,7 @@ export class TopNavigation extends LitElement {
   }
 
   private async handleEmergencyStop(): Promise<void> {
-    if (!this.confirmEmergencyStop(EMERGENCY_STOP_CONFIRMATION)) return
+    if (!(await this.confirmEmergencyStop(EMERGENCY_STOP_CONFIRMATION))) return
     await this.attemptEmergencyStop()
   }
 

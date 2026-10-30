@@ -9,6 +9,7 @@ import {
 import { renderIcon } from '../icons'
 import { calculateRemainingSeconds, formatFinishTime, formatSpentDuration } from '../print-job-metrics'
 import type { PrinterState } from '../types'
+import { askForConfirmation } from './confirmation-dialog'
 
 const CANCEL_QUESTION = 'Cancel this print?'
 const BUTTON_ICON_SIZE = 16
@@ -24,7 +25,7 @@ export class PhonePrintSummary extends LitElement {
   @property({ attribute: false }) pausePrint: () => Promise<unknown> = pausePrintRequest
   @property({ attribute: false }) resumePrint: () => Promise<unknown> = resumePrintRequest
   @property({ attribute: false }) cancelPrint: () => Promise<unknown> = cancelPrintRequest
-  @property({ attribute: false }) confirmAction: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) confirmAction: (message: string) => Promise<boolean> = askForConfirmation
 
   createRenderRoot() {
     return this
@@ -40,7 +41,7 @@ export class PhonePrintSummary extends LitElement {
   }
 
   private async handleCancel(): Promise<void> {
-    if (!this.confirmAction(CANCEL_QUESTION)) return
+    if (!(await this.confirmAction(CANCEL_QUESTION))) return
     await this.cancelPrint()
   }
 
