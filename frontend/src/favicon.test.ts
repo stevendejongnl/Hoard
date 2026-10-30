@@ -41,7 +41,7 @@ describe('index.html', () => {
   })
 
   it('keeps the manifest and apple-touch-icon links', () => {
-    expect(html()).toContain('<link rel="manifest" href="/manifest.webmanifest" />')
+    expect(html()).toContain('<link rel="manifest" href="/manifest.webmanifest" crossorigin="use-credentials" />')
     expect(html()).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png" />')
   })
 })
