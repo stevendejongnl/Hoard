@@ -1,6 +1,6 @@
 {
   "name": "hoard-frontend",
-  "version": "1.46.2",
+  "version": "1.47.0",
   "private": true,
   "type": "module",
   "scripts": {

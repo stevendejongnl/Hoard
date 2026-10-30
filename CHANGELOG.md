@@ -1,3 +1,21 @@
+## [1.47.0](https://github.com/stevendejongnl/Hoard/compare/v1.46.2...v1.47.0) (2026-10-30)
+
+### Features
+
+* **dashboard:** the phone has the lists, print a file and the cost predictor ([fcc5b06](https://github.com/stevendejongnl/Hoard/commit/fcc5b06018f3c5e5a2d13606169da7c98babf5ac))
+* **dashboard:** the phone has the power switches and the parameter sections ([ab7d660](https://github.com/stevendejongnl/Hoard/commit/ab7d6605a2e304eee4de718181fc508956367a98))
+* **phone:** history filters and summary, add to project, project filament and file kind ([4a61efd](https://github.com/stevendejongnl/Hoard/commit/4a61efdcf8227319376797b54fa932a5f6007d0e))
+* **phone:** search, camera buttons, status bar and readable file names ([403b4fd](https://github.com/stevendejongnl/Hoard/commit/403b4fdbd2ef6b5c85fc468e83a2cc7d1125ef87))
+* **phone:** the project totals and the spool summary ([ff2df05](https://github.com/stevendejongnl/Hoard/commit/ff2df0592a7ff8594ebf5ca4ecdb2765f53838d0))
+
+### Bug Fixes
+
+* **dashboard:** the printer power asks before it switches off ([ce23eda](https://github.com/stevendejongnl/Hoard/commit/ce23eda8da2a2f5bd0785f9c225322513ecd01ae))
+
+### Documentation
+
+* the README says what the phone has, with new screenshots ([7c8193f](https://github.com/stevendejongnl/Hoard/commit/7c8193fb0f6d0a30452a885d08d8a6bdc2c73e33))
+
 ## [1.46.2](https://github.com/stevendejongnl/Hoard/compare/v1.46.1...v1.46.2) (2026-10-30)
 
 ### Bug Fixes
