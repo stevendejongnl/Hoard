@@ -1,8 +1,12 @@
-import { LitElement, html } from 'lit'
+import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { property } from 'lit/decorators.js'
+import { keyed } from 'lit/directives/keyed.js'
 import { buildDocumentTitle } from '../document-title'
+import { renderIcon } from '../icons'
+import { canStartPull, isPullComplete, measurePull } from '../pull-to-refresh'
+import type { TouchPoint } from '../pull-to-refresh'
 import { router } from '../router'
 import type { ServerSentEventPayload } from '../server-sent-events-client'
 import { sseClient } from '../sse'
@@ -51,6 +55,15 @@ export class HoardApp extends LitElement {
   @state() private route = '/'
   @state() private printerState = ''
   @state() private faultCount = 0
+  @state() private pullDistance = 0
+  /** a new value makes the page element new, so it loads everything again */
+  @state() private pageGeneration = 0
+
+  private pullStart: TouchPoint | null = null
+  private readonly pullMoveListener = {
+    handleEvent: (event: TouchEvent) => this.continuePull(event),
+    passive: true,
+  }
 
   private stopListeningToStream: StopFunction | null = null
   private stopListeningToRoute: StopFunction | null = null
@@ -72,6 +85,42 @@ export class HoardApp extends LitElement {
     this.stopListeningToRoute?.()
   }
 
+  private readTouchPoint(event: TouchEvent): TouchPoint {
+    return { x: event.touches[0].clientX, y: event.touches[0].clientY }
+  }
+
+  private startPull(event: TouchEvent): void {
+    const canPull = canStartPull(event.target as Element, event.currentTarget as Element)
+    this.pullStart = canPull ? this.readTouchPoint(event) : null
+  }
+
+  private continuePull(event: TouchEvent): void {
+    if (this.pullStart) this.pullDistance = measurePull(this.pullStart, this.readTouchPoint(event))
+  }
+
+  private finishPull(): void {
+    if (isPullComplete(this.pullDistance)) this.pageGeneration += 1
+    this.pullStart = null
+    this.pullDistance = 0
+  }
+
+  private cancelPull(): void {
+    this.pullStart = null
+    this.pullDistance = 0
+  }
+
+  private renderPullIndicator(): TemplateResult | typeof nothing {
+    if (this.pullDistance === 0) return nothing
+    const isReady = isPullComplete(this.pullDistance)
+    return html`<div
+      class="pull-indicator ${isReady ? 'ready' : ''}"
+      aria-hidden="true"
+      style="transform: translate(-50%, ${this.pullDistance}px) rotate(${this.pullDistance * 4}deg)"
+    >
+      ${renderIcon('refresh', 18)}
+    </div>`
+  }
+
   private handlePayload(payload: ServerSentEventPayload): void {
     if (payload.type === 'system_faults') this.faultCount = payload.data.active_count
     if (payload.type !== 'printer_state') return
@@ -86,7 +135,16 @@ export class HoardApp extends LitElement {
         printerstate=${this.printerState}
         .faultCount=${this.faultCount}
       ></top-navigation>
-      <main class="app-content">${this.renderPage(this.route)}</main>
+      ${this.renderPullIndicator()}
+      <main
+        class="app-content"
+        @touchstart=${this.startPull}
+        @touchmove=${this.pullMoveListener}
+        @touchend=${this.finishPull}
+        @touchcancel=${this.cancelPull}
+      >
+        ${keyed(this.pageGeneration, this.renderPage(this.route))}
+      </main>
       <status-bar printerstate=${this.printerState}></status-bar>
       <bottom-tabs route=${this.route} .faultCount=${this.faultCount}></bottom-tabs>
     `
