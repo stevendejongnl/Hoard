@@ -38,6 +38,8 @@ export class PrinterParameterPanel extends LitElement {
   @property({ attribute: false }) estimatedSeconds: number | null = null
   @property({ attribute: false }) now: () => number = () => Date.now()
   @property({ type: String }) timeZone: string | undefined = undefined
+  /** on a phone the print summary holds pause and cancel, and power comes first */
+  @property({ type: Boolean }) isPhoneLayout = false
   @property({ attribute: false }) pausePrint: () => Promise<unknown> = pausePrintRequest
   @property({ attribute: false }) resumePrint: () => Promise<unknown> = resumePrintRequest
   @property({ attribute: false }) cancelPrint: () => Promise<unknown> = cancelPrintRequest
@@ -268,7 +270,14 @@ export class PrinterParameterPanel extends LitElement {
     </div>`
   }
 
+  private renderPhone(): TemplateResult {
+    return html`<div class="parameter-body">
+      ${this.renderPower()} ${this.renderPrintJob()} ${this.renderTemperatures()} ${this.renderPi()}
+    </div>`
+  }
+
   render(): TemplateResult {
+    if (this.isPhoneLayout) return this.renderPhone()
     return html`<div class="parameter-body">
         ${this.renderPrintJob()} ${this.renderTemperatures()} ${this.renderPower()} ${this.renderPi()}
       </div>

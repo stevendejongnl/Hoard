@@ -175,6 +175,16 @@ export class DashboardPage extends LitElement {
       ></phone-print-summary>
       <phone-temperature-section .temperatures=${this.temperatures} .power=${this.power}></phone-temperature-section>
       <camera-panel></camera-panel>
+      <printer-parameter-panel
+        isPhoneLayout
+        .printerState=${this.printerState}
+        .temperatures=${this.temperatures}
+        .power=${this.power}
+        .piStats=${this.piStats}
+        .estimatedSeconds=${this.estimatedSeconds}
+        .now=${this.now}
+        .timeZone=${this.timeZone}
+      ></printer-parameter-panel>
     </div>`
   }
 

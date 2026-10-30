@@ -562,4 +562,17 @@ cost-predictor-panel .section-header {
   .dashboard-phone .camera-buttons {
     display: none;
   }
+
+  .dashboard-phone printer-parameter-panel {
+    flex: none;
+    border-top: 1px solid var(--border-color);
+  }
+
+  .dashboard-phone .parameter-body {
+    overflow: visible;
+  }
+
+  .dashboard-phone .parameter-row:has(.power-switch) {
+    min-height: 44px;
+  }
 }

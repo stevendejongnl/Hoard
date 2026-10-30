@@ -37,6 +37,7 @@ from frontend.parity.image_comparison import (
 )
 from frontend.parity.mock_backend import start_mock_backend
 from frontend.parity.ports import read_port
+from frontend.parity.scrolled_screens import SCROLLED_SCREENS
 from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 
 PARITY_DIRECTORY = Path(__file__).resolve().parent
@@ -69,10 +70,11 @@ SCREENS = {
     "spool-sheet-phone": ("/spools", PHONE_SIZE),
     "top-bar-desktop": ("/", DESKTOP_SIZE),
     "top-bar-phone": ("/", PHONE_SIZE),
+    **{name: ("/", PHONE_SIZE) for name in SCROLLED_SCREENS},
 }
 
 # screen name -> what a person does before the screenshot: ("click", selector), ("press", key),
-# ("type", text) or ("choose", selector, option value)
+# ("type", text), ("choose", selector, option value) or ("scroll", selector, top)
 CHOSEN_HISTORY_ROW = ("click", ".history-row:nth-child(6)")
 SCREEN_STEPS = {
     "history-desktop": [CHOSEN_HISTORY_ROW],
@@ -80,6 +82,7 @@ SCREEN_STEPS = {
     "file-browser-desktop": [("choose", 'select[aria-label="File"]', "__browse__")],
     "print-ready-desktop": [CHOSEN_HISTORY_ROW, ("click", "button.print-again-button")],
     "spool-sheet-phone": [("click", ".spool-row:nth-child(2) .edit-spool-button")],
+    **{name: [("scroll", screen.app_scroller, screen.scroll_top)] for name, screen in SCROLLED_SCREENS.items()},
 }
 
 
@@ -105,7 +108,9 @@ def wait_until_responding(address: str) -> None:
 def start_app_server() -> subprocess.Popen:
     command = ["npx", "vite", "--host", "127.0.0.1", "--port", str(APP_PORT), "--strictPort"]
     environment = {**os.environ, "PARITY_BACKEND_PORT": str(BACKEND_PORT)}
-    return subprocess.Popen(command, cwd=FRONTEND_DIRECTORY, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    return subprocess.Popen(
+        command, cwd=FRONTEND_DIRECTORY, env=environment, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
 
 
 def perform_step(page: Page, step: tuple) -> None:
@@ -118,6 +123,8 @@ def perform_step(page: Page, step: tuple) -> None:
         page.keyboard.type(step[1])
     if action == "choose":
         page.select_option(step[1], step[2])
+    if action == "scroll":
+        page.locator(step[1]).evaluate("(element, top) => { element.scrollTop = top }", step[2])
 
 
 def fulfil_with(body: object):
@@ -172,7 +179,9 @@ def compare_screen(page: Page, name: str, app_address: str) -> float:
     box = crop.app_box if crop else None
     served = crop.served_responses if crop else None
     capture_screen(page, f"{app_address}{path}", size, screenshot_path, SCREEN_STEPS.get(name), box, served)
-    return measure_difference_share(REFERENCE_DIRECTORY / f"{name}.png", screenshot_path, OUTPUT_DIRECTORY / f"{name}-difference.png")
+    return measure_difference_share(
+        REFERENCE_DIRECTORY / f"{name}.png", screenshot_path, OUTPUT_DIRECTORY / f"{name}-difference.png"
+    )
 
 
 def format_report_line(name: str, difference_share: float) -> str:
@@ -211,7 +220,9 @@ def main() -> int:
     finally:
         app_server.terminate()
         backend.shutdown()
-    print(f"\nTolerance: at most {MAXIMUM_DIFFERENCE_SHARE * 100:.1f}% of pixels may differ by more than {DEFAULT_CHANNEL_TOLERANCE} per channel.")
+    print(
+        f"\nTolerance: at most {MAXIMUM_DIFFERENCE_SHARE * 100:.1f}% of pixels may differ by more than {DEFAULT_CHANNEL_TOLERANCE} per channel."
+    )
     return 0 if all(is_within_tolerance(share, MAXIMUM_DIFFERENCE_SHARE) for share in shares.values()) else 1
 
 

@@ -26,6 +26,7 @@ from frontend.parity.browser_settings import (
     FREEZE_MOTION_STYLE,
     PHONE_SIZE,
 )
+from frontend.parity.scrolled_screens import SCROLLED_SCREENS, ScrolledScreen
 from frontend.parity.top_bar_crops import TOP_BAR_CROPS
 
 PARITY_DIRECTORY = Path(__file__).resolve().parent
@@ -112,11 +113,16 @@ def render_screen(
     size: tuple[int, int],
     target: Path,
     box: tuple[int, int, int, int] | None = None,
+    scrolled_screen: ScrolledScreen | None = None,
 ) -> None:
     page.set_viewport_size({"width": size[0], "height": size[1]})
     page.goto(f"{server_address}/{design_file}", wait_until="networkidle")
     page.add_style_tag(content=FREEZE_MOTION_STYLE)
     page.evaluate("document.fonts.ready")
+    if scrolled_screen:
+        page.locator(scrolled_screen.board_scroller).evaluate(
+            "(element, top) => { element.scrollTop = top }", scrolled_screen.scroll_top
+        )
     page.wait_for_timeout(300)
     x, y, width, height = box or (0, 0, size[0], size[1])
     page.screenshot(path=str(target), clip={"x": x, "y": y, "width": width, "height": height})
@@ -132,6 +138,10 @@ def render_all_screens(server_address: str) -> None:
         page.route("**/*", lambda route: answer_request(route, server_address, font_stylesheet))
         for design_file, (reference_name, size) in SCREENS.items():
             render_screen(page, server_address, design_file, size, REFERENCE_DIRECTORY / f"{reference_name}.png")
+            print("rendered", reference_name)
+        for reference_name, screen in SCROLLED_SCREENS.items():
+            target = REFERENCE_DIRECTORY / f"{reference_name}.png"
+            render_screen(page, server_address, screen.board_file, PHONE_SIZE, target, scrolled_screen=screen)
             print("rendered", reference_name)
         for reference_name, crop in TOP_BAR_CROPS.items():
             target = REFERENCE_DIRECTORY / f"{reference_name}.png"
