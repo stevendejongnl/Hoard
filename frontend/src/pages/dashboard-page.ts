@@ -14,6 +14,7 @@ import '../components/print-ready-modal'
 import '../components/print-timeline'
 import '../components/printer-parameter-panel'
 import '../components/temperature-chart'
+import '../components/status-bar'
 import '../styles/dashboard.css'
 
 type StopFunction = () => void
@@ -190,6 +191,7 @@ export class DashboardPage extends LitElement {
         .currentPrintWeightGrams=${this.filamentWeightGrams}
       ></dashboard-lists-panel>
       <cost-predictor-panel></cost-predictor-panel>
+      <status-bar printerstate=${this.printerState?.state ?? ''}></status-bar>
     </div>`
   }
 
