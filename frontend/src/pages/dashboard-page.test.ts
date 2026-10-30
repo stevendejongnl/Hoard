@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import type { GcodeFile } from '../types'
 import './dashboard-page'
 import type { DashboardPage } from './dashboard-page'
+import type { StatusBar } from '../components/status-bar'
 
 type Handler = (payload: { type: string; data: unknown }) => void
 
@@ -149,6 +150,13 @@ describe('phone dashboard', () => {
     lists.dispatchEvent(new CustomEvent('open-file-browser', { detail: { purpose: 'print' }, bubbles: true }))
     await page.updateComplete
     expect(page.querySelector('file-browser-modal')?.hasAttribute('open')).toBe(true)
+  })
+
+  it('ends with the status bar, with the state of the printer', async () => {
+    const { page, send } = await createPage({ isPhoneLayout: () => true })
+    await deliverEverything(page, send)
+    const statusBar = page.querySelector<StatusBar>('.dashboard-phone > status-bar:last-child')
+    expect(statusBar?.printerState).toBe('printing')
   })
 
   it('offers pause and cancel once, in the summary', async () => {
