@@ -1,3 +1,20 @@
+## [1.48.0](https://github.com/stevendejongnl/Hoard/compare/v1.47.1...v1.48.0) (2026-10-30)
+
+### Features
+
+* **system:** faults are detected, kept in a history, and rows can be hidden ([e4908e2](https://github.com/stevendejongnl/Hoard/commit/e4908e237f6b2591acb7f3da0247e4375ca9a0b6))
+* **system:** GET /api/system reports the host and control boards as sections ([fe4d6a7](https://github.com/stevendejongnl/Hoard/commit/fe4d6a71eecc92ce9f02b59b0782d17ac8a61a36))
+* **system:** the System page, with a fault count on its tab and rows to choose ([8843230](https://github.com/stevendejongnl/Hoard/commit/8843230de9cb95d5ec23a414d727dc6224b2afbe))
+
+### Bug Fixes
+
+* **dialog:** questions show an in-app dialog instead of the native one ([8d12e11](https://github.com/stevendejongnl/Hoard/commit/8d12e11f41a7c4e0026bf60e87d4c8a0500859ed))
+
+### Documentation
+
+* the README describes the System page ([6a79901](https://github.com/stevendejongnl/Hoard/commit/6a799016a588cb14f9cc41f7656a292352fcc6e9))
+* the System line of the README reads like the others ([c9acb5b](https://github.com/stevendejongnl/Hoard/commit/c9acb5bf3c864964118231f3b9ad88e54f8e9cd4))
+
 ## [1.47.1](https://github.com/stevendejongnl/Hoard/compare/v1.47.0...v1.47.1) (2026-10-30)
 
 ### Bug Fixes
