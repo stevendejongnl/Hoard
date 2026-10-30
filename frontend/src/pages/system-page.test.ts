@@ -146,6 +146,14 @@ describe('system page', () => {
   })
 })
 
+describe('nothing to choose', () => {
+  it('offers no Choose rows when the host reports nothing', async () => {
+    const { page } = await createPage({ ...report, reachable: false, sections: [] })
+    expect(page.querySelector('.choose-rows-button')).toBeNull()
+    expect(page.querySelector('.system-strip')).not.toBeNull()
+  })
+})
+
 describe('choosing rows', () => {
   async function startChoosing(): Promise<{ page: SystemPage; environment: Environment }> {
     const created = await createPage({ ...report, hidden: ['fans.fan'] })
