@@ -137,6 +137,20 @@ describe('phone dashboard', () => {
     expect(panel?.querySelector('[data-field="cpu-temperature"]')?.textContent).toContain('37.6')
   })
 
+  it('shows the lists and the cost predictor under the parameter sections', async () => {
+    const { page } = await createPage({ isPhoneLayout: () => true })
+    expect(page.querySelector('printer-parameter-panel ~ dashboard-lists-panel')).not.toBeNull()
+    expect(page.querySelector('dashboard-lists-panel ~ cost-predictor-panel')).not.toBeNull()
+  })
+
+  it('opens the file browser from the lists', async () => {
+    const { page } = await createPage({ isPhoneLayout: () => true })
+    const lists = page.querySelector('dashboard-lists-panel')!
+    lists.dispatchEvent(new CustomEvent('open-file-browser', { detail: { purpose: 'print' }, bubbles: true }))
+    await page.updateComplete
+    expect(page.querySelector('file-browser-modal')?.hasAttribute('open')).toBe(true)
+  })
+
   it('offers pause and cancel once, in the summary', async () => {
     const { page, send } = await createPage({ isPhoneLayout: () => true })
     await deliverEverything(page, send)
