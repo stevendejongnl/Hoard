@@ -101,6 +101,12 @@ afterEach(() => {
 })
 
 describe('projects-page', () => {
+  it('names the filament in the short summary of a card, as the phone shows no statistics', async () => {
+    const page = await mountPage(new FakeEnvironment())
+    const summary = page.querySelector('.card-summary')?.textContent ?? ''
+    expect(summary).toContain('86.6 g')
+  })
+
   it('shows a card for every project with its statistics', async () => {
     const page = await mountPage(new FakeEnvironment())
     expect(readCardNames(page)).toEqual(['Dactyl Manuform', 'Doorhandle', 'Voron 2.4'])

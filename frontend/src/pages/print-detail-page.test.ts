@@ -155,3 +155,54 @@ describe('print detail', () => {
     expect(readText(page, '.state-message')).toBe('Could not load this print')
   })
 })
+
+describe('add to project', () => {
+  const projects = [
+    { id: 3, name: 'Doorhandle' },
+    { id: 7, name: 'Dactyl Manuform' },
+  ]
+
+  async function createPageWithProjects(): Promise<{
+    page: PrintDetailPage
+    calls: Calls
+    links: { projectId: number; jobId: string }[]
+  }> {
+    const links: { projectId: number; jobId: string }[] = []
+    const { page, calls } = await createPage({
+      loadProjects: async () => projects,
+      linkPrintToProject: async (projectId, jobId) => void links.push({ projectId, jobId }),
+    })
+    return { page, calls, links }
+  }
+
+  async function chooseProject(page: PrintDetailPage, value: string): Promise<void> {
+    page.querySelector<HTMLButtonElement>('button.add-to-project-button')!.click()
+    await settle(page)
+    const select = page.querySelector<HTMLSelectElement>('select.add-to-project-select')!
+    select.value = value
+    select.dispatchEvent(new Event('change'))
+    await settle(page)
+  }
+
+  it('offers the projects to choose from', async () => {
+    const { page } = await createPageWithProjects()
+    page.querySelector<HTMLButtonElement>('button.add-to-project-button')!.click()
+    await settle(page)
+    const names = [...page.querySelectorAll('select.add-to-project-select option')].map((item) => item.textContent)
+    expect(names).toEqual(['Pick project…', 'Doorhandle', 'Dactyl Manuform'])
+  })
+
+  it('links the print to the chosen project and loads it again', async () => {
+    const { page, calls, links } = await createPageWithProjects()
+    await chooseProject(page, '7')
+    expect(links).toEqual([{ projectId: 7, jobId: 'job-1' }])
+    expect(calls.loaded).toHaveLength(2)
+    expect(page.querySelector('button.add-to-project-button')).not.toBeNull()
+  })
+
+  it('links nothing when no project is picked', async () => {
+    const { page, links } = await createPageWithProjects()
+    await chooseProject(page, '')
+    expect(links).toEqual([])
+  })
+})
