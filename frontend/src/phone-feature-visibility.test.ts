@@ -17,9 +17,9 @@ describe('features on phone', () => {
 
   it('keeps the status filter, the summary and the reset button of the history', () => {
     const styles = readStyles('history.css')
-    expect(styles).not.toMatch(/\.status-filter-row,?[^{}]*\{\s*display: none/)
-    expect(styles).not.toMatch(/\.history-summary-section,?[^{}]*\{\s*display: none/)
-    expect(styles).not.toMatch(/\.history-filters-footer,?[^{}]*\{\s*display: none/)
+    expect(styles).not.toMatch(/\.status-filter-row(,[^{}]*)?\s*\{\s*display: none/)
+    expect(styles).not.toMatch(/\.history-summary-section(,[^{}]*)?\s*\{\s*display: none/)
+    expect(styles).not.toMatch(/\.history-filters-footer(,[^{}]*)?\s*\{\s*display: none/)
   })
 
   it('keeps the kind of a project file', () => {
@@ -27,11 +27,11 @@ describe('features on phone', () => {
   })
 
   it('keeps the totals of the projects', () => {
-    expect(readStyles('projects.css')).not.toMatch(/\.totals-section,?[^{}]*\{\s*display: none/)
+    expect(readStyles('projects.css')).not.toMatch(/\.totals-section(,[^{}]*)?\s*\{\s*display: none/)
   })
 
   it('keeps the summary of the spools', () => {
-    expect(readStyles('spools.css')).not.toMatch(/\.summary-section,?[^{}]*\{\s*display: none/)
+    expect(readStyles('spools.css')).not.toMatch(/\.summary-section(,[^{}]*)?\s*\{\s*display: none/)
   })
 
   it('gives a file name in the file browser its own line', () => {

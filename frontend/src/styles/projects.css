@@ -230,10 +230,34 @@
   }
 
   .projects-layout .section-header,
-  .projects-layout .totals-section,
   .projects-layout .parameter-label,
   .projects-layout .page-strip {
     display: none;
+  }
+
+  .projects-layout .totals-section .section-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 0;
+  }
+
+  .projects-layout .totals-section .parameter-row {
+    gap: 6px;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .projects-layout .totals-section .parameter-label {
+    display: inline;
+  }
+
+  .projects-layout .totals-section .value-field {
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
   }
 
   .projects-layout .section-body,

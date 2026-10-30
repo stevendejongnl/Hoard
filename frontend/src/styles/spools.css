@@ -322,7 +322,37 @@
     display: contents;
   }
 
-  .summary-section,
+  .summary-section {
+    padding: 8px 16px;
+    background: var(--chrome-color);
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .summary-section .section-header {
+    display: none;
+  }
+
+  .summary-section .section-body {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 0;
+  }
+
+  .summary-section .parameter-row {
+    gap: 6px;
+    min-height: 0;
+    padding: 0;
+  }
+
+  .summary-section .value-field {
+    min-width: 0;
+    height: auto;
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+
   .filters-section .section-header,
   .filter-controls .parameter-label,
   .spools-title-strip,
