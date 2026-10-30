@@ -12,7 +12,7 @@ The [wiki](https://github.com/stevendejongnl/Hoard/wiki) has the guides: install
 | **Projects** | **Spools** |
 | ![The projects as cards with their totals](docs/screenshots/projects.png) | ![The spools with the remaining filament](docs/screenshots/spools.png) |
 
-It works on a phone as well, and installs as an app (PWA).
+It works on a phone as well, with the same features as on desktop: printer power and the other switches, starting a print, the cost predictor, search and the camera buttons. It installs as an app (PWA).
 
 | Dashboard | History | Spools | Edit a spool |
 |---|---|---|---|
