@@ -31,6 +31,7 @@ from app.routes import (
     push,
     search,
     spools,
+    system,
     temperatures,
     webcams,
 )
@@ -111,6 +112,7 @@ _ROUTERS = (
     prints.router,
     push.router,
     temperatures.router,
+    system.router,
 )
 
 # Real files of the built frontend (PWA manifest, sw.js, icons) are served as they are, every other path gets
