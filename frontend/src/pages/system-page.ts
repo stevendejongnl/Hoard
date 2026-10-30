@@ -165,12 +165,20 @@ export class SystemPage extends LitElement {
     return html`<div class="system-sections">${sections.map((section) => this.renderSection(section))}</div>`
   }
 
-  private renderStrip(): TemplateResult {
+  private renderChooseRowsButton(report: SystemReport): TemplateResult | typeof nothing {
+    if (report.sections.length === 0) return nothing
+    return html`<button
+      class="button small choose-rows-button"
+      @click=${() => (this.isChoosingRows = !this.isChoosingRows)}
+    >
+      ${this.isChoosingRows ? 'Done' : 'Choose rows'}
+    </button>`
+  }
+
+  private renderStrip(report: SystemReport): TemplateResult {
     return html`<div class="system-strip">
       <span class="system-title">System</span>
-      <button class="button small choose-rows-button" @click=${() => (this.isChoosingRows = !this.isChoosingRows)}>
-        ${this.isChoosingRows ? 'Done' : 'Choose rows'}
-      </button>
+      ${this.renderChooseRowsButton(report)}
     </div>`
   }
 
@@ -178,7 +186,7 @@ export class SystemPage extends LitElement {
     if (this.loadState === 'loading') return html`<div class="state-message">Loading system…</div>`
     if (!this.report) return html`<div class="state-message">Could not load the system information</div>`
     return html`<div class="system-layout">
-      ${this.renderStrip()} ${this.renderFaults(this.report)} ${this.renderSections(this.report)}
+      ${this.renderStrip(this.report)} ${this.renderFaults(this.report)} ${this.renderSections(this.report)}
     </div>`
   }
 }

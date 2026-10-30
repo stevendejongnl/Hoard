@@ -65,8 +65,15 @@ describe('canStartPull', () => {
   })
 
   it('does not start while text is being edited, because a reload would lose it', () => {
-    const boundary = createPage('<textarea></textarea><button id="target"></button>')
+    const boundary = createPage('<markdown-editor><textarea></textarea></markdown-editor><button id="target"></button>')
     expect(canStartPull(boundary.querySelector('#target')!, boundary)).toBe(false)
+  })
+
+  it('starts on a page with a closed form, like the sheet of the spools page', () => {
+    const boundary = createPage(
+      '<aside class="spools-details"><textarea></textarea></aside><button id="target"></button>',
+    )
+    expect(canStartPull(boundary.querySelector('#target')!, boundary)).toBe(true)
   })
 
   it('does not start while a field has focus', () => {

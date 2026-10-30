@@ -170,6 +170,11 @@
     display: none;
   }
 
+  /* with no title and no button there is nothing to show in the strip */
+  .system-strip:not(:has(button)) {
+    display: none;
+  }
+
   .system-strip .choose-rows-button {
     min-height: 36px;
   }

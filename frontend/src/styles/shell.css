@@ -171,6 +171,33 @@ hoard-app {
   display: block;
 }
 
+/* Pull to refresh: comes down from under the top bar while the page is pulled. */
+.pull-indicator {
+  position: fixed;
+  top: 40px;
+  left: 50%;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--strong-border-color);
+  border-radius: 50%;
+  background: var(--chrome-color);
+  color: var(--muted-text-color);
+}
+
+.pull-indicator.ready {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The browser's own pull to refresh would reload the whole app on top of this one. */
+html,
+body {
+  overscroll-behavior-y: contain;
+}
+
 @media (max-width: 800px) {
   .app-content {
     overflow-y: auto;
