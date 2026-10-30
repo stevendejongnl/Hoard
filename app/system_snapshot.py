@@ -67,6 +67,10 @@ def _format_with_unit(value: Any, unit: str, decimals: int = 1) -> str | None:
     return f"{value:.{decimals}f} {unit}"
 
 
+def _format_number(value: Any) -> str | None:
+    return None if value is None else f"{value:.2f}"
+
+
 def _format_duration(seconds: Any) -> str | None:
     if seconds is None:
         return None
@@ -148,7 +152,7 @@ def _build_host(readings: dict[str, Any]) -> Section | None:
         ("cpu_load", "CPU load", _format_with_unit(usage.get("cpu"), "%")),
         *_core_rows(proc_stats),
         ("memory_used", "Memory used", _format_percentage_used(proc_stats.get("system_memory", {}))),
-        ("system_load", "System load", stats.get("sysload")),
+        ("system_load", "System load", _format_number(stats.get("sysload"))),
         ("uptime", "Uptime", _format_duration(proc_stats.get("system_uptime"))),
         ("connections", "Websocket connections", proc_stats.get("websocket_connections")),
         *_throttle_rows(proc_stats),
