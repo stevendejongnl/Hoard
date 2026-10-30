@@ -171,6 +171,27 @@ async def _create_push_subscriptions(connection: aiosqlite.Connection) -> None:
     """)
 
 
+async def _create_system_tables(connection: aiosqlite.Connection) -> None:
+    await connection.execute("""
+        CREATE TABLE IF NOT EXISTS system_faults (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            key        TEXT NOT NULL,
+            severity   TEXT NOT NULL,
+            source     TEXT NOT NULL,
+            title      TEXT NOT NULL,
+            detail     TEXT NOT NULL,
+            first_seen INTEGER NOT NULL,
+            last_seen  INTEGER NOT NULL,
+            cleared_at INTEGER
+        )
+    """)
+    await connection.execute("""
+        CREATE TABLE IF NOT EXISTS hidden_system_rows (
+            key TEXT PRIMARY KEY
+        )
+    """)
+
+
 async def _create_indexes(connection: aiosqlite.Connection) -> None:
     await connection.execute("CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)")
     await connection.execute("CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)")
@@ -280,11 +301,73 @@ class Database:
             await connection.commit()
             await _create_push_subscriptions(connection)
             await connection.commit()
+            await _create_system_tables(connection)
+            await connection.commit()
             await _create_indexes(connection)
             await connection.commit()
 
     def open_connection(self) -> aiosqlite.Connection:
         return self._connect(self.path, timeout=self._timeout)
+
+    async def record_system_faults(self, faults: list[dict[str, Any]], now: int) -> None:
+        """Brings the open faults in line with what is wrong now: new ones start, gone ones are cleared."""
+        async with self.open_connection() as connection:
+            await self._clear_gone_system_faults(connection, [fault["key"] for fault in faults], now)
+            for fault in faults:
+                await self._save_system_fault(connection, fault, now)
+            await connection.commit()
+
+    async def _clear_gone_system_faults(self, connection: aiosqlite.Connection, keys: list[str], now: int) -> None:
+        placeholders = ",".join("?" for _ in keys)
+        await connection.execute(
+            f"UPDATE system_faults SET cleared_at = ? WHERE cleared_at IS NULL AND key NOT IN ({placeholders})",
+            (now, *keys),
+        )
+
+    async def _save_system_fault(self, connection: aiosqlite.Connection, fault: dict[str, Any], now: int) -> None:
+        cursor = await connection.execute(
+            "UPDATE system_faults SET last_seen = ?, detail = ? WHERE cleared_at IS NULL AND key = ?",
+            (now, fault["detail"], fault["key"]),
+        )
+        if cursor.rowcount > 0:
+            return
+        await connection.execute(
+            """INSERT INTO system_faults (key, severity, source, title, detail, first_seen, last_seen)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (fault["key"], fault["severity"], fault["source"], fault["title"], fault["detail"], now, now),
+        )
+
+    async def list_system_faults(self, limit: int = 100) -> list[dict[str, Any]]:
+        async with self.open_connection() as connection:
+            connection.row_factory = aiosqlite.Row
+            async with connection.execute(
+                "SELECT * FROM system_faults ORDER BY first_seen DESC, id DESC LIMIT ?", (limit,)
+            ) as cursor:
+                return [dict(row) for row in await cursor.fetchall()]
+
+    async def prune_system_faults(self, keep: int = 500) -> None:
+        async with self.open_connection() as connection:
+            await connection.execute(
+                """DELETE FROM system_faults WHERE cleared_at IS NOT NULL AND id NOT IN
+                   (SELECT id FROM system_faults ORDER BY first_seen DESC, id DESC LIMIT ?)""",
+                (keep,),
+            )
+            await connection.commit()
+
+    async def list_hidden_system_rows(self) -> list[str]:
+        async with (
+            self.open_connection() as connection,
+            connection.execute("SELECT key FROM hidden_system_rows") as cursor,
+        ):
+            return [row[0] for row in await cursor.fetchall()]
+
+    async def set_hidden_system_rows(self, keys: list[str]) -> None:
+        async with self.open_connection() as connection:
+            await connection.execute("DELETE FROM hidden_system_rows")
+            await connection.executemany(
+                "INSERT OR IGNORE INTO hidden_system_rows (key) VALUES (?)", [(key,) for key in keys]
+            )
+            await connection.commit()
 
     async def get_active_spool(self) -> dict[str, Any] | None:
         async with self.open_connection() as connection:

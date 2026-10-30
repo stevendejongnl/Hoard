@@ -32,6 +32,7 @@ SHOWN_OBJECT_PREFIXES = (
     *FILAMENT_PREFIXES,
     "toolhead",
     "system_stats",
+    "print_stats",
 )
 UNDER_VOLTAGE_FLAGS = ("Under-Voltage Detected", "Previously Under-Volted")
 THROTTLE_ROWS = (
