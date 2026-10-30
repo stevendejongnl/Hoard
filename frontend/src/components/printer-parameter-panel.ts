@@ -19,6 +19,7 @@ import {
   formatSpentDuration,
 } from '../print-job-metrics'
 import type { HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
+import { askForConfirmation } from './confirmation-dialog'
 
 const NO_VALUE = '—'
 const SECTION_CHEVRON_SIZE = 14
@@ -45,7 +46,7 @@ export class PrinterParameterPanel extends LitElement {
   @property({ attribute: false }) cancelPrint: () => Promise<unknown> = cancelPrintRequest
   @property({ attribute: false }) switchPower: (turnOn: boolean) => Promise<unknown> = (turnOn) =>
     turnOn ? powerOn() : powerOff()
-  @property({ attribute: false }) confirmAction: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) confirmAction: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) loadSwitches: () => Promise<HomeAssistantSwitch[]> = getSwitches
   @property({ attribute: false }) changeSwitch: (key: string, turnOn: boolean) => Promise<unknown> = setSwitchState
 
@@ -76,13 +77,13 @@ export class PrinterParameterPanel extends LitElement {
     }
   }
 
-  private confirmSwitchOff(label: string): boolean {
+  private confirmSwitchOff(label: string): Promise<boolean> {
     const warning = this.isPrintActive() ? 'A print is running. ' : ''
     return this.confirmAction(`${warning}Switch off ${label}?`)
   }
 
   private async togglePower(turnOn: boolean): Promise<void> {
-    if (!turnOn && !this.confirmSwitchOff('Printer power')) return
+    if (!turnOn && !(await this.confirmSwitchOff('Printer power'))) return
     await this.switchPower(turnOn)
   }
 
@@ -92,7 +93,7 @@ export class PrinterParameterPanel extends LitElement {
 
   private async toggleSwitch(item: HomeAssistantSwitch): Promise<void> {
     const turnOn = item.state !== 'on'
-    if (!turnOn && !this.confirmSwitchOff(item.label)) return
+    if (!turnOn && !(await this.confirmSwitchOff(item.label))) return
     try {
       await this.changeSwitch(item.key, turnOn)
       this.replaceSwitchState(item.key, turnOn ? 'on' : 'off')
@@ -261,7 +262,7 @@ export class PrinterParameterPanel extends LitElement {
   }
 
   private async handleCancel(): Promise<void> {
-    if (!this.confirmAction(CANCEL_QUESTION)) return
+    if (!(await this.confirmAction(CANCEL_QUESTION))) return
     await this.cancelPrint()
   }
 

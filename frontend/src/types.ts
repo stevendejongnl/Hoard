@@ -20,7 +20,7 @@ export interface Temps {
 export interface Power {
   watts: number
   eur_per_kwh: number
-  switch: 'on' | 'off' | 'unknown'
+  switch: string
 }
 
 /** A switch from Home Assistant that the app controls, as it is set in HA_SWITCHES. */

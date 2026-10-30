@@ -11,6 +11,7 @@ import { followNavigationLink } from '../navigation'
 import { formatCost, formatDuration, formatFilament } from '../project-list'
 import { router } from '../router'
 import type { PrintRecord, Project, ProjectFile, ProjectLink } from '../types'
+import { askForConfirmation } from '../components/confirmation-dialog'
 import '../styles/projects.css'
 import '../styles/project-detail.css'
 
@@ -73,7 +74,7 @@ export class ProjectDetailPage extends LitElement {
     linkIdentifier: number,
     clearCover: boolean,
   ) => Promise<unknown> = deleteProjectLink
-  @property({ attribute: false }) confirm: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) confirm: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) askText: (message: string) => string | null = (message) => window.prompt(message)
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
 
@@ -109,7 +110,7 @@ export class ProjectDetailPage extends LitElement {
 
   private async deleteThisProject(): Promise<void> {
     if (!this.project) return
-    if (!this.confirm(`Delete project "${this.project.name}"? This cannot be undone.`)) return
+    if (!(await this.confirm(`Delete project "${this.project.name}"? This cannot be undone.`))) return
     await this.deleteProject(this.project.id)
     this.navigate('/projects')
   }
@@ -131,7 +132,8 @@ export class ProjectDetailPage extends LitElement {
     const project = this.project
     if (!project) return
     const shouldAsk = this.shouldAskAboutCover(project, linkIdentifier)
-    const clearCover = shouldAsk && this.confirm('This link provided the cover image. Also remove the cover image?')
+    const clearCover =
+      shouldAsk && (await this.confirm('This link provided the cover image. Also remove the cover image?'))
     await this.removeLink(project.id, linkIdentifier, clearCover)
     this.project = {
       ...project,

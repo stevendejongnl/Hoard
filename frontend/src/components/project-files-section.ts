@@ -4,6 +4,7 @@ import { customElement, property, state } from 'lit/decorators.js'
 import { addProjectFile, deleteProjectFile, getFiles, startPrint, uploadProjectStl } from '../api'
 import { renderIcon } from '../icons'
 import type { ProjectFile } from '../types'
+import { askForConfirmation } from './confirmation-dialog'
 
 const MODEL_FILE_TYPES = '.stl,.3mf,.scad,.step,.stp,.obj,.f3d,.FCStd'
 
@@ -35,7 +36,7 @@ export class ProjectFilesSection extends LitElement {
     deleteProjectFile(this.projectId, fileIdentifier)
 
   @property({ attribute: false }) printFile: (filename: string) => Promise<unknown> = startPrint
-  @property({ attribute: false }) confirm: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) confirm: (message: string) => Promise<boolean> = askForConfirmation
 
   @state() private isPickerOpen = false
   @state() private printMessage = ''
@@ -84,7 +85,7 @@ export class ProjectFilesSection extends LitElement {
 
   private async printGcodeFile(file: ProjectFile): Promise<void> {
     const name = findBaseName(file.filename)
-    if (!this.confirm(`Start printing ${name}?`)) return
+    if (!(await this.confirm(`Start printing ${name}?`))) return
     this.printMessage = await this.tryPrint(file.filename, name)
   }
 

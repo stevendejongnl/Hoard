@@ -31,7 +31,7 @@ async function createSummary(calls: Calls, properties: Partial<PhonePrintSummary
   summary.pausePrint = async () => void (calls.paused += 1)
   summary.resumePrint = async () => void (calls.resumed += 1)
   summary.cancelPrint = async () => void (calls.cancelled += 1)
-  summary.confirmAction = (message) => {
+  summary.confirmAction = async (message) => {
     calls.confirmations.push(message)
     return true
   }

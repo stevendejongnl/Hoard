@@ -43,7 +43,7 @@ async function createPanel(
   panel.resumePrint = async () => void (calls.resumed += 1)
   panel.cancelPrint = async () => void (calls.cancelled += 1)
   panel.switchPower = async (turnOn) => void calls.powerSwitches.push(turnOn)
-  panel.confirmAction = (message) => {
+  panel.confirmAction = async (message) => {
     calls.confirmations.push(message)
     return isConfirmed
   }

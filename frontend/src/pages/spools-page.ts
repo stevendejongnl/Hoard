@@ -29,6 +29,7 @@ import {
 } from '../spool-list'
 import type { ShowFilter, SpoolForm } from '../spool-list'
 import { normalizeHexadecimalColor } from '../theme'
+import { askForConfirmation } from '../components/confirmation-dialog'
 import '../styles/spools.css'
 
 type LoadState = 'loading' | 'ready' | 'error'
@@ -51,7 +52,7 @@ export class SpoolsPage extends LitElement {
   @property({ attribute: false }) createSpool: (data: Partial<Spool>) => Promise<Spool> = createSpoolRequest
   @property({ attribute: false }) updateSpool: (id: number, data: Partial<Spool>) => Promise<Spool> = updateSpoolRequest
   @property({ attribute: false }) deleteSpool: (id: number) => Promise<DeleteResponse> = deleteSpoolRequest
-  @property({ attribute: false }) confirmAction: (message: string) => boolean = (message) => window.confirm(message)
+  @property({ attribute: false }) confirmAction: (message: string) => Promise<boolean> = askForConfirmation
 
   /** Reads the id of the next NFC tag, or is null where the browser cannot read tags. */
   @property({ attribute: false }) readTag: (() => Promise<TagReading>) | null = createDefaultTagReader()
@@ -158,7 +159,7 @@ export class SpoolsPage extends LitElement {
   private async deleteSelectedSpool(): Promise<void> {
     const selected = this.findSelectedSpool()
     if (!selected) return
-    if (!this.confirmAction(`Delete ${buildSpoolName(selected)}?`)) return
+    if (!(await this.confirmAction(`Delete ${buildSpoolName(selected)}?`))) return
     try {
       await this.removeSpool(selected)
     } catch {
