@@ -561,9 +561,32 @@ cost-predictor-panel .section-header {
     place-items: center;
   }
 
-  .dashboard-phone .camera-overlay,
-  .dashboard-phone .camera-buttons {
+  .dashboard-phone .camera-overlay {
     display: none;
+  }
+
+  .dashboard-phone .camera-buttons {
+    top: 8px;
+    right: 8px;
+    flex-direction: row;
+  }
+
+  .dashboard-phone .camera-buttons .button {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
+  }
+
+  .dashboard-phone status-bar {
+    display: block;
+    flex: none;
+  }
+
+  .dashboard-phone .status-bar {
+    flex-wrap: wrap;
+    row-gap: 0;
+    height: auto;
+    min-height: 44px;
   }
 
   .dashboard-phone printer-parameter-panel {

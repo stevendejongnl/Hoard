@@ -198,9 +198,14 @@ hoard-app {
   }
 
   .top-navigation .brand-name,
-  .top-navigation .search-button,
   .top-navigation .emergency-stop .label {
     display: none;
+  }
+
+  .top-navigation .search-button {
+    width: 44px;
+    min-height: 44px;
+    padding: 0;
   }
 
   .top-navigation .phone-title {
