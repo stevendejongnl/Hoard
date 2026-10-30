@@ -337,3 +337,35 @@ describe('phone layout', () => {
     expect(panel.querySelector('.parameter-footer')).not.toBeNull()
   })
 })
+
+describe('printer power switch', () => {
+  it('warns about the running print before switching off', async () => {
+    const calls = createCalls()
+    const panel = await createPanel(calls)
+    await press(panel, 'button.power-switch')
+    expect(calls.confirmations).toEqual(['A print is running. Switch off Printer power?'])
+    expect(calls.powerSwitches).toEqual([false])
+  })
+
+  it('only asks when no print is running', async () => {
+    const calls = createCalls()
+    const panel = await createPanel(calls, { printerState: { ...printingState, state: 'ready' } })
+    await press(panel, 'button.power-switch')
+    expect(calls.confirmations).toEqual(['Switch off Printer power?'])
+  })
+
+  it('stays on when the question is declined', async () => {
+    const calls = createCalls()
+    const panel = await createPanel(calls, {}, false)
+    await press(panel, 'button.power-switch')
+    expect(calls.powerSwitches).toEqual([])
+  })
+
+  it('switches on without asking', async () => {
+    const calls = createCalls()
+    const panel = await createPanel(calls, { power: { ...power, switch: 'off' } })
+    await press(panel, 'button.power-switch')
+    expect(calls.confirmations).toEqual([])
+    expect(calls.powerSwitches).toEqual([true])
+  })
+})
