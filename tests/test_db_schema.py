@@ -232,6 +232,32 @@ FRESH_SCHEMA: dict[str, dict] = {
         "table": "projects",
         "type": "table",
     },
+    "hidden_system_rows": {
+        "type": "table",
+        "table": "hidden_system_rows",
+        "sql": "CREATE TABLE hidden_system_rows ( key TEXT PRIMARY KEY )",
+        "columns": [("key", "TEXT", 0, None, 1)],
+    },
+    "system_faults": {
+        "type": "table",
+        "table": "system_faults",
+        "sql": "CREATE TABLE system_faults ( id INTEGER PRIMARY KEY "
+        "AUTOINCREMENT, key TEXT NOT NULL, severity TEXT NOT NULL, source "
+        "TEXT NOT NULL, title TEXT NOT NULL, detail TEXT NOT NULL, "
+        "first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL, "
+        "cleared_at INTEGER )",
+        "columns": [
+            ("id", "INTEGER", 0, None, 1),
+            ("key", "TEXT", 1, None, 0),
+            ("severity", "TEXT", 1, None, 0),
+            ("source", "TEXT", 1, None, 0),
+            ("title", "TEXT", 1, None, 0),
+            ("detail", "TEXT", 1, None, 0),
+            ("first_seen", "INTEGER", 1, None, 0),
+            ("last_seen", "INTEGER", 1, None, 0),
+            ("cleared_at", "INTEGER", 0, None, 0),
+        ],
+    },
     "push_subscriptions": {
         "columns": [
             ("endpoint", "TEXT", 0, None, 1),
@@ -380,6 +406,32 @@ MIGRATED_SCHEMA: dict[str, dict] = {
         "notes TEXT, created_at INTEGER NOT NULL , cover_url TEXT, cover_link_id INTEGER)",
         "table": "projects",
         "type": "table",
+    },
+    "hidden_system_rows": {
+        "type": "table",
+        "table": "hidden_system_rows",
+        "sql": "CREATE TABLE hidden_system_rows ( key TEXT PRIMARY KEY )",
+        "columns": [("key", "TEXT", 0, None, 1)],
+    },
+    "system_faults": {
+        "type": "table",
+        "table": "system_faults",
+        "sql": "CREATE TABLE system_faults ( id INTEGER PRIMARY KEY "
+        "AUTOINCREMENT, key TEXT NOT NULL, severity TEXT NOT NULL, source "
+        "TEXT NOT NULL, title TEXT NOT NULL, detail TEXT NOT NULL, "
+        "first_seen INTEGER NOT NULL, last_seen INTEGER NOT NULL, "
+        "cleared_at INTEGER )",
+        "columns": [
+            ("id", "INTEGER", 0, None, 1),
+            ("key", "TEXT", 1, None, 0),
+            ("severity", "TEXT", 1, None, 0),
+            ("source", "TEXT", 1, None, 0),
+            ("title", "TEXT", 1, None, 0),
+            ("detail", "TEXT", 1, None, 0),
+            ("first_seen", "INTEGER", 1, None, 0),
+            ("last_seen", "INTEGER", 1, None, 0),
+            ("cleared_at", "INTEGER", 0, None, 0),
+        ],
     },
     "push_subscriptions": {
         "columns": [

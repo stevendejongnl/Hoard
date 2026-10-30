@@ -11,7 +11,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import cache, db, home_assistant, recorder, server_sent_events
+from app import cache, db, home_assistant, recorder, server_sent_events, system_faults
 from app.config import settings
 from app.influx import influx
 from app.mcp.api_request import InProcessApi
@@ -63,6 +63,7 @@ def _start_background_tasks() -> list[asyncio.Task]:
         asyncio.create_task(server_sent_events._poll_ha()),
         asyncio.create_task(server_sent_events._poll_pi_stats()),
         asyncio.create_task(server_sent_events._poll_printer_state()),
+        asyncio.create_task(system_faults.watch_system_faults()),
     ]
     # Full backfill on startup, then quick reconcile every 5 minutes
     asyncio.create_task(recorder.startup_reconcile())
