@@ -1,4 +1,4 @@
-import type { GcodeFile, HomeAssistantSwitch, PredictResult, PrintRecord, Spool } from './types'
+import type { GcodeFile, HomeAssistantSwitch, PredictResult, PrintRecord, Spool, SystemReport } from './types'
 import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
@@ -110,6 +110,13 @@ export const powerOff = () => fetchJson('/api/control/power/off', { method: 'POS
 export const getSwitches = () => fetchJson<HomeAssistantSwitch[]>('/api/control/switches')
 export const setSwitchState = (key: string, turnOn: boolean) =>
   fetchJson(`/api/control/switches/${encodeURIComponent(key)}/${turnOn ? 'on' : 'off'}`, { method: 'POST' })
+export const getSystem = () => fetchJson<SystemReport>('/api/system')
+export const setHiddenSystemRows = (keys: string[]) =>
+  fetchJson('/api/system/hidden', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ keys }),
+  })
 export const firmwareRestart = () => fetchJson('/api/control/firmware_restart', { method: 'POST' })
 export const emergencyStop = () => fetchJson('/api/control/emergency_stop', { method: 'POST' })
 export const startPrint = (filename: string) =>

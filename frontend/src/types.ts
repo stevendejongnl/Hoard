@@ -229,3 +229,37 @@ export interface GcodeMeta {
   project_name?: string
   [key: string]: string | number | undefined
 }
+
+export interface SystemRow {
+  key: string
+  label: string
+  value: string
+}
+
+export interface SystemSection {
+  key: string
+  title: string
+  rows: SystemRow[]
+}
+
+export interface SystemFault {
+  key: string
+  severity: 'error' | 'warning'
+  source: string
+  title: string
+  detail: string
+}
+
+export interface FaultRecord extends SystemFault {
+  first_seen: number
+  last_seen: number
+  cleared_at: number | null
+}
+
+export interface SystemReport {
+  reachable: boolean
+  sections: SystemSection[]
+  active_faults: SystemFault[]
+  fault_history: FaultRecord[]
+  hidden: string[]
+}

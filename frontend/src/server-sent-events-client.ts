@@ -6,6 +6,7 @@ export type ServerSentEventPayload =
   | { type: 'power'; data: Power }
   | { type: 'pi_stats'; data: PiStats }
   | { type: 'history_updated'; data: { job_id: string; filename: string } }
+  | { type: 'system_faults'; data: { active_count: number } }
 
 export interface ConnectionStatus {
   isConnected: boolean
@@ -33,7 +34,14 @@ type StatusHandler = (status: ConnectionStatus) => void
 
 const STREAM_URL = '/stream'
 const RECONNECT_DELAY_MILLISECONDS = 3000
-const EVENT_NAMES: ServerSentEventPayload['type'][] = ['printer_state', 'temps', 'power', 'pi_stats', 'history_updated']
+const EVENT_NAMES: ServerSentEventPayload['type'][] = [
+  'printer_state',
+  'temps',
+  'power',
+  'pi_stats',
+  'history_updated',
+  'system_faults',
+]
 
 /** Returns the parsed value, or undefined when the text is not valid JSON. */
 function parseJsonText(text: string): unknown {

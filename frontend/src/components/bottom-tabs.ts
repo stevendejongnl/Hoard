@@ -1,4 +1,4 @@
-import { LitElement, html } from 'lit'
+import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { renderIcon } from '../icons'
@@ -14,18 +14,25 @@ const ICON_FOR_SECTION: Record<NavigationItem['section'], IconName> = {
   history: 'history',
   projects: 'projects',
   spools: 'spools',
+  system: 'system',
 }
 
 const navigateWithRouter: NavigateFunction = (path) => router.navigate(path as Parameters<typeof router.navigate>[0])
 
-/** The phone's navigation: the same four sections as the top bar tabs, along the bottom edge. */
+/** The phone's navigation: the same sections as the top bar tabs, along the bottom edge. */
 @customElement('bottom-tabs')
 export class BottomTabs extends LitElement {
   @property({ type: String }) route = '/'
+  @property({ type: Number }) faultCount = 0
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
 
   createRenderRoot() {
     return this
+  }
+
+  private renderFaultCount(item: NavigationItem): TemplateResult | typeof nothing {
+    if (item.section !== 'system' || this.faultCount === 0) return nothing
+    return html`<span class="fault-count" aria-label="${this.faultCount} active faults">${this.faultCount}</span>`
   }
 
   private renderTab(item: NavigationItem, currentSection: string): TemplateResult {
@@ -35,7 +42,7 @@ export class BottomTabs extends LitElement {
       href=${item.path}
       aria-current=${isCurrent ? 'page' : 'false'}
       @click=${(click: MouseEvent) => followNavigationLink(click, item.path, this.navigate)}
-      >${renderIcon(ICON_FOR_SECTION[item.section], 22)}<span>${item.label}</span></a
+      >${renderIcon(ICON_FOR_SECTION[item.section], 22)}<span>${item.label}</span>${this.renderFaultCount(item)}</a
     >`
   }
 

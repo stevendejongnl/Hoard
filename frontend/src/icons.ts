@@ -23,6 +23,8 @@ const ICON_SHAPES = {
   history: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   projects: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
   spools: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/>',
+  system:
+    '<rect x="5" y="5" width="14" height="14" rx="1"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
   cube: '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5"/><path d="M12 13v8"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
   nfc: '<path d="M6 8.3a8 8 0 0 1 0 7.4M10 6a12 12 0 0 1 0 12M14 3.7a16 16 0 0 1 0 16.6"/>',
