@@ -315,3 +315,25 @@ describe('extra switches', () => {
     expect(loads).toBe(2)
   })
 })
+
+describe('phone layout', () => {
+  function readSectionTitles(panel: PrinterParameterPanel): (string | undefined)[] {
+    return [...panel.querySelectorAll('.section-header')].map((header) => header.textContent?.trim())
+  }
+
+  it('starts with power, because that is what a phone reaches for', async () => {
+    const panel = await createPanel(createCalls(), { isPhoneLayout: true })
+    expect(readSectionTitles(panel)).toEqual(['Power & energy', 'Print job', 'Temperatures', 'Raspberry Pi'])
+  })
+
+  it('leaves pause and cancel to the print summary', async () => {
+    const panel = await createPanel(createCalls(), { isPhoneLayout: true })
+    expect(panel.querySelector('.parameter-footer')).toBeNull()
+  })
+
+  it('keeps the desktop order and buttons otherwise', async () => {
+    const panel = await createPanel(createCalls())
+    expect(readSectionTitles(panel)).toEqual(['Print job', 'Temperatures', 'Power & energy', 'Raspberry Pi'])
+    expect(panel.querySelector('.parameter-footer')).not.toBeNull()
+  })
+})

@@ -122,13 +122,26 @@ describe('desktop dashboard', () => {
 })
 
 describe('phone dashboard', () => {
-  it('shows the print summary, the temperatures and the camera, and no side panels', async () => {
+  it('shows the print summary, the temperatures and the camera', async () => {
     const { page } = await createPage({ isPhoneLayout: () => true })
     for (const tag of ['phone-print-summary', 'phone-temperature-section', 'camera-panel']) {
       expect(page.querySelector(tag), tag).not.toBeNull()
     }
-    expect(page.querySelector('printer-parameter-panel')).toBeNull()
-    expect(page.querySelector('dashboard-lists-panel')).toBeNull()
+  })
+
+  it('shows the parameter sections under the camera', async () => {
+    const { page, send } = await createPage({ isPhoneLayout: () => true })
+    await deliverEverything(page, send)
+    const panel = page.querySelector('.dashboard-phone camera-panel ~ printer-parameter-panel')
+    expect(panel?.querySelector('button[aria-label="Printer power"]')).not.toBeNull()
+    expect(panel?.querySelector('[data-field="cpu-temperature"]')?.textContent).toContain('37.6')
+  })
+
+  it('offers pause and cancel once, in the summary', async () => {
+    const { page, send } = await createPage({ isPhoneLayout: () => true })
+    await deliverEverything(page, send)
+    expect(page.querySelectorAll('button.pause-button')).toHaveLength(1)
+    expect(page.querySelectorAll('button.cancel-button')).toHaveLength(1)
   })
 
   it('shows when the print will be done', async () => {
