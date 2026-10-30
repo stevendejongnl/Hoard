@@ -1,4 +1,4 @@
-export type Route = '/' | '/history' | '/spools' | '/projects' | `/projects/${string}` | `/prints/${string}`
+export type Route = '/' | '/history' | '/spools' | '/system' | '/projects' | `/projects/${string}` | `/prints/${string}`
 
 /** What the router needs from the browser, so a test can hand it a fake one. */
 export interface RouterEnvironment {
@@ -29,6 +29,7 @@ export class Router {
     const pathname = this.environment.readPathname()
     if (pathname === '/history') return '/history'
     if (pathname === '/spools') return '/spools'
+    if (pathname === '/system') return '/system'
     if (pathname === '/projects') return '/projects'
     if (pathname.startsWith(PROJECT_PREFIX)) return pathname as `/projects/${string}`
     if (pathname.startsWith(PRINT_PREFIX)) return pathname as `/prints/${string}`

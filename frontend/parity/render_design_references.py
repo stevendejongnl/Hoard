@@ -50,6 +50,8 @@ SCREENS = {
     "FileBrowser.dc.html": ("file-browser-desktop", DESKTOP_SIZE),
     "PrintReady.dc.html": ("print-ready-desktop", DESKTOP_SIZE),
     "SpoolSheet.dc.html": ("spool-sheet-phone", PHONE_SIZE),
+    "System.dc.html": ("system-desktop", DESKTOP_SIZE),
+    "SystemMobile.dc.html": ("system-phone", PHONE_SIZE),
 }
 
 FONT_FACES = [

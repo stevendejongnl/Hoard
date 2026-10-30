@@ -34,6 +34,7 @@ export class TopNavigation extends LitElement {
   @property({ type: String }) route = '/'
   /** the printer state from the stream: printing, paused, error, standby, ... */
   @property({ type: String }) printerState = ''
+  @property({ type: Number }) faultCount = 0
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
   @property({ attribute: false }) confirmEmergencyStop: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) stopEmergency: () => Promise<unknown> = () => emergencyStop()
@@ -97,6 +98,11 @@ export class TopNavigation extends LitElement {
     </button>`
   }
 
+  private renderFaultCount(item: NavigationItem): TemplateResult | typeof nothing {
+    if (item.section !== 'system' || this.faultCount === 0) return nothing
+    return html`<span class="fault-count" aria-label="${this.faultCount} active faults">${this.faultCount}</span>`
+  }
+
   private renderTab(item: NavigationItem, currentSection: string): TemplateResult {
     const isCurrent = item.section === currentSection
     return html`<a
@@ -104,7 +110,7 @@ export class TopNavigation extends LitElement {
       href=${item.path}
       aria-current=${isCurrent ? 'page' : 'false'}
       @click=${(click: MouseEvent) => this.followLink(click, item.path)}
-      >${item.label}</a
+      >${item.label}${this.renderFaultCount(item)}</a
     >`
   }
 

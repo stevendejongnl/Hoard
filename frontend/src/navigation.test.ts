@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { NAVIGATION_ITEMS, findNavigationSection, followNavigationLink } from './navigation'
 
 describe('NAVIGATION_ITEMS', () => {
-  it('lists the four sections in order with their paths and labels', () => {
+  it('lists the five sections in order with their paths and labels', () => {
     expect(NAVIGATION_ITEMS).toEqual([
       { section: 'dashboard', path: '/', label: 'Dashboard' },
       { section: 'history', path: '/history', label: 'History' },
       { section: 'projects', path: '/projects', label: 'Projects' },
       { section: 'spools', path: '/spools', label: 'Spools' },
+      { section: 'system', path: '/system', label: 'System' },
     ])
   })
 })

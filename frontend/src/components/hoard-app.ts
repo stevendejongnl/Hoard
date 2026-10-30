@@ -12,6 +12,7 @@ import './top-navigation'
 import '../pages/dashboard-page'
 import '../pages/history-page'
 import '../pages/spools-page'
+import '../pages/system-page'
 import '../pages/projects-page'
 import '../pages/project-detail-page'
 import '../pages/print-detail-page'
@@ -26,6 +27,7 @@ function formatLocalClockTime(date: Date): string {
 function renderPageForRoute(route: string): TemplateResult {
   if (route === '/history') return html`<history-page></history-page>`
   if (route === '/spools') return html`<spools-page></spools-page>`
+  if (route === '/system') return html`<system-page></system-page>`
   if (route === '/projects') return html`<projects-page></projects-page>`
   if (route.startsWith('/projects/')) return html`<project-detail-page></project-detail-page>`
   if (route.startsWith('/prints/')) return html`<print-detail-page></print-detail-page>`
@@ -48,6 +50,7 @@ export class HoardApp extends LitElement {
 
   @state() private route = '/'
   @state() private printerState = ''
+  @state() private faultCount = 0
 
   private stopListeningToStream: StopFunction | null = null
   private stopListeningToRoute: StopFunction | null = null
@@ -70,6 +73,7 @@ export class HoardApp extends LitElement {
   }
 
   private handlePayload(payload: ServerSentEventPayload): void {
+    if (payload.type === 'system_faults') this.faultCount = payload.data.active_count
     if (payload.type !== 'printer_state') return
     this.printerState = payload.data.state
     this.setDocumentTitle(buildDocumentTitle(payload.data, new Date(), formatLocalClockTime))
@@ -77,10 +81,14 @@ export class HoardApp extends LitElement {
 
   render(): TemplateResult {
     return html`
-      <top-navigation route=${this.route} printerstate=${this.printerState}></top-navigation>
+      <top-navigation
+        route=${this.route}
+        printerstate=${this.printerState}
+        .faultCount=${this.faultCount}
+      ></top-navigation>
       <main class="app-content">${this.renderPage(this.route)}</main>
       <status-bar printerstate=${this.printerState}></status-bar>
-      <bottom-tabs route=${this.route}></bottom-tabs>
+      <bottom-tabs route=${this.route} .faultCount=${this.faultCount}></bottom-tabs>
     `
   }
 }

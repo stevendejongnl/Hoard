@@ -1,0 +1,210 @@
+/* The system page: what the host and boards report, and what is or was wrong. */
+
+.system-layout {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--panel-color);
+}
+
+.system-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.system-title {
+  font: 600 15px var(--font-family);
+}
+
+.button.choose-rows-button {
+  font-size: 13px;
+}
+
+.system-faults {
+  border-bottom: 1px solid var(--border-color);
+}
+
+.system-fault-total {
+  margin-left: auto;
+}
+
+.active-fault,
+.fault-history-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+}
+
+.fault-light {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 50%;
+  background: #ffd54f;
+}
+
+.error > .fault-light {
+  background: var(--danger-color);
+}
+
+.fault-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fault-title {
+  font-weight: 600;
+}
+
+.fault-detail {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.fault-source,
+.fault-when {
+  flex: none;
+  font-size: 12px;
+}
+
+.no-faults {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.fault-history-title {
+  padding: 8px 12px 4px;
+  font: 600 12px var(--font-family);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.system-sections {
+  columns: 3 320px;
+  column-gap: 0;
+}
+
+.system-section {
+  break-inside: avoid;
+}
+
+.system-section .section-body {
+  padding: 4px 0 8px;
+}
+
+.system-row {
+  box-sizing: border-box;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 24px;
+  padding: 2px 12px;
+  font-size: 13px;
+}
+
+.system-row .parameter-label {
+  flex: none;
+  max-width: 55%;
+  color: var(--secondary-text-color);
+}
+
+.system-value {
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.row-toggle,
+.section-toggle {
+  flex: none;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.fault-count {
+  display: inline-block;
+  min-width: 16px;
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 2px;
+  background: #c62828;
+  color: #fff;
+  font: 700 11px/16px var(--font-family);
+  text-align: center;
+}
+
+.bottom-tab .fault-count {
+  position: absolute;
+  top: 6px;
+  left: calc(50% + 6px);
+  margin-left: 0;
+}
+
+@media (max-width: 800px) {
+  .system-layout {
+    height: auto;
+    overflow-y: visible;
+  }
+
+  .system-strip {
+    justify-content: flex-end;
+    padding: 4px 16px;
+  }
+
+  .system-title {
+    display: none;
+  }
+
+  .system-strip .choose-rows-button {
+    min-height: 36px;
+  }
+
+  .system-sections {
+    columns: auto;
+  }
+
+  .active-fault,
+  .fault-history-row {
+    flex-wrap: wrap;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .fault-when,
+  .fault-source {
+    box-sizing: border-box;
+    flex-basis: 100%;
+    padding-left: 18px;
+  }
+
+  .system-row {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .row-toggle,
+  .section-toggle {
+    width: 22px;
+    height: 22px;
+  }
+
+  .system-row:has(.row-toggle) {
+    min-height: 44px;
+    align-items: center;
+  }
+}

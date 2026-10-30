@@ -70,7 +70,9 @@ SCREENS = {
     "spool-sheet-phone": ("/spools", PHONE_SIZE),
     "top-bar-desktop": ("/", DESKTOP_SIZE),
     "top-bar-phone": ("/", PHONE_SIZE),
-    **{name: ("/", PHONE_SIZE) for name in SCROLLED_SCREENS},
+    "system-desktop": ("/system", DESKTOP_SIZE),
+    "system-phone": ("/system", PHONE_SIZE),
+    **{name: (screen.path, PHONE_SIZE) for name, screen in SCROLLED_SCREENS.items()},
 }
 
 # screen name -> what a person does before the screenshot: ("click", selector), ("press", key),
