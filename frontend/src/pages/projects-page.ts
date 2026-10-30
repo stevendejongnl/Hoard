@@ -196,7 +196,8 @@ export class ProjectsPage extends LitElement {
           ${this.renderStatistic('Cost', formatCost(project.total_cost), 'accented-value')}
         </div>
         <span class="card-summary muted"
-          >${describePrintCount(project)} · ${formatDuration(project.total_duration_s)}</span
+          >${describePrintCount(project)} · ${formatDuration(project.total_duration_s)} ·
+          ${formatFilament(project.total_filament_g)}</span
         >
         <span class="card-cost monospace">${formatCost(project.total_cost)}</span>
       </div>
