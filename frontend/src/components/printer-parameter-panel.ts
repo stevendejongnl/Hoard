@@ -203,6 +203,7 @@ export class PrinterParameterPanel extends LitElement {
         role="switch"
         aria-checked=${isOn ? 'true' : 'false'}
         aria-label="Printer power"
+        ?disabled=${!SWITCHABLE_STATES.includes(this.power?.switch ?? '')}
         @click=${() => this.togglePower(!isOn)}
       >
         <span class="power-switch-knob"></span>
