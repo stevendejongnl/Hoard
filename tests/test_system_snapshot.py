@@ -137,3 +137,9 @@ def test_every_row_has_a_stable_key_within_its_section():
 
 def test_an_object_of_an_unknown_kind_is_ignored():
     assert "some_future_object" not in str(build_sections(PI_READINGS))
+
+
+def test_the_system_load_is_rounded():
+    objects = {**PI_READINGS["objects"], "system_stats": {"sysload": 0.04443359375}}
+    rows = read_rows(find_section(build_sections({**PI_READINGS, "objects": objects}), "host"))
+    assert rows["System load"] == "0.04"
