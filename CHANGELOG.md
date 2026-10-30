@@ -1,3 +1,13 @@
+## [1.49.0](https://github.com/stevendejongnl/Hoard/compare/v1.48.0...v1.49.0) (2026-10-30)
+
+### Features
+
+* **phone:** pull to refresh on every page, and no Choose rows without rows ([8b158f9](https://github.com/stevendejongnl/Hoard/commit/8b158f98dff5c2fe3313430d5697e61aef1a62ba))
+
+### Bug Fixes
+
+* **system:** the system load is rounded ([8b0a5f7](https://github.com/stevendejongnl/Hoard/commit/8b0a5f7b6d11e2c88fb26081474f1146b284c560))
+
 ## [1.48.0](https://github.com/stevendejongnl/Hoard/compare/v1.47.1...v1.48.0) (2026-10-30)
 
 ### Features
