@@ -1,3 +1,9 @@
+## [1.47.1](https://github.com/stevendejongnl/Hoard/compare/v1.47.0...v1.47.1) (2026-10-30)
+
+### Bug Fixes
+
+* **dashboard:** printer power is disabled when unreachable, and a power strip switch ([d30871b](https://github.com/stevendejongnl/Hoard/commit/d30871b7bbc5b90e025aafbfe39a9df9056f7ebb))
+
 ## [1.47.0](https://github.com/stevendejongnl/Hoard/compare/v1.46.2...v1.47.0) (2026-10-30)
 
 ### Features
