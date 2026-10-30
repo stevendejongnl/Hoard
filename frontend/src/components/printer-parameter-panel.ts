@@ -76,9 +76,14 @@ export class PrinterParameterPanel extends LitElement {
     }
   }
 
-  private confirmSwitchOff(item: HomeAssistantSwitch): boolean {
+  private confirmSwitchOff(label: string): boolean {
     const warning = this.isPrintActive() ? 'A print is running. ' : ''
-    return this.confirmAction(`${warning}Switch off ${item.label}?`)
+    return this.confirmAction(`${warning}Switch off ${label}?`)
+  }
+
+  private async togglePower(turnOn: boolean): Promise<void> {
+    if (!turnOn && !this.confirmSwitchOff('Printer power')) return
+    await this.switchPower(turnOn)
   }
 
   private replaceSwitchState(key: string, state: string): void {
@@ -87,7 +92,7 @@ export class PrinterParameterPanel extends LitElement {
 
   private async toggleSwitch(item: HomeAssistantSwitch): Promise<void> {
     const turnOn = item.state !== 'on'
-    if (!turnOn && !this.confirmSwitchOff(item)) return
+    if (!turnOn && !this.confirmSwitchOff(item.label)) return
     try {
       await this.changeSwitch(item.key, turnOn)
       this.replaceSwitchState(item.key, turnOn ? 'on' : 'off')
@@ -198,7 +203,7 @@ export class PrinterParameterPanel extends LitElement {
         role="switch"
         aria-checked=${isOn ? 'true' : 'false'}
         aria-label="Printer power"
-        @click=${() => this.switchPower(!isOn)}
+        @click=${() => this.togglePower(!isOn)}
       >
         <span class="power-switch-knob"></span>
       </button>
