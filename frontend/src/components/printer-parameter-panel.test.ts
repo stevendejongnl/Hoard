@@ -361,6 +361,12 @@ describe('printer power switch', () => {
     expect(calls.powerSwitches).toEqual([])
   })
 
+  it('cannot be pressed when Home Assistant cannot reach it', async () => {
+    const calls = createCalls()
+    const panel = await createPanel(calls, { power: { ...power, switch: 'unavailable' } })
+    expect(panel.querySelector<HTMLButtonElement>('button.power-switch')!.disabled).toBe(true)
+  })
+
   it('switches on without asking', async () => {
     const calls = createCalls()
     const panel = await createPanel(calls, { power: { ...power, switch: 'off' } })
