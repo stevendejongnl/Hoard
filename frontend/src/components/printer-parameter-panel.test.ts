@@ -172,8 +172,22 @@ describe('print buttons', () => {
 })
 
 describe('extra switches', () => {
-  const powerStrip = { key: 'power-strip', label: 'Power strip', entity_id: 'switch.feed_plug', state: 'on' }
-  const raspberryPi = { key: 'raspberry-pi', label: 'Raspberry Pi', entity_id: 'switch.pi_outlet', state: 'off' }
+  const powerStrip: HomeAssistantSwitch = {
+    key: 'power-strip',
+    label: 'Power strip',
+    entity_id: 'switch.feed_plug',
+    state: 'on',
+    requires: null,
+    is_printer: false,
+  }
+  const raspberryPi: HomeAssistantSwitch = {
+    key: 'raspberry-pi',
+    label: 'Raspberry Pi',
+    entity_id: 'switch.pi_outlet',
+    state: 'off',
+    requires: null,
+    is_printer: false,
+  }
   const switches: HomeAssistantSwitch[] = [powerStrip, raspberryPi]
 
   interface SwitchChange {
@@ -293,12 +307,15 @@ describe('extra switches', () => {
     expect(findSwitch(panel, 'raspberry-pi').disabled).toBe(true)
   })
 
-  it('reads the states again when the power changes, at most every ten seconds', async () => {
-    let currentTime = new Date('2026-10-27T14:56:00Z').getTime()
+  it('reads the states again every ten seconds on its own', async () => {
     let loads = 0
-    const { panel } = await createPanelWithSwitches(createCalls(), {
+    let refresh: () => void = () => undefined
+    await createPanelWithSwitches(createCalls(), {
       properties: {
-        now: () => currentTime,
+        repeatEvery: (callback) => {
+          refresh = callback
+          return () => undefined
+        },
         loadSwitches: async () => {
           loads += 1
           return switches
@@ -306,13 +323,133 @@ describe('extra switches', () => {
       },
     })
     expect(loads).toBe(1)
-    panel.power = { ...power, watts: 110 }
+    refresh()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(loads).toBe(2)
+  })
+
+  it('reads the states again after a switch changed', async () => {
+    let loads = 0
+    const { panel } = await createPanelWithSwitches(createCalls(), {
+      properties: {
+        waitBeforeReading: async () => undefined,
+        loadSwitches: async () => {
+          loads += 1
+          return switches
+        },
+      },
+    })
+    findSwitch(panel, 'raspberry-pi').click()
     await settle(panel)
-    expect(loads).toBe(1)
-    currentTime += 11_000
-    panel.power = { ...power, watts: 111 }
     await settle(panel)
     expect(loads).toBe(2)
+  })
+})
+
+describe('switch order and needs', () => {
+  function createSwitch(key: string, label: string, state: string, requires: string | null = null) {
+    return { key, label, entity_id: `switch.${key}`, state, requires, is_printer: key === 'printer' }
+  }
+
+  const strip = createSwitch('power-strip', 'Power strip', 'on')
+  const pi = createSwitch('raspberry-pi', 'Raspberry Pi', 'on', 'power-strip')
+  const printer = createSwitch('printer', 'Printer', 'on', 'raspberry-pi')
+  const dryer = createSwitch('filament-dryer', 'Filament dryer', 'off', 'power-strip')
+
+  async function createPanelWith(
+    calls: Calls,
+    switches: HomeAssistantSwitch[],
+    properties: Partial<PrinterParameterPanel> = {},
+  ): Promise<{ panel: PrinterParameterPanel; changes: string[] }> {
+    const changes: string[] = []
+    const panel = await createPanel(calls, {
+      printerState: { ...printingState, state: 'standby' },
+      loadSwitches: async () => switches,
+      changeSwitch: async (key, turnOn) => void changes.push(`${key} ${turnOn ? 'on' : 'off'}`),
+      waitBeforeReading: () => new Promise(() => undefined),
+      ...properties,
+    })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await panel.updateComplete
+    return { panel, changes }
+  }
+
+  function readLabels(panel: PrinterParameterPanel): (string | null)[] {
+    return [...panel.querySelectorAll('button.power-switch')].map((button) => button.getAttribute('aria-label'))
+  }
+
+  function findRow(panel: PrinterParameterPanel, label: string): HTMLElement {
+    return panel.querySelector<HTMLElement>(`button.power-switch[aria-label="${label}"]`)!.closest('.parameter-row')!
+  }
+
+  function findButton(panel: PrinterParameterPanel, label: string): HTMLButtonElement {
+    return panel.querySelector<HTMLButtonElement>(`button.power-switch[aria-label="${label}"]`)!
+  }
+
+  it('shows the switches in the configured order, the printer power among them', async () => {
+    const { panel } = await createPanelWith(createCalls(), [strip, pi, printer, dryer])
+    expect(readLabels(panel)).toEqual(['Power strip', 'Raspberry Pi', 'Printer', 'Filament dryer'])
+  })
+
+  it('puts the printer power first when the list does not hold it', async () => {
+    const { panel } = await createPanelWith(createCalls(), [strip, pi])
+    expect(readLabels(panel)).toEqual(['Printer power', 'Power strip', 'Raspberry Pi'])
+  })
+
+  it('locks a switch whose needed switch is off, says what it needs and shows it off', async () => {
+    const { panel } = await createPanelWith(createCalls(), [
+      { ...strip, state: 'off' },
+      { ...pi, state: 'unavailable' },
+    ])
+    expect(findButton(panel, 'Raspberry Pi').disabled).toBe(true)
+    expect(findButton(panel, 'Raspberry Pi').getAttribute('aria-checked')).toBe('false')
+    expect(findRow(panel, 'Raspberry Pi').querySelector('.switch-need')?.textContent).toBe('needs Power strip')
+    expect(findRow(panel, 'Power strip').querySelector('.switch-need')).toBeNull()
+  })
+
+  it('locks the printer power while the Pi is off', async () => {
+    const { panel } = await createPanelWith(createCalls(), [strip, { ...pi, state: 'off' }, printer], {
+      power: { ...power, switch: 'off' },
+    })
+    expect(findButton(panel, 'Printer').disabled).toBe(true)
+    expect(findRow(panel, 'Printer').querySelector('.switch-need')?.textContent).toBe('needs Raspberry Pi')
+  })
+
+  it('shows the printer power as the power events tell and switches it through the power', async () => {
+    const calls = createCalls()
+    const { panel, changes } = await createPanelWith(calls, [strip, pi, { ...printer, state: 'off' }])
+    expect(findButton(panel, 'Printer').getAttribute('aria-checked')).toBe('true')
+    findButton(panel, 'Printer').click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(calls.confirmations).toEqual(['Switch off Printer?'])
+    expect(calls.powerSwitches).toEqual([false])
+    expect(changes).toEqual([])
+  })
+
+  it('names what goes off with a switch, and shows those off after', async () => {
+    const calls = createCalls()
+    const { panel, changes } = await createPanelWith(calls, [strip, pi, printer, dryer])
+    findButton(panel, 'Power strip').click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await panel.updateComplete
+    expect(calls.confirmations).toEqual(['Switch off Power strip? This also switches off Printer and Raspberry Pi.'])
+    expect(changes).toEqual(['power-strip off'])
+    expect(readLabels(panel).map((label) => findButton(panel, label!).getAttribute('aria-checked'))).toEqual([
+      'false',
+      'false',
+      'false',
+      'false',
+    ])
+  })
+
+  it('lists three or more with commas', async () => {
+    const calls = createCalls()
+    const { panel } = await createPanelWith(calls, [strip, pi, printer, { ...dryer, state: 'on' }])
+    findButton(panel, 'Power strip').click()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(calls.confirmations).toEqual([
+      'Switch off Power strip? This also switches off Printer, Raspberry Pi and Filament dryer.',
+    ])
   })
 })
 
