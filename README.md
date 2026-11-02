@@ -51,7 +51,7 @@ The Home Assistant entities are settings, so you map them to the names of your o
 | `HA_POWER_SENSOR` | `sensor.3d_printer_power` | the power the printer draws (W) |
 | `HA_PRICE_SENSOR` | `sensor.electricity_price_all_in` | the price per kWh, all in |
 | `HA_POWER_SWITCH` | `switch.3d_printer` | the switch that powers the printer |
-| `HA_SWITCHES` | none | more switches to control from the dashboard, as `Label=entity` pairs separated by commas (for example `Pi=switch.pi_outlet,Filament dryer=switch.dryer_outlet`); any switch, light or input_boolean works |
+| `HA_SWITCHES` | none | more switches to control from the dashboard, as a JSON list in display order where a switch can require another (for example `[{"label": "Pi", "entity": "switch.pi_outlet"}, {"label": "Printer power", "printer": true, "requires": "Pi"}]`), or as `Label=entity` pairs separated by commas; any switch, light or input_boolean works. See the wiki's Configuration page |
 | `HA_ENERGY_SENSORS` | `sensor.3d_printer_energy` | energy in kWh, comma separated, oldest first (keep the sensors of a plug you replaced) |
 
 The price is read from the price sensor and written to InfluxDB every half hour, so the cost of a print is worked out with the price of its own hours. The filament weight is derived from the length with the density of PLA for 1.75 mm filament.

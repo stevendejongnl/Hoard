@@ -13,8 +13,9 @@ class Settings(BaseSettings):
     ha_power_sensor: str = "sensor.3d_printer_power"
     ha_price_sensor: str = "sensor.electricity_price_all_in"
     ha_power_switch: str = "switch.3d_printer"
-    # More switches to control from the dashboard, as comma separated Label=entity pairs, for example
-    # "Power strip=switch.feed_plug,Raspberry Pi=switch.pi_outlet". Any switch, light or input_boolean works.
+    # More switches to control from the dashboard, as a JSON list in display order, for example
+    # '[{"label": "Pi", "entity": "switch.pi_outlet"}, {"label": "Printer power", "printer": true, "requires": "Pi"}]',
+    # or as comma separated Label=entity pairs. Any switch, light or input_boolean works.
     ha_switches: str = ""
     # Energy sensors (kWh, total increasing), oldest first, separated by commas: a plug that was replaced or
     # renamed keeps its old sensor here, so older prints can still be worked out.
