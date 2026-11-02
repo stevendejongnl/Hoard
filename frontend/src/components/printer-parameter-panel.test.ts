@@ -415,9 +415,12 @@ describe('switch order and needs', () => {
     expect(findRow(panel, 'Printer').querySelector('.switch-need')?.textContent).toBe('needs Raspberry Pi')
   })
 
-  it('shows the printer power as the power events tell and switches it through the power', async () => {
+  it('shows the printer power as the next power event tells and switches it through the power', async () => {
     const calls = createCalls()
     const { panel, changes } = await createPanelWith(calls, [strip, pi, { ...printer, state: 'off' }])
+    expect(findButton(panel, 'Printer').getAttribute('aria-checked')).toBe('false')
+    panel.power = { ...power, switch: 'on' }
+    await panel.updateComplete
     expect(findButton(panel, 'Printer').getAttribute('aria-checked')).toBe('true')
     findButton(panel, 'Printer').click()
     await new Promise((resolve) => setTimeout(resolve, 0))

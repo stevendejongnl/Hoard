@@ -291,3 +291,8 @@
     transform: translate(-50%, -50%);
   }
 }
+
+.parameter-row .switch-need {
+  margin-left: auto;
+  font-size: 12px;
+}

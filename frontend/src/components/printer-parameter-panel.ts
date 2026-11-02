@@ -19,6 +19,7 @@ import {
   formatSpentDuration,
 } from '../print-job-metrics'
 import type { HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
+import { findDependentSwitches, findRequiredSwitch, joinLabels } from '../switch-dependencies'
 import { askForConfirmation } from './confirmation-dialog'
 
 const NO_VALUE = '—'
@@ -26,7 +27,19 @@ const SECTION_CHEVRON_SIZE = 14
 const ICON_STROKE_WIDTH = 2.4
 const CANCEL_QUESTION = 'Cancel this print?'
 const SWITCH_REFRESH_MILLISECONDS = 10_000
+const READ_AFTER_CHANGE_MILLISECONDS = 2_000
 const SWITCHABLE_STATES = ['on', 'off']
+
+type StopFunction = () => void
+
+function repeatWithInterval(callback: () => void): StopFunction {
+  const interval = setInterval(callback, SWITCH_REFRESH_MILLISECONDS)
+  return () => clearInterval(interval)
+}
+
+function waitForHomeAssistant(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, READ_AFTER_CHANGE_MILLISECONDS))
+}
 
 /** The left panel of the dashboard: what the printer is doing right now, as parameters. */
 @customElement('printer-parameter-panel')
@@ -49,9 +62,12 @@ export class PrinterParameterPanel extends LitElement {
   @property({ attribute: false }) confirmAction: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) loadSwitches: () => Promise<HomeAssistantSwitch[]> = getSwitches
   @property({ attribute: false }) changeSwitch: (key: string, turnOn: boolean) => Promise<unknown> = setSwitchState
+  @property({ attribute: false }) repeatEvery: (callback: () => void) => StopFunction = repeatWithInterval
+  /** Home Assistant takes a moment before a switched entity reports its new state */
+  @property({ attribute: false }) waitBeforeReading: () => Promise<void> = waitForHomeAssistant
 
   @state() private switches: HomeAssistantSwitch[] = []
-  private switchesLoadedAt = 0
+  private stopRefreshing: StopFunction | null = null
 
   createRenderRoot() {
     return this
@@ -60,16 +76,21 @@ export class PrinterParameterPanel extends LitElement {
   connectedCallback(): void {
     super.connectedCallback()
     void this.reloadSwitches()
+    this.stopRefreshing = this.repeatEvery(() => void this.reloadSwitches())
   }
 
-  protected updated(changed: Map<string, unknown>): void {
-    if (changed.has('power') && this.now() - this.switchesLoadedAt >= SWITCH_REFRESH_MILLISECONDS) {
-      void this.reloadSwitches()
-    }
+  disconnectedCallback(): void {
+    super.disconnectedCallback()
+    this.stopRefreshing?.()
+  }
+
+  protected willUpdate(changed: Map<string, unknown>): void {
+    const printerState = this.power?.switch ?? ''
+    if (!changed.has('power') || !SWITCHABLE_STATES.includes(printerState)) return
+    this.switches = this.switches.map((item) => (item.is_printer ? { ...item, state: printerState } : item))
   }
 
   private async reloadSwitches(): Promise<void> {
-    this.switchesLoadedAt = this.now()
     try {
       this.switches = await this.loadSwitches()
     } catch {
@@ -77,26 +98,46 @@ export class PrinterParameterPanel extends LitElement {
     }
   }
 
-  private confirmSwitchOff(label: string): Promise<boolean> {
+  private confirmSwitchOff(label: string, alsoOff: HomeAssistantSwitch[] = []): Promise<boolean> {
     const warning = this.isPrintActive() ? 'A print is running. ' : ''
-    return this.confirmAction(`${warning}Switch off ${label}?`)
+    const consequence = alsoOff.length
+      ? ` This also switches off ${joinLabels(alsoOff.map((item) => item.label))}.`
+      : ''
+    return this.confirmAction(`${warning}Switch off ${label}?${consequence}`)
   }
 
   private async togglePower(turnOn: boolean): Promise<void> {
     if (!turnOn && !(await this.confirmSwitchOff('Printer power'))) return
     await this.switchPower(turnOn)
+    void this.readAfterChange()
   }
 
-  private replaceSwitchState(key: string, state: string): void {
-    this.switches = this.switches.map((item) => (item.key === key ? { ...item, state } : item))
+  private replaceSwitchStates(keys: string[], state: string): void {
+    this.switches = this.switches.map((item) => (keys.includes(item.key) ? { ...item, state } : item))
+  }
+
+  private findDependentsThatAreOn(item: HomeAssistantSwitch): HomeAssistantSwitch[] {
+    return findDependentSwitches(this.switches, item.key).filter((dependent) => dependent.state === 'on')
+  }
+
+  private sendSwitch(item: HomeAssistantSwitch, turnOn: boolean): Promise<unknown> {
+    if (item.is_printer) return this.switchPower(turnOn)
+    return this.changeSwitch(item.key, turnOn)
+  }
+
+  private async readAfterChange(): Promise<void> {
+    await this.waitBeforeReading()
+    await this.reloadSwitches()
   }
 
   private async toggleSwitch(item: HomeAssistantSwitch): Promise<void> {
     const turnOn = item.state !== 'on'
-    if (!turnOn && !(await this.confirmSwitchOff(item.label))) return
+    const alsoOff = turnOn ? [] : this.findDependentsThatAreOn(item)
+    if (!turnOn && !(await this.confirmSwitchOff(item.label, alsoOff))) return
     try {
-      await this.changeSwitch(item.key, turnOn)
-      this.replaceSwitchState(item.key, turnOn ? 'on' : 'off')
+      await this.sendSwitch(item, turnOn)
+      this.replaceSwitchStates([item.key, ...alsoOff.map((dependent) => dependent.key)], turnOn ? 'on' : 'off')
+      void this.readAfterChange()
     } catch {
       // the switch keeps the state it showed
     }
@@ -212,17 +253,29 @@ export class PrinterParameterPanel extends LitElement {
     </div>`
   }
 
+  /** the needed switch that is not on, which keeps this one off */
+  private findMissingSwitch(item: HomeAssistantSwitch): HomeAssistantSwitch | undefined {
+    const required = findRequiredSwitch(this.switches, item)
+    return required && required.state !== 'on' ? required : undefined
+  }
+
+  private renderNeed(missing: HomeAssistantSwitch | undefined): TemplateResult | typeof nothing {
+    if (!missing) return nothing
+    return html`<span class="muted switch-need">needs ${missing.label}</span>`
+  }
+
   private renderExtraSwitch(item: HomeAssistantSwitch): TemplateResult {
-    const isOn = item.state === 'on'
+    const missing = this.findMissingSwitch(item)
+    const isOn = !missing && item.state === 'on'
     return html`<div class="parameter-row">
-      <span class="parameter-label">${item.label}</span>
+      <span class="parameter-label">${item.label}</span>${this.renderNeed(missing)}
       <button
         class="power-switch ${isOn ? 'on' : ''}"
         role="switch"
         aria-checked=${isOn ? 'true' : 'false'}
         aria-label=${item.label}
         data-switch=${item.key}
-        ?disabled=${!SWITCHABLE_STATES.includes(item.state)}
+        ?disabled=${Boolean(missing) || !SWITCHABLE_STATES.includes(item.state)}
         @click=${() => this.toggleSwitch(item)}
       >
         <span class="power-switch-knob"></span>
@@ -230,11 +283,17 @@ export class PrinterParameterPanel extends LitElement {
     </div>`
   }
 
+  /** the printer power comes first, unless the list of switches places it */
+  private renderSwitches(): TemplateResult {
+    const printerRow = this.switches.some((item) => item.is_printer) ? nothing : this.renderPowerSwitch()
+    return html`${printerRow} ${this.switches.map((item) => this.renderExtraSwitch(item))}`
+  }
+
   private renderPower(): TemplateResult {
     return html`<div class="section">
       ${this.renderSectionHeader('Power & energy')}
       <div class="section-body">
-        ${this.renderPowerSwitch()} ${this.switches.map((item) => this.renderExtraSwitch(item))}
+        ${this.renderSwitches()}
         ${this.renderField('Draw', 'draw', this.power ? String(Math.round(this.power.watts)) : NO_VALUE, 'W')}
         ${this.renderField('Price', 'price', this.power ? this.power.eur_per_kwh.toFixed(2) : NO_VALUE, '€/kWh')}
       </div>

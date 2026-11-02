@@ -30,6 +30,10 @@ export interface HomeAssistantSwitch {
   entity_id: string
   /** 'on' or 'off', or 'unavailable' or 'unknown' when Home Assistant cannot tell */
   state: string
+  /** the key of the switch that must be on before this one may be switched on */
+  requires: string | null
+  /** the printer power, which the power events also report */
+  is_printer: boolean
 }
 
 export interface PiStats {
