@@ -35,7 +35,11 @@ spec:
             - name: HA_ENERGY_SENSORS
               value: sensor.nous_3d_printer_feed_plug_energy
             - name: HA_SWITCHES
-              value: Power strip=switch.nous_3d_printer_feed_plug,Raspberry Pi=switch.attic_3d_printer_power_strip_pi,Filament dryer=switch.attic_3d_printer_power_strip_filament
+              value: >-
+                [{"label": "Power strip", "entity": "switch.nous_3d_printer_feed_plug"},
+                {"label": "Raspberry Pi", "entity": "switch.attic_3d_printer_power_strip_pi", "requires": "Power strip"},
+                {"label": "Printer power", "printer": true, "requires": "Raspberry Pi"},
+                {"label": "Filament dryer", "entity": "switch.attic_3d_printer_power_strip_filament", "requires": "Power strip"}]
             - name: STATIC_DIR
               value: /app/static
             - name: REDIS_URL
