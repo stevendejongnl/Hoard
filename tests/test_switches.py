@@ -61,12 +61,36 @@ async def test_the_list_shows_every_switch_with_its_state(client, monkeypatch) -
         return {"state": states[entity_id]}
 
     configure(monkeypatch, f"{POWER_STRIP},{PI}")
+    monkeypatch.setattr(settings, "ha_power_switch", "switch.machine_outlet")
+    states["switch.machine_outlet"] = "on"
     monkeypatch.setattr(home_assistant, "get_state", fake_state)
     response = await client.get("/api/control/switches")
     assert response.status_code == 200
     assert response.json() == [
-        {"key": "power-strip", "label": "Power strip", "entity_id": "switch.feed_plug", "state": "on"},
-        {"key": "raspberry-pi", "label": "Raspberry Pi", "entity_id": "switch.pi_outlet", "state": "off"},
+        {
+            "key": "printer-power",
+            "label": "Printer power",
+            "entity_id": "switch.machine_outlet",
+            "state": "on",
+            "requires": None,
+            "is_printer": True,
+        },
+        {
+            "key": "power-strip",
+            "label": "Power strip",
+            "entity_id": "switch.feed_plug",
+            "state": "on",
+            "requires": None,
+            "is_printer": False,
+        },
+        {
+            "key": "raspberry-pi",
+            "label": "Raspberry Pi",
+            "entity_id": "switch.pi_outlet",
+            "state": "off",
+            "requires": None,
+            "is_printer": False,
+        },
     ]
 
 
@@ -77,12 +101,12 @@ async def test_a_switch_that_home_assistant_cannot_read_is_unknown(client, monke
     configure(monkeypatch, PI)
     monkeypatch.setattr(home_assistant, "get_state", failing_state)
     response = await client.get("/api/control/switches")
-    assert [item["state"] for item in response.json()] == ["unknown"]
+    assert [item["state"] for item in response.json()] == ["unknown", "unknown"]
 
 
-async def test_the_list_is_empty_without_configured_switches(client, monkeypatch) -> None:
+async def test_the_list_has_only_the_printer_power_without_configured_switches(client, monkeypatch) -> None:
     configure(monkeypatch, "")
-    assert (await client.get("/api/control/switches")).json() == []
+    assert [item["key"] for item in (await client.get("/api/control/switches")).json()] == ["printer-power"]
 
 
 async def test_a_switch_is_turned_on_and_off_through_home_assistant(client, monkeypatch) -> None:

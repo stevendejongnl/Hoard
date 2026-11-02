@@ -60,11 +60,13 @@ async def test_starting_a_print_the_printer_refuses_is_a_502(client: AsyncClient
 
 async def test_the_switches_are_listed_with_their_state_and_unknown_when_unreadable(client: AsyncClient, monkeypatch):
     monkeypatch.setattr(settings, "ha_switches", "Power strip=switch.strip,Pi=switch.pi")
-    install_fakes(monkeypatch, home_assistant=FakeHomeAssistant(states={"switch.strip": "on"}))
+    monkeypatch.setattr(settings, "ha_power_switch", "switch.plug")
+    install_fakes(monkeypatch, home_assistant=FakeHomeAssistant(states={"switch.strip": "on", "switch.plug": "off"}))
     body = (await client.get("/api/control/switches")).json()
-    assert body == [
-        {"key": "power-strip", "label": "Power strip", "entity_id": "switch.strip", "state": "on"},
-        {"key": "pi", "label": "Pi", "entity_id": "switch.pi", "state": "unknown"},
+    assert [(item["key"], item["label"], item["entity_id"], item["state"]) for item in body] == [
+        ("printer-power", "Printer power", "switch.plug", "off"),
+        ("power-strip", "Power strip", "switch.strip", "on"),
+        ("pi", "Pi", "switch.pi", "unknown"),
     ]
 
 
@@ -111,7 +113,7 @@ async def test_the_printer_power_is_switched_through_home_assistant(client: Asyn
     override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
     response = await client.post(f"/api/control/power/{action}")
     assert response.json() == {"state": action}
-    assert requests[0].url.path == f"/api/services/switch/turn_{action}"
+    assert requests[-1].url.path == f"/api/services/homeassistant/turn_{action}"
 
 
 @pytest.mark.parametrize(("method", "path"), [("get", "power"), ("post", "power/on"), ("post", "power/off")])
