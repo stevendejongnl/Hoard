@@ -12,6 +12,7 @@ LEFT_OUT_OPERATIONS = {
     "proxy_stream_api_webcams__index__stream_get",
     "download_file_api_projects__project_id__files__file_id__download_get",
     "serve_photo_api_photos__job_id___filename__get",
+    "serve_project_cover_api_projects__project_id__cover_get",
 }
 LEFT_OUT_PATH_PREFIXES = ("/mcp",)
 DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "power_off", "switch_off"}

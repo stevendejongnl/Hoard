@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import json as _json
 import logging
 import math
@@ -11,7 +12,7 @@ from typing import Any
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.config import settings
 from app.db import Database as SqliteDatabase
@@ -55,6 +56,27 @@ class LinkAdd(BaseModel):
 class PrintLink(BaseModel):
     job_id: str
     project_file_id: int | None = None
+
+
+COVER_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".gif")
+
+
+class CoverSet(BaseModel):
+    """The cover is an image file on the printer (Hoard keeps a copy) or the address of an image."""
+
+    filename: str | None = None
+    url: str | None = None
+
+    @model_validator(mode="after")
+    def require_one_source(self) -> "CoverSet":
+        if (self.filename is None) == (self.url is None):
+            raise ValueError("Give either a filename or a url, not both")
+        return self
+
+
+class FileImport(BaseModel):
+    filename: str
+    label: str | None = None
 
 
 @dataclass
@@ -120,6 +142,7 @@ async def delete_project(project_id: int, database: Database, cache: Cache) -> N
     project = await _require_project(database, project_id)
     for project_file in project.get("files", []):
         _remove_stored_file(project_file)
+    _remove_covers(project_id)
     await database.delete_project(project_id)
     await _invalidate_project(cache, project_id)
 
@@ -156,6 +179,84 @@ async def upload_file(
     result = await database.add_project_file(project_id, extension, stored_path, label or file.filename)
     await _invalidate_project(cache, project_id)
     return result
+
+
+async def _fetch_printer_file(moonraker: MoonrakerClient, filename: str) -> bytes:
+    try:
+        return await moonraker.download_file(filename)
+    except Exception as exc:
+        raise HTTPException(502, f"Could not download {filename} from the printer: {exc}") from exc
+
+
+@router.post("/{project_id}/files/import", status_code=201)
+async def import_printer_file(
+    project_id: int, body: FileImport, database: Database, cache: Cache, moonraker: Moonraker
+) -> dict[str, Any]:
+    """Copy a file from the printer's gcodes folder (a source 3MF, an image) into the project, so it can be downloaded."""
+    await _require_project(database, project_id)
+    extension = Path(body.filename).suffix.lstrip(".").lower() or "file"
+    if extension == "gcode":
+        raise HTTPException(400, "A gcode file stays on the printer: add it to the project with add_file")
+    stored_path = _store_upload(await _fetch_printer_file(moonraker, body.filename), Path(body.filename).name)
+    result = await database.add_project_file(project_id, extension, stored_path, body.label or body.filename)
+    await _invalidate_project(cache, project_id)
+    return result
+
+
+def _cover_paths(project_id: int) -> list[Path]:
+    return sorted(Path(settings.uploads_dir).glob(f"cover_{project_id}_*"))
+
+
+def _remove_covers(project_id: int, keep: Path | None = None) -> None:
+    for path in _cover_paths(project_id):
+        if path != keep:
+            path.unlink(missing_ok=True)
+
+
+async def _store_cover(project_id: int, filename: str, moonraker: MoonrakerClient) -> str:
+    """Keep a copy of the printer image as the cover of the project and return the address it is served at."""
+    extension = Path(filename).suffix.lower()
+    if extension not in COVER_EXTENSIONS:
+        raise HTTPException(400, "A cover must be a png, jpg, jpeg, webp or gif image")
+    contents = await _fetch_printer_file(moonraker, filename)
+    version = hashlib.sha1(contents).hexdigest()[:8]
+    stored = Path(settings.uploads_dir) / f"cover_{project_id}_{version}{extension}"
+    stored.parent.mkdir(parents=True, exist_ok=True)
+    stored.write_bytes(contents)
+    _remove_covers(project_id, keep=stored)
+    return f"/api/projects/{project_id}/cover?v={version}"
+
+
+@router.put("/{project_id}/cover")
+async def set_project_cover(
+    project_id: int, body: CoverSet, database: Database, cache: Cache, moonraker: Moonraker
+) -> dict[str, Any]:
+    """Set the cover from an image file on the printer, or from the address of an image such as a print photo."""
+    await _require_project(database, project_id)
+    if body.url is not None:
+        _remove_covers(project_id)
+        cover_url = body.url
+    else:
+        cover_url = await _store_cover(project_id, body.filename or "", moonraker)
+    await database.set_project_cover(project_id, cover_url, None)
+    await _invalidate_project(cache, project_id)
+    return await _require_project(database, project_id)
+
+
+@router.get("/{project_id}/cover")
+async def serve_project_cover(project_id: int) -> Any:
+    paths = _cover_paths(project_id)
+    if not paths:
+        raise HTTPException(404, "No cover image stored for this project")
+    return FileResponse(paths[-1])
+
+
+@router.delete("/{project_id}/cover", status_code=204)
+async def clear_project_cover(project_id: int, database: Database, cache: Cache) -> None:
+    await _require_project(database, project_id)
+    _remove_covers(project_id)
+    await database.set_project_cover(project_id, None, None)
+    await _invalidate_project(cache, project_id)
 
 
 @router.delete("/{project_id}/files/{file_id}", status_code=204)
