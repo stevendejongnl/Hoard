@@ -1,3 +1,9 @@
+## [1.52.0](https://github.com/stevendejongnl/Hoard/compare/v1.51.0...v1.52.0) (2026-11-02)
+
+### Features
+
+* **projects:** set a project cover from a printer image or an address, and import printer files ([2304fa6](https://github.com/stevendejongnl/Hoard/commit/2304fa60a181516b6f0c10fe1afff8bdbcc4c549))
+
 ## [1.51.0](https://github.com/stevendejongnl/Hoard/compare/v1.50.0...v1.51.0) (2026-11-02)
 
 ### Features
