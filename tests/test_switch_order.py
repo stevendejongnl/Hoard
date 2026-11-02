@@ -128,3 +128,55 @@ async def test_the_printer_power_is_not_switched_on_while_the_pi_is_off(client: 
     for path in ("/api/control/power/on", "/api/control/switches/printer/on"):
         response = await client.post(path)
         assert (response.status_code, response.json()["detail"]) == (409, "Needs Raspberry Pi")
+
+
+def refusing_client_factory(requests: list[httpx.Request], refused_entity: str):
+    """Records every request and fails the one that switches the refused entity."""
+
+    def respond(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if json.loads(request.content)["entity_id"] == refused_entity:
+            return httpx.Response(500)
+        return httpx.Response(200, json=[])
+
+    return lambda **options: httpx.AsyncClient(transport=httpx.MockTransport(respond), **options)
+
+
+def switched_entities(requests: list[httpx.Request]) -> list[tuple[str, str]]:
+    return [(request.url.path.rsplit("/", 1)[-1], json.loads(request.content)["entity_id"]) for request in requests]
+
+
+ALL_ON = {"switch.feed_plug": "on", "switch.pi_outlet": "on", PRINTER_ENTITY: "on", "switch.dryer_outlet": "off"}
+
+
+async def test_switching_off_first_switches_off_what_needs_it_deepest_first(client: AsyncClient, monkeypatch):
+    configure(monkeypatch, STRIP, PI, PRINTER, DRYER)
+    requests: list[httpx.Request] = []
+    install_fakes(monkeypatch, home_assistant=FakeHomeAssistant(states=ALL_ON))
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
+    response = await client.post("/api/control/switches/power-strip/off")
+    assert response.json() == {"state": "off", "also_off": ["printer", "raspberry-pi"]}
+    assert switched_entities(requests) == [
+        ("turn_off", PRINTER_ENTITY),
+        ("turn_off", "switch.pi_outlet"),
+        ("turn_off", "switch.feed_plug"),
+    ]
+
+
+async def test_a_switch_that_nothing_needs_is_switched_off_alone(client: AsyncClient, monkeypatch):
+    configure(monkeypatch, STRIP, PI, PRINTER, DRYER)
+    requests: list[httpx.Request] = []
+    install_fakes(monkeypatch, home_assistant=FakeHomeAssistant(states=ALL_ON))
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
+    assert (await client.post("/api/control/power/off")).json() == {"state": "off", "also_off": []}
+    assert switched_entities(requests) == [("turn_off", PRINTER_ENTITY)]
+
+
+async def test_the_switch_stays_on_when_one_that_needs_it_does_not_switch_off(client: AsyncClient, monkeypatch):
+    configure(monkeypatch, STRIP, PI, PRINTER, DRYER)
+    requests: list[httpx.Request] = []
+    install_fakes(monkeypatch, home_assistant=FakeHomeAssistant(states=ALL_ON))
+    override_provider(monkeypatch, provide_http_client_factory, refusing_client_factory(requests, PRINTER_ENTITY))
+    response = await client.post("/api/control/switches/power-strip/off")
+    assert response.status_code == 502
+    assert switched_entities(requests) == [("turn_off", PRINTER_ENTITY)]
