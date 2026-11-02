@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import yaml
@@ -95,9 +96,14 @@ def test_the_deployment_reads_the_energy_from_the_feed_plug() -> None:
 def test_the_deployment_switches_the_power_strip_the_pi_and_the_filament_dryer() -> None:
     environment = read_container(find_object("Deployment", APPLICATION_NAME))["env"]
     values = {item["name"]: item["value"] for item in environment if "value" in item}
-    assert values["HA_SWITCHES"].split(",") == [
-        "Power strip=switch.nous_3d_printer_feed_plug",
-        "Raspberry Pi=switch.attic_3d_printer_power_strip_pi",
-        "Filament dryer=switch.attic_3d_printer_power_strip_filament",
+    assert json.loads(values["HA_SWITCHES"]) == [
+        {"label": "Power strip", "entity": "switch.nous_3d_printer_feed_plug"},
+        {"label": "Raspberry Pi", "entity": "switch.attic_3d_printer_power_strip_pi", "requires": "Power strip"},
+        {"label": "Printer power", "printer": True, "requires": "Raspberry Pi"},
+        {
+            "label": "Filament dryer",
+            "entity": "switch.attic_3d_printer_power_strip_filament",
+            "requires": "Power strip",
+        },
     ]
     assert "feed_plug" not in values["HA_POWER_SWITCH"]
