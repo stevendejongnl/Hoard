@@ -1,3 +1,9 @@
+## [1.51.0](https://github.com/stevendejongnl/Hoard/compare/v1.50.0...v1.51.0) (2026-11-02)
+
+### Features
+
+* **progress:** blend the slicer progress with the file position like Fluidd ([9a76ae4](https://github.com/stevendejongnl/Hoard/commit/9a76ae4b7bd705072cae976a6ea7d3eface82129))
+
 ## [1.50.0](https://github.com/stevendejongnl/Hoard/compare/v1.49.0...v1.50.0) (2026-11-02)
 
 ### Features
