@@ -41,9 +41,18 @@ class World:
         self.notifier = FakeNotifier()
         self.tasks: list[FakeTask] = []
         self.slept: list[float] = []
+        self.metadata: dict[str, Any] = {}
+        self.metadata_requests: list[str] = []
+        self.metadata_unreachable = False
 
     async def sleep(self, seconds: float) -> None:
         self.slept.append(seconds)
+
+    async def fetch_file_metadata(self, filename: str) -> dict[str, Any]:
+        self.metadata_requests.append(filename)
+        if self.metadata_unreachable:
+            raise RuntimeError("the printer cannot be reached")
+        return self.metadata
 
     def create_task(self, coroutine: Any) -> FakeTask:
         task = FakeTask(coroutine)
@@ -65,6 +74,18 @@ def build_handler(world: World):
         notifier=world.notifier,
         sleep=world.sleep,
         start_task=world.create_task,
+    )
+    return tracker.handle_status_update
+
+
+def build_progress_handler(world: World):
+    """A tracker that asks the world, not the printer, for the start and end of the gcode."""
+    tracker = server_sent_events.PrinterStateTracker(
+        event_hub=world.hub,
+        notifier=world.notifier,
+        sleep=world.sleep,
+        start_task=world.create_task,
+        fetch_file_metadata=world.fetch_file_metadata,
     )
     return tracker.handle_status_update
 
@@ -261,3 +282,84 @@ async def test_one_update_can_carry_the_printer_and_the_temperatures() -> None:
     handle = build_handler(world)
     await handle([{"print_stats": {"state": "printing"}, "extruder": {"temperature": 1.0}}])
     assert [event for event, _ in world.hub.broadcasts] == ["printer_state", "temps"]
+
+
+PRINTING_PART = {"state": "printing", "filename": "part.gcode"}
+GCODE_BYTES = {"gcode_start_byte": 1_000, "gcode_end_byte": 101_000}
+
+
+async def test_the_progress_is_the_average_of_the_slicer_and_the_position_in_the_gcode() -> None:
+    world = World()
+    world.metadata = GCODE_BYTES
+    handle = build_progress_handler(world)
+    await handle(
+        [
+            {
+                "print_stats": PRINTING_PART,
+                "display_status": {"progress": 0.6},
+                "virtual_sdcard": {"file_position": 51_000, "progress": 0.5},
+            }
+        ]
+    )
+    assert printer_states(world)[-1]["progress"] == 55.0
+
+
+async def test_without_the_gcode_bytes_the_whole_file_progress_takes_the_place_of_the_position() -> None:
+    world = World()
+    world.metadata_unreachable = True
+    handle = build_progress_handler(world)
+    await handle(
+        [
+            {
+                "print_stats": PRINTING_PART,
+                "display_status": {"progress": 0.6},
+                "virtual_sdcard": {"file_position": 40_000, "progress": 0.4},
+            }
+        ]
+    )
+    assert printer_states(world)[-1]["progress"] == 50.0
+
+
+async def test_a_file_position_alone_moves_the_progress_without_new_slicer_progress() -> None:
+    world = World()
+    world.metadata = GCODE_BYTES
+    handle = build_progress_handler(world)
+    await handle([{"print_stats": PRINTING_PART, "display_status": {"progress": 0.6}}])
+    await handle([{"virtual_sdcard": {"file_position": 51_000, "progress": 0.5}}])
+    assert [state["progress"] for state in printer_states(world)] == [60.0, 55.0]
+
+
+async def test_a_print_without_slicer_progress_follows_the_position_in_the_gcode() -> None:
+    world = World()
+    world.metadata = GCODE_BYTES
+    handle = build_progress_handler(world)
+    await handle([{"print_stats": PRINTING_PART, "virtual_sdcard": {"file_position": 26_000, "progress": 0.2}}])
+    assert printer_states(world)[-1]["progress"] == 25.0
+
+
+async def test_the_start_and_end_of_the_gcode_are_asked_for_once_per_file() -> None:
+    world = World()
+    world.metadata = GCODE_BYTES
+    handle = build_progress_handler(world)
+    await handle([{"print_stats": PRINTING_PART, "virtual_sdcard": {"file_position": 2_000, "progress": 0.1}}])
+    await handle([{"virtual_sdcard": {"file_position": 3_000, "progress": 0.2}}])
+    await handle([{"print_stats": {"filename": "other.gcode"}, "virtual_sdcard": {"file_position": 2_000}}])
+    assert world.metadata_requests == ["part.gcode", "other.gcode"]
+
+
+async def test_the_gcode_bytes_are_not_asked_for_before_there_is_a_file_position() -> None:
+    world = World()
+    handle = build_progress_handler(world)
+    await handle([{"print_stats": PRINTING_PART, "display_status": {"progress": 0.5}}])
+    assert world.metadata_requests == []
+
+
+async def test_a_failed_request_for_the_gcode_bytes_is_tried_again_with_the_next_update() -> None:
+    world = World()
+    world.metadata_unreachable = True
+    handle = build_progress_handler(world)
+    await handle([{"print_stats": PRINTING_PART, "virtual_sdcard": {"file_position": 2_000, "progress": 0.1}}])
+    world.metadata_unreachable = False
+    world.metadata = GCODE_BYTES
+    await handle([{"virtual_sdcard": {"file_position": 51_000, "progress": 0.5}}])
+    assert printer_states(world)[-1]["progress"] == 50.0

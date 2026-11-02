@@ -140,6 +140,7 @@ class MoonrakerClient:
                 "/printer/objects/query",
                 print_stats="",
                 display_status="",
+                virtual_sdcard="",
                 motion_report="",
                 extruder="",
                 heater_bed="",
@@ -205,6 +206,7 @@ class MoonrakerClient:
                         "objects": {
                             "print_stats": None,
                             "display_status": None,
+                            "virtual_sdcard": None,
                             "motion_report": None,
                             "extruder": None,
                             "heater_bed": None,

@@ -6,6 +6,7 @@ from typing import Any
 
 from app import home_assistant, push_client
 from app.moonraker import moonraker
+from app.print_progress import blend_progress, file_relative_progress
 from app.routes.control import _get_switch_state
 
 log = logging.getLogger(__name__)
@@ -195,11 +196,6 @@ def _apply_print_stats(updated: dict[str, Any], print_stats: dict[str, Any]) -> 
         updated["layer_total"] = info["total_layer"]
 
 
-def _apply_display_status(updated: dict[str, Any], display_status: dict[str, Any]) -> None:
-    if "progress" in display_status:
-        updated["progress"] = round(display_status["progress"] * 100, 1)
-
-
 def _apply_motion_report(updated: dict[str, Any], motion_report: dict[str, Any]) -> None:
     if "live_velocity" in motion_report:
         updated["speed"] = round(motion_report["live_velocity"], 1)
@@ -212,15 +208,14 @@ def _merge_printer_state(previous: dict[str, Any], status: dict[str, Any]) -> di
     updated = _printer_state_defaults(previous)
     if status.get("print_stats"):
         _apply_print_stats(updated, status["print_stats"])
-    if status.get("display_status"):
-        _apply_display_status(updated, status["display_status"])
     if status.get("motion_report"):
         _apply_motion_report(updated, status["motion_report"])
     return updated
 
 
 def _has_printer_fields(status: dict[str, Any]) -> bool:
-    return bool(status.get("print_stats") or status.get("display_status") or status.get("motion_report"))
+    fields = ("print_stats", "display_status", "virtual_sdcard", "motion_report")
+    return any(status.get(field) for field in fields)
 
 
 def _is_standby_during_print(previous_state: Any, new_state: Any) -> bool:
@@ -242,13 +237,21 @@ class PrinterStateTracker:
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         start_task: Callable[[Any], Any] = asyncio.create_task,
         standby_delay_seconds: float = 8,
+        fetch_file_metadata: Callable[[str], Awaitable[dict[str, Any]]] = moonraker.get_file_metadata,
     ) -> None:
         self._hub = event_hub
         self._notifier = notifier
         self._sleep = sleep
         self._start_task = start_task
         self._standby_delay_seconds = standby_delay_seconds
+        self._fetch_file_metadata = fetch_file_metadata
         self._standby_task: Any = None
+        self._slicer_progress = 0.0
+        self._whole_file_progress = 0.0
+        self._file_position: int | None = None
+        self._gcode_start_byte: int | None = None
+        self._gcode_end_byte: int | None = None
+        self._gcode_bytes_filename = ""
 
     async def handle_status_update(self, params: list[Any]) -> None:
         if not params:
@@ -258,12 +261,48 @@ class PrinterStateTracker:
         if _has_printer_fields(status):
             previous = self._hub.last_value("printer_state")
             updated = _merge_printer_state(previous, status)
+            await self._apply_progress(updated, status)
             if _is_standby_during_print(previous.get("state"), updated["state"]):
                 self._delay_standby(updated)
                 return
             await self._publish_printer_state(previous.get("state"), updated)
 
         await self._publish_temperatures(status)
+
+    async def _apply_progress(self, updated: dict[str, Any], status: dict[str, Any]) -> None:
+        """Progress is the average of the slicer's M73 progress and the position in the gcode, as in Fluidd."""
+        self._remember_progress_inputs(status)
+        await self._load_gcode_bytes(updated["filename"])
+        updated["progress"] = self._blended_progress()
+
+    def _remember_progress_inputs(self, status: dict[str, Any]) -> None:
+        display_status = status.get("display_status") or {}
+        if "progress" in display_status:
+            self._slicer_progress = display_status["progress"]
+        virtual_sdcard = status.get("virtual_sdcard") or {}
+        if "file_position" in virtual_sdcard:
+            self._file_position = virtual_sdcard["file_position"]
+        if "progress" in virtual_sdcard:
+            self._whole_file_progress = virtual_sdcard["progress"]
+
+    async def _load_gcode_bytes(self, filename: str) -> None:
+        """Asks once per file where its gcode starts and ends. A failed request is tried again with the next update."""
+        if not filename or self._file_position is None or filename == self._gcode_bytes_filename:
+            return
+        try:
+            metadata = await self._fetch_file_metadata(filename)
+        except Exception as exc:
+            log.warning("File metadata error for %s: %s", filename, exc)
+            return
+        self._gcode_start_byte = metadata.get("gcode_start_byte")
+        self._gcode_end_byte = metadata.get("gcode_end_byte")
+        self._gcode_bytes_filename = filename
+
+    def _blended_progress(self) -> float:
+        file_progress = file_relative_progress(
+            self._file_position, self._whole_file_progress, self._gcode_start_byte, self._gcode_end_byte
+        )
+        return round(blend_progress(self._slicer_progress, file_progress) * 100, 1)
 
     def _delay_standby(self, payload: dict[str, Any]) -> None:
         """Hold standby back, so the frontend does not flash "Printer idle" during a normal klippy reconnect."""
