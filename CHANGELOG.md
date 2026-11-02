@@ -1,3 +1,15 @@
+## [1.50.0](https://github.com/stevendejongnl/Hoard/compare/v1.49.0...v1.50.0) (2026-11-02)
+
+### Features
+
+* **switches:** switches in the configured order, and a switch that needs another ([aaa56cf](https://github.com/stevendejongnl/Hoard/commit/aaa56cf55ba842173a8fa0b783abf4fbac91a0cd))
+* **switches:** switching off first switches off what needs it ([1c5f20b](https://github.com/stevendejongnl/Hoard/commit/1c5f20bc65620fc3c015b18d6503e75df3714ce3))
+* **switches:** the panel shows the switches in order, locks what needs a switch that is off, and refreshes ([d539ebe](https://github.com/stevendejongnl/Hoard/commit/d539ebe9e5e74978c0e1df9dd724c3ea6796bde7))
+
+### Documentation
+
+* **switches:** HA_SWITCHES as a JSON list with order and requires ([211f13f](https://github.com/stevendejongnl/Hoard/commit/211f13fcf80969305c34a18393b748966d586964))
+
 ## [1.49.0](https://github.com/stevendejongnl/Hoard/compare/v1.48.0...v1.49.0) (2026-10-30)
 
 ### Features
