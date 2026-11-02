@@ -114,7 +114,7 @@ async def test_a_switch_is_turned_on_and_off_through_home_assistant(client, monk
     configure(monkeypatch, f"{PI},{DRYER}")
     override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
     assert (await client.post("/api/control/switches/filament-dryer/on")).json() == {"state": "on"}
-    assert (await client.post("/api/control/switches/raspberry-pi/off")).json() == {"state": "off"}
+    assert (await client.post("/api/control/switches/raspberry-pi/off")).json()["state"] == "off"
     assert [(request.url.path, json.loads(request.content)["entity_id"]) for request in requests] == [
         ("/api/services/homeassistant/turn_on", "switch.dryer_outlet"),
         ("/api/services/homeassistant/turn_off", "switch.pi_outlet"),

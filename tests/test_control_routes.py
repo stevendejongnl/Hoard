@@ -90,7 +90,7 @@ async def test_a_switch_is_turned_on_or_off_through_home_assistant(client: Async
     requests: list[httpx.Request] = []
     override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
     response = await client.post(f"/api/control/switches/pi/{action}")
-    assert response.json() == {"state": action}
+    assert response.json()["state"] == action
     request = requests[0]
     assert request.url.path == f"/api/services/homeassistant/turn_{action}"
     assert json.loads(request.content) == {"entity_id": "switch.pi"}
@@ -112,7 +112,7 @@ async def test_the_printer_power_is_switched_through_home_assistant(client: Asyn
     requests: list[httpx.Request] = []
     override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
     response = await client.post(f"/api/control/power/{action}")
-    assert response.json() == {"state": action}
+    assert response.json()["state"] == action
     assert requests[-1].url.path == f"/api/services/homeassistant/turn_{action}"
 
 

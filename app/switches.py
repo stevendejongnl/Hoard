@@ -163,3 +163,9 @@ def find_switch(key: str) -> SwitchDefinition | None:
 
 def find_printer_switch() -> SwitchDefinition:
     return next(definition for definition in configured_switches() if definition.is_printer)
+
+
+def find_dependents(definitions: list[SwitchDefinition], key: str) -> list[SwitchDefinition]:
+    """Every switch that needs this one, directly or through others, the deepest first."""
+    children = [definition for definition in definitions if definition.requires == key]
+    return [found for child in children for found in [*find_dependents(definitions, child.key), child]]
