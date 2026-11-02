@@ -7,7 +7,7 @@ import httpx
 from app import home_assistant
 from app.config import Settings, settings
 from app.routes import control
-from tests.route_fakes import recording_client_factory
+from tests.route_fakes import FakeHomeAssistant, recording_client_factory
 
 
 def configure(monkeypatch, **names: str) -> None:
@@ -124,11 +124,11 @@ async def test_the_power_switch_is_the_configured_one(monkeypatch) -> None:
     requests: list[httpx.Request] = []
     configure(monkeypatch, ha_power_switch="switch.plug")
     create_client = recording_client_factory(requests)
-    await control.power_on(create_client)
+    await control.power_on(create_client, FakeHomeAssistant())
     await control.power_off(create_client)
     assert [(request.url.path, json.loads(request.content)) for request in requests] == [
-        ("/api/services/switch/turn_on", {"entity_id": "switch.plug"}),
-        ("/api/services/switch/turn_off", {"entity_id": "switch.plug"}),
+        ("/api/services/homeassistant/turn_on", {"entity_id": "switch.plug"}),
+        ("/api/services/homeassistant/turn_off", {"entity_id": "switch.plug"}),
     ]
 
 

@@ -42,7 +42,7 @@ def test_a_json_list_keeps_its_order_and_names_what_each_switch_needs() -> None:
 
 def test_a_switch_may_need_one_that_comes_later_in_the_list() -> None:
     definitions = read_switch_definitions(as_json(PI, STRIP), PRINTER_ENTITY)
-    assert definitions[0].requires == "power-strip"
+    assert definitions[1].requires == "power-strip"
 
 
 def test_the_printer_power_comes_first_when_the_list_does_not_place_it() -> None:
