@@ -15,7 +15,8 @@ from app.detectors import Detection, DetectorUnavailableError
 
 REQUEST_TIMEOUT = 30.0
 API_VERSION = "2023-06-01"
-MAXIMUM_ANSWER_TOKENS = 200
+# The current models think by default and thinking counts against max_tokens, so the limit leaves room for it.
+MAXIMUM_ANSWER_TOKENS = 4096
 FIRST_JSON_OBJECT = re.compile(r"\{.*?\}", re.DOTALL)
 
 PROMPT = (
@@ -69,6 +70,7 @@ class VisionDetector:
         body = {
             "model": self._model,
             "max_tokens": MAXIMUM_ANSWER_TOKENS,
+            "output_config": {"effort": "low"},
             "messages": [{"role": "user", "content": [image, {"type": "text", "text": PROMPT}]}],
         }
         headers = {"x-api-key": self._api_key, "anthropic-version": API_VERSION, "content-type": "application/json"}
