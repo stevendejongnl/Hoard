@@ -186,6 +186,12 @@ async def _create_system_tables(connection: aiosqlite.Connection) -> None:
         )
     """)
     await connection.execute("""
+        CREATE TABLE IF NOT EXISTS detection_settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    """)
+    await connection.execute("""
         CREATE TABLE IF NOT EXISTS hidden_system_rows (
             key TEXT PRIMARY KEY
         )
@@ -351,6 +357,22 @@ class Database:
                 """DELETE FROM system_faults WHERE cleared_at IS NOT NULL AND id NOT IN
                    (SELECT id FROM system_faults ORDER BY first_seen DESC, id DESC LIMIT ?)""",
                 (keep,),
+            )
+            await connection.commit()
+
+    async def get_detection_settings(self) -> dict[str, Any]:
+        async with (
+            self.open_connection() as connection,
+            connection.execute("SELECT key, value FROM detection_settings") as cursor,
+        ):
+            return {key: json.loads(value) for key, value in await cursor.fetchall()}
+
+    async def save_detection_settings(self, values: dict[str, Any]) -> None:
+        async with self.open_connection() as connection:
+            await connection.executemany(
+                "INSERT INTO detection_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                [(key, json.dumps(value)) for key, value in values.items()],
             )
             await connection.commit()
 

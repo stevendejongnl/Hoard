@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     vapid_private_key: str = Field(default="", repr=False)
     vapid_subject: str = "mailto:admin@example.com"
 
+    # Print failure detection stays off while detector_url is empty. The detector is a separate container, for
+    # example Obico's ml_api. It fetches the camera image itself, so detector_snapshot_url is an address that the
+    # detector can open without a login: the in-cluster address of Hoard, not the public one.
+    detector_url: str = ""
+    detector_token: str = Field(default="", repr=False)
+    detector_snapshot_url: str = "http://hoard/api/webcams/0/snapshot"
+
     # The clients of the MCP endpoint (/mcp), as comma separated name:scope:hash entries. The scope is read, control
     # or admin; the hash is the SHA-256 of the client's token. Make an entry with `python -m app.mcp.new_token`.
     mcp_clients: str = Field(default="", repr=False)
