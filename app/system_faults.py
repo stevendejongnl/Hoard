@@ -143,8 +143,9 @@ async def check_system_faults(
     database: Any,
     event_hub: Any,
     clock: Callable[[], float] = time.time,
+    read_extra_faults: Callable[[], list[Fault]] = list,
 ) -> None:
-    faults = detect_faults(await read_readings())
+    faults = [*detect_faults(await read_readings()), *read_extra_faults()]
     await database.record_system_faults(faults, now=int(clock()))
     await database.prune_system_faults()
     await event_hub.broadcast("system_faults", {"active_count": len(faults)})
@@ -156,6 +157,7 @@ async def watch_system_faults(
     database: Any = default_database,
     event_hub: Any = hub,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    read_extra_faults: Callable[[], list[Fault]] = list,
 ) -> None:
     """Runs all the time, so a fault that clears overnight is still in the history."""
 
@@ -164,7 +166,7 @@ async def watch_system_faults(
 
     while True:
         try:
-            await check_system_faults(read_readings, database, event_hub)
+            await check_system_faults(read_readings, database, event_hub, read_extra_faults=read_extra_faults)
         except Exception as exc:
             log.warning("System fault check error: %s", exc)
         await sleep(interval)
