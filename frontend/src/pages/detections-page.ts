@@ -109,7 +109,10 @@ export class DetectionsPage extends LitElement {
       <td class="detection-thumbnail">
         <detection-frame .frameUrl=${alert.frame_url} .boxes=${alert.detections}></detection-frame>
       </td>
-      <td class="detection-print">${alert.filename}</td>
+      <td class="detection-print">
+        ${alert.filename}
+        <span class="muted detection-when">${describeAlertTime(alert.created_at, this.timeZone)}</span>
+      </td>
       <td class="muted">${describeAlertTime(alert.created_at, this.timeZone)}</td>
       <td class="monospace">${formatPercent(alert.score)}</td>
       <td class="detection-verdicts">

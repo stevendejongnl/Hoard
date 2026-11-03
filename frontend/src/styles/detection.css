@@ -111,10 +111,36 @@ detection-banner:not([hidden]) {
   .detection-banner-body {
     flex-wrap: wrap;
   }
+
+  .detection-banner-text {
+    flex: 1 1 140px;
+  }
+
+  .detection-banner-actions {
+    flex: 0 0 100%;
+  }
+
+  detection-strip:not([hidden]) {
+    flex-wrap: wrap;
+  }
+
+  /* Every button and link can be hit within 44 px of its center. */
+  .detection-banner-actions .button,
+  .detection-verdicts .button,
+  .detection-suggestion .button,
+  .detection-settings-actions .button {
+    min-height: 44px;
+  }
+
+  .detection-strip-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+  }
 }
 
 /* The settings form on the system page. */
-.detection-settings-body {
+.detection-settings-section .detection-settings-body {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -225,6 +251,33 @@ detections-page {
 
 .detection-verdicts {
   white-space: nowrap;
+}
+
+.detection-when {
+  display: none;
+}
+
+/* On a phone the time moves under the print, so the verdict buttons fit on the screen. */
+@media (max-width: 800px) {
+  .detections-table th,
+  .detections-table td {
+    padding: 6px 8px;
+  }
+
+  .detections-table th:nth-child(4),
+  .detections-table td:nth-child(4) {
+    display: none;
+  }
+
+  .detection-when {
+    display: block;
+    font-size: 12px;
+  }
+
+  .detection-verdicts .button {
+    display: block;
+    margin-bottom: 4px;
+  }
 }
 
 .detection-verdicts .button.active {
