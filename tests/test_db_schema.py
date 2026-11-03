@@ -238,6 +238,12 @@ FRESH_SCHEMA: dict[str, dict] = {
         "sql": "CREATE TABLE hidden_system_rows ( key TEXT PRIMARY KEY )",
         "columns": [("key", "TEXT", 0, None, 1)],
     },
+    "detection_settings": {
+        "type": "table",
+        "table": "detection_settings",
+        "sql": "CREATE TABLE detection_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
+        "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
+    },
     "system_faults": {
         "type": "table",
         "table": "system_faults",
@@ -412,6 +418,12 @@ MIGRATED_SCHEMA: dict[str, dict] = {
         "table": "hidden_system_rows",
         "sql": "CREATE TABLE hidden_system_rows ( key TEXT PRIMARY KEY )",
         "columns": [("key", "TEXT", 0, None, 1)],
+    },
+    "detection_settings": {
+        "type": "table",
+        "table": "detection_settings",
+        "sql": "CREATE TABLE detection_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
+        "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
     },
     "system_faults": {
         "type": "table",
