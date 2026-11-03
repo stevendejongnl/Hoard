@@ -1,4 +1,4 @@
-import type { PiStats, Power, PrinterState, Temps } from './types'
+import type { DetectionState, PiStats, Power, PrinterState, Temps } from './types'
 
 export type ServerSentEventPayload =
   | { type: 'printer_state'; data: PrinterState }
@@ -7,6 +7,7 @@ export type ServerSentEventPayload =
   | { type: 'pi_stats'; data: PiStats }
   | { type: 'history_updated'; data: { job_id: string; filename: string } }
   | { type: 'system_faults'; data: { active_count: number } }
+  | { type: 'detection'; data: { state: DetectionState; score: number | null } }
 
 export interface ConnectionStatus {
   isConnected: boolean
@@ -41,6 +42,7 @@ const EVENT_NAMES: ServerSentEventPayload['type'][] = [
   'pi_stats',
   'history_updated',
   'system_faults',
+  'detection',
 ]
 
 /** Returns the parsed value, or undefined when the text is not valid JSON. */

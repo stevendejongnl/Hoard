@@ -267,3 +267,49 @@ export interface SystemReport {
   fault_history: FaultRecord[]
   hidden: string[]
 }
+
+export type DetectionState = 'off' | 'idle' | 'watching' | 'unavailable' | 'alert'
+export type DetectionAction = 'notify' | 'pause'
+export type DetectionVerdict = 'real' | 'false_alarm'
+
+export interface DetectionSettings {
+  enabled: boolean
+  /** a score from 0 to 1 at or above which a frame looks failed */
+  threshold: number
+  interval_seconds: number
+  window_size: number
+  required_frames: number
+  action: DetectionAction
+}
+
+export interface ThresholdSuggestion {
+  threshold: number
+  reason: string
+}
+
+export interface DetectionStatus {
+  /** false while the server has no detector address: nothing about detection is shown then */
+  configured: boolean
+  state: DetectionState
+  score: number | null
+  settings: DetectionSettings
+  suggestion: ThresholdSuggestion | null
+}
+
+export interface DetectionBox {
+  label: string
+  score: number
+  /** centre x, centre y, width and height in pixels of the frame, or null */
+  box: number[] | null
+}
+
+export interface DetectionAlert {
+  id: number
+  created_at: number
+  filename: string
+  score: number
+  detections: DetectionBox[]
+  has_frame: boolean
+  verdict: DetectionVerdict | null
+  frame_url: string | null
+}

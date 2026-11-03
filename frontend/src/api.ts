@@ -1,3 +1,4 @@
+import type { DetectionAlert, DetectionSettings, DetectionStatus, DetectionVerdict } from './types'
 import type { GcodeFile, HomeAssistantSwitch, PredictResult, PrintRecord, Spool, SystemReport } from './types'
 import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
@@ -121,6 +122,23 @@ export const firmwareRestart = () => fetchJson('/api/control/firmware_restart', 
 export const emergencyStop = () => fetchJson('/api/control/emergency_stop', { method: 'POST' })
 export const startPrint = (filename: string) =>
   fetchJson(`/api/control/print?filename=${encodeURIComponent(filename)}`, { method: 'POST' })
+// Print failure detection
+export const getDetection = () => fetchJson<DetectionStatus>('/api/detection')
+export const saveDetectionSettings = (changes: Partial<DetectionSettings>) =>
+  fetchJson<DetectionSettings>('/api/detection/settings', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(changes),
+  })
+export const getDetectionAlerts = (verdict?: DetectionVerdict | 'unlabelled') =>
+  fetchJson<DetectionAlert[]>(`/api/detection/alerts${verdict ? `?verdict=${verdict}` : ''}`)
+export const setDetectionVerdicts = (ids: number[], verdict: DetectionVerdict | null) =>
+  fetchJson('/api/detection/alerts/verdicts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids, verdict }),
+  })
+
 export const pausePrint = () => fetchJson('/api/control/pause', { method: 'POST' })
 export const resumePrint = () => fetchJson('/api/control/resume', { method: 'POST' })
 export const cancelPrint = () => fetchJson('/api/control/cancel', { method: 'POST' })
