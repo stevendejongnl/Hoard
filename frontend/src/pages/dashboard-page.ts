@@ -7,6 +7,7 @@ import type { GcodeFile, PiStats, Power, PrinterState, Temps } from '../types'
 import '../components/camera-panel'
 import '../components/cost-predictor-panel'
 import '../components/dashboard-lists-panel'
+import '../components/detection-strip'
 import '../components/file-browser-modal'
 import '../components/phone-print-summary'
 import '../components/phone-temperature-section'
@@ -135,6 +136,18 @@ export class DashboardPage extends LitElement {
     ></print-timeline>`
   }
 
+  private renderMainColumn(): TemplateResult {
+    return html`<section class="dashboard-main" aria-label="Main">
+      <camera-panel></camera-panel>
+      <detection-strip></detection-strip>
+      <div class="chart-block">
+        ${this.renderChartHeader()}
+        <div class="chart-body"><temperature-chart></temperature-chart></div>
+      </div>
+      ${this.renderTimeline()}
+    </section>`
+  }
+
   private renderDesktop(): TemplateResult {
     return html`<div class="dashboard-layout">
       <aside class="dashboard-parameters" aria-label="Parameters">
@@ -148,14 +161,7 @@ export class DashboardPage extends LitElement {
           .timeZone=${this.timeZone}
         ></printer-parameter-panel>
       </aside>
-      <section class="dashboard-main" aria-label="Main">
-        <camera-panel></camera-panel>
-        <div class="chart-block">
-          ${this.renderChartHeader()}
-          <div class="chart-body"><temperature-chart></temperature-chart></div>
-        </div>
-        ${this.renderTimeline()}
-      </section>
+      ${this.renderMainColumn()}
       <aside class="dashboard-side" aria-label="Details">
         <dashboard-lists-panel
           .printerState=${this.printerState}
@@ -176,6 +182,7 @@ export class DashboardPage extends LitElement {
       ></phone-print-summary>
       <phone-temperature-section .temperatures=${this.temperatures} .power=${this.power}></phone-temperature-section>
       <camera-panel></camera-panel>
+      <detection-strip></detection-strip>
       <printer-parameter-panel
         isPhoneLayout
         .printerState=${this.printerState}

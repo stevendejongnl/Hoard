@@ -20,7 +20,7 @@ export function findNavigationSection(route: string): NavigationSection {
   if (route === '/history' || route.startsWith('/prints/')) return 'history'
   if (route.startsWith('/projects')) return 'projects'
   if (route === '/spools') return 'spools'
-  if (route === '/system') return 'system'
+  if (route === '/system' || route === '/detections') return 'system'
   return 'dashboard'
 }
 
@@ -52,6 +52,7 @@ const PHONE_TITLES: Record<NavigationSection, string> = {
 /** What the phone's top bar shows for a route: the page title, and a way back from a project. */
 export function describePhoneHeader(route: string): PhoneHeader {
   if (route.startsWith('/projects/')) return { title: 'Project', backPath: '/projects' }
+  if (route === '/detections') return { title: 'Detections', backPath: '/system' }
   return { title: PHONE_TITLES[findNavigationSection(route)], backPath: null }
 }
 

@@ -1,4 +1,12 @@
-export type Route = '/' | '/history' | '/spools' | '/system' | '/projects' | `/projects/${string}` | `/prints/${string}`
+export type Route =
+  | '/'
+  | '/history'
+  | '/spools'
+  | '/system'
+  | '/detections'
+  | '/projects'
+  | `/projects/${string}`
+  | `/prints/${string}`
 
 /** What the router needs from the browser, so a test can hand it a fake one. */
 export interface RouterEnvironment {
@@ -30,6 +38,7 @@ export class Router {
     if (pathname === '/history') return '/history'
     if (pathname === '/spools') return '/spools'
     if (pathname === '/system') return '/system'
+    if (pathname === '/detections') return '/detections'
     if (pathname === '/projects') return '/projects'
     if (pathname.startsWith(PROJECT_PREFIX)) return pathname as `/projects/${string}`
     if (pathname.startsWith(PRINT_PREFIX)) return pathname as `/prints/${string}`
