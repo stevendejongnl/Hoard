@@ -132,8 +132,9 @@ def _percent(share: float | None) -> str:
 
 
 def _format_tier(tier: str, summary: TierSummary) -> str:
+    noun = "image " if summary.count == 1 else "images"
     return (
-        f"{tier:<14}{summary.count:>4} images   lowest {_percent(summary.lowest):>4}"
+        f"{tier:<14}{summary.count:>4} {noun}   lowest {_percent(summary.lowest):>4}"
         f"   mean {_percent(summary.mean):>4}   highest {_percent(summary.highest):>4}"
     )
 
