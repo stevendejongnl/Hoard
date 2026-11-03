@@ -192,6 +192,17 @@ async def _create_system_tables(connection: aiosqlite.Connection) -> None:
         )
     """)
     await connection.execute("""
+        CREATE TABLE IF NOT EXISTS detection_alerts (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            created_at INTEGER NOT NULL,
+            filename   TEXT NOT NULL,
+            score      REAL NOT NULL,
+            detections TEXT NOT NULL,
+            has_frame  INTEGER NOT NULL DEFAULT 0,
+            verdict    TEXT
+        )
+    """)
+    await connection.execute("""
         CREATE TABLE IF NOT EXISTS hidden_system_rows (
             key TEXT PRIMARY KEY
         )
@@ -201,6 +212,21 @@ async def _create_system_tables(connection: aiosqlite.Connection) -> None:
 async def _create_indexes(connection: aiosqlite.Connection) -> None:
     await connection.execute("CREATE INDEX IF NOT EXISTS idx_print_photos_job_id ON print_photos(job_id)")
     await connection.execute("CREATE INDEX IF NOT EXISTS idx_project_prints_job_id ON project_prints(job_id)")
+
+
+def _read_detection_alert(row: aiosqlite.Row) -> dict[str, Any]:
+    alert = dict(row)
+    alert["detections"] = json.loads(alert["detections"])
+    alert["has_frame"] = bool(alert["has_frame"])
+    return alert
+
+
+def _detection_verdict_condition(verdict: str | None) -> tuple[str, tuple[str, ...]]:
+    if verdict is None:
+        return "", ()
+    if verdict == "unlabelled":
+        return "WHERE verdict IS NULL", ()
+    return "WHERE verdict = ?", (verdict,)
 
 
 async def _fetch_project_totals(connection: aiosqlite.Connection, project_id: int) -> dict[str, Any] | None:
@@ -375,6 +401,60 @@ class Database:
                 [(key, json.dumps(value)) for key, value in values.items()],
             )
             await connection.commit()
+
+    async def add_detection_alert(
+        self, created_at: int, filename: str, score: float, detections: list[dict[str, Any]]
+    ) -> int:
+        async with self.open_connection() as connection:
+            cursor = await connection.execute(
+                "INSERT INTO detection_alerts (created_at, filename, score, detections) VALUES (?, ?, ?, ?)",
+                (created_at, filename, score, json.dumps(detections)),
+            )
+            await connection.commit()
+            return cursor.lastrowid or 0
+
+    async def mark_detection_alert_has_frame(self, alert_id: int) -> None:
+        async with self.open_connection() as connection:
+            await connection.execute("UPDATE detection_alerts SET has_frame = 1 WHERE id = ?", (alert_id,))
+            await connection.commit()
+
+    async def get_detection_alert(self, alert_id: int) -> dict[str, Any] | None:
+        async with self.open_connection() as connection:
+            connection.row_factory = aiosqlite.Row
+            async with connection.execute("SELECT * FROM detection_alerts WHERE id = ?", (alert_id,)) as cursor:
+                row = await cursor.fetchone()
+        return _read_detection_alert(row) if row else None
+
+    async def list_detection_alerts(self, limit: int = 200, verdict: str | None = None) -> list[dict[str, Any]]:
+        """Newest first. A verdict of "unlabelled" lists the alerts that have none yet."""
+        condition, arguments = _detection_verdict_condition(verdict)
+        async with self.open_connection() as connection:
+            connection.row_factory = aiosqlite.Row
+            async with connection.execute(
+                f"SELECT * FROM detection_alerts {condition} ORDER BY created_at DESC, id DESC LIMIT ?",
+                (*arguments, limit),
+            ) as cursor:
+                return [_read_detection_alert(row) for row in await cursor.fetchall()]
+
+    async def set_detection_verdicts(self, alert_ids: list[int], verdict: str | None) -> None:
+        placeholders = ",".join("?" for _ in alert_ids)
+        async with self.open_connection() as connection:
+            await connection.execute(
+                f"UPDATE detection_alerts SET verdict = ? WHERE id IN ({placeholders})", (verdict, *alert_ids)
+            )
+            await connection.commit()
+
+    async def delete_detection_alerts_beyond(self, keep: int) -> list[int]:
+        """Deletes all but the newest alerts and returns the ids that went."""
+        async with self.open_connection() as connection:
+            async with connection.execute(
+                "SELECT id FROM detection_alerts ORDER BY created_at DESC, id DESC LIMIT -1 OFFSET ?", (keep,)
+            ) as cursor:
+                removed = [row[0] for row in await cursor.fetchall()]
+            placeholders = ",".join("?" for _ in removed)
+            await connection.execute(f"DELETE FROM detection_alerts WHERE id IN ({placeholders})", removed)
+            await connection.commit()
+        return removed
 
     async def list_hidden_system_rows(self) -> list[str]:
         async with (
