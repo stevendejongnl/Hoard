@@ -27,11 +27,13 @@ class DetectionAlertStore:
         frames_directory: Path,
         fetch_frame: Callable[[], Awaitable[bytes]],
         clock: Callable[[], float] = time.time,
+        kept_alerts: int = KEPT_ALERTS,
     ) -> None:
         self._database = database
         self._frames_directory = frames_directory
         self._fetch_frame = fetch_frame
         self._clock = clock
+        self._kept_alerts = kept_alerts
 
     def frame_path(self, alert_id: int) -> Path | None:
         path = self._frames_directory / f"{alert_id}.jpg"
@@ -42,6 +44,7 @@ class DetectionAlertStore:
             int(self._clock()), report.filename, report.score, _describe(report)
         )
         await self._keep_frame(alert_id)
+        await self.prune(self._kept_alerts)
         return alert_id
 
     async def _keep_frame(self, alert_id: int) -> None:
@@ -54,6 +57,6 @@ class DetectionAlertStore:
             return
         await self._database.mark_detection_alert_has_frame(alert_id)
 
-    async def prune(self, keep: int = KEPT_ALERTS) -> None:
+    async def prune(self, keep: int) -> None:
         for alert_id in await self._database.delete_detection_alerts_beyond(keep):
             (self._frames_directory / f"{alert_id}.jpg").unlink(missing_ok=True)

@@ -11,8 +11,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import cache, db, home_assistant, recorder, server_sent_events, system_faults
+from app import cache, db, home_assistant, push_client, recorder, server_sent_events, system_faults
 from app.config import settings
+from app.db import default_database
+from app.detection_setup import build_detection_monitor
 from app.influx import influx
 from app.mcp.api_request import InProcessApi
 from app.mcp.catalog import build_tool_definitions
@@ -59,13 +61,25 @@ async def _price_recorder_loop() -> None:
 
 def _start_background_tasks() -> list[asyncio.Task]:
     """Start the long-running tasks and return the ones that must be cancelled on shutdown."""
+    detection_monitor = build_detection_monitor(
+        settings,
+        default_database,
+        server_sent_events.hub,
+        push_client.notify,
+        moonraker,
+        lambda: server_sent_events.hub.last_value("printer_state"),
+    )
     cancellable_tasks = [
         asyncio.create_task(moonraker.connect_ws()),
         asyncio.create_task(server_sent_events._poll_ha()),
         asyncio.create_task(server_sent_events._poll_pi_stats()),
         asyncio.create_task(server_sent_events._poll_printer_state()),
-        asyncio.create_task(system_faults.watch_system_faults()),
+        asyncio.create_task(
+            system_faults.watch_system_faults(read_extra_faults=detection_monitor.faults if detection_monitor else list)
+        ),
     ]
+    if detection_monitor:
+        cancellable_tasks.append(asyncio.create_task(detection_monitor.run()))
     # Full backfill on startup, then quick reconcile every 5 minutes
     asyncio.create_task(recorder.startup_reconcile())
     asyncio.create_task(recorder.periodic_reconcile())
