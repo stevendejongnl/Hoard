@@ -132,3 +132,10 @@ def test_the_report_names_the_tiers_and_the_rates_at_each_threshold():
 
 def test_a_report_without_unjudged_images_does_not_mention_them():
     assert "could not be judged" not in format_report([scored("obvious", 0.9)], [0.5])
+
+
+def test_a_tier_with_one_image_says_image_and_not_images():
+    report = format_report([scored("obvious", 0.9), scored("good", 0.1), scored("good", 0.2)], [0.5])
+    assert "1 image " in report
+    assert "2 images" in report
+    assert "1 images" not in report
