@@ -2,6 +2,7 @@ import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { getSystem, setHiddenSystemRows } from '../api'
+import '../components/detection-settings'
 import { renderIcon } from '../icons'
 import { formatPrintDuration } from '../print-history-list'
 import type { FaultRecord, SystemFault, SystemReport, SystemRow, SystemSection } from '../types'
@@ -186,7 +187,8 @@ export class SystemPage extends LitElement {
     if (this.loadState === 'loading') return html`<div class="state-message">Loading system…</div>`
     if (!this.report) return html`<div class="state-message">Could not load the system information</div>`
     return html`<div class="system-layout">
-      ${this.renderStrip(this.report)} ${this.renderFaults(this.report)} ${this.renderSections(this.report)}
+      ${this.renderStrip(this.report)} ${this.renderFaults(this.report)}
+      <detection-settings></detection-settings> ${this.renderSections(this.report)}
     </div>`
   }
 }

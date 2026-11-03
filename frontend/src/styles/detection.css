@@ -112,3 +112,123 @@ detection-banner:not([hidden]) {
     flex-wrap: wrap;
   }
 }
+
+/* The settings form on the system page. */
+.detection-settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+}
+
+.detection-setting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.detection-setting .parameter-label {
+  flex: 0 0 220px;
+}
+
+.detection-setting input.value-field,
+.detection-setting select.value-field {
+  box-sizing: border-box;
+  max-width: 240px;
+}
+
+.detection-setting input.value-field[type='number'] {
+  width: 80px;
+}
+
+.detection-suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  font-size: 13px;
+}
+
+.detection-settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+/* The detections page: one dense row per alert. */
+detections-page {
+  display: block;
+  height: 100%;
+}
+
+.detections-layout {
+  height: 100%;
+  overflow-y: auto;
+  background: var(--panel-color);
+}
+
+.detections-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 6px 12px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.detections-title {
+  font: 600 15px var(--font-family);
+}
+
+.detections-bulk {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detections-table-wrapper {
+  overflow-x: auto;
+}
+
+.detections-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.detections-table th {
+  padding: 6px 12px;
+  background: var(--section-header-color);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--secondary-text-color);
+  font-weight: 600;
+  text-align: left;
+}
+
+.detections-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.detection-thumbnail detection-frame img {
+  height: 54px;
+  width: auto;
+  border: 1px solid var(--border-color);
+}
+
+.detection-verdicts {
+  white-space: nowrap;
+}
+
+.detection-verdicts .button.active {
+  background: var(--selection-tint);
+  border-color: var(--accent);
+  color: #fff;
+}
