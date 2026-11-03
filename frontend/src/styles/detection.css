@@ -1,0 +1,114 @@
+/* Print failure detection: the strip under the camera, the banner above every page, and the frame with boxes. */
+
+detection-frame {
+  position: relative;
+  display: inline-block;
+  line-height: 0;
+}
+
+detection-frame img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+detection-frame svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+detection-frame rect {
+  fill: none;
+  stroke: var(--danger-color);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.detection-no-frame {
+  display: inline-block;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.detection-light {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted-text-color);
+}
+
+.detection-light.ok {
+  background: var(--ok-color);
+}
+
+.detection-light.warning {
+  background: var(--hotend-color);
+}
+
+.detection-light.error {
+  background: var(--danger-color);
+}
+
+detection-strip:not([hidden]) {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-sizing: border-box;
+  min-height: 30px;
+  padding: 0 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+}
+
+.detection-strip-link {
+  margin-left: auto;
+}
+
+detection-banner:not([hidden]) {
+  flex: none;
+  display: block;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+  border-left: 3px solid var(--danger-color);
+}
+
+.detection-banner-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.detection-banner-body detection-frame img {
+  height: 48px;
+  width: auto;
+  border: 1px solid var(--border-color);
+}
+
+.detection-banner-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.detection-banner-error {
+  color: var(--danger-color);
+}
+
+.detection-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+@media (max-width: 800px) {
+  .detection-banner-body {
+    flex-wrap: wrap;
+  }
+}
