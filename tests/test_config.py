@@ -36,3 +36,13 @@ def test_secrets_never_show_when_the_settings_are_printed() -> None:
     printed = repr(settings) + str(settings)
     for secret in ("ha-secret-value", "influx-secret-value", "vapid-secret-value"):
         assert secret not in printed
+
+
+def test_detection_is_off_until_a_detector_address_is_set() -> None:
+    settings = Settings(_env_file=None, detector_url="")
+    assert settings.detector_url == ""
+
+
+def test_the_detector_token_never_shows_when_the_settings_are_printed() -> None:
+    settings = Settings(_env_file=None, detector_token="detector-secret")
+    assert "detector-secret" not in repr(settings)
