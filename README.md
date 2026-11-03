@@ -30,6 +30,7 @@ The screenshots are taken from the app filled with sample data (`python3 -m fron
 - **Print detail.** The job, the cost breakdown, and photos of the result.
 - **Search.** A command palette over prints, projects and spools (`/`).
 - **Notifications.** Web push when a print finishes or fails.
+- **Failure detection (optional).** A detector judges the camera while a print runs. When enough of the newest images look failed, a banner on every page shows the image with the buttons Real and False alarm, a push notification opens the Detections page, and the print is paused if you chose that. Your verdicts suggest a limit, and the labelled images download as a dataset. It stays off and hidden until you set a detector: Obico's `ml_api` in a container of its own, or a vision model, which is a service outside your network. See the wiki's Failure detection page.
 - **Appearance.** One accent colour, set by hex in the status bar.
 - **System.** What the printer's host and control boards report, whatever the hardware is, with the active faults and a history of them. Under-voltage shows on a host that reports it. Rows and sections can be hidden.
 
@@ -43,6 +44,7 @@ Hoard talks to what is already in the house:
 | Home Assistant | printer power draw, electricity price, energy and the power switch | `HA_URL`, `HA_TOKEN`, and the entity names below |
 | InfluxDB | stores power, electricity prices and print costs | `INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET` |
 | Redis | caches the lists | `REDIS_URL` |
+| A detector (optional) | failure detection | `DETECTOR_BACKEND`, `DETECTOR_URL`, `VISION_API_KEY` |
 
 The Home Assistant entities are settings, so you map them to the names of your own setup:
 
