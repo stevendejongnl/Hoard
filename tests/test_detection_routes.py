@@ -50,6 +50,28 @@ async def test_with_a_detector_the_status_is_what_the_watcher_announced(client: 
     assert (body["configured"], body["state"], body["score"]) == (True, "watching", 0.2)
 
 
+async def test_a_detector_in_the_network_does_not_send_frames_away(client: AsyncClient, hub: FakeHub, monkeypatch):
+    monkeypatch.setattr(settings, "detector_backend", "obico")
+    assert (await client.get("/api/detection")).json()["frames_leave_network"] is False
+
+
+@pytest.mark.parametrize("backend", ["vision", "chained"])
+async def test_a_vision_model_sends_frames_away_and_the_status_says_so(
+    client: AsyncClient, hub: FakeHub, monkeypatch, backend: str
+):
+    monkeypatch.setattr(settings, "detector_backend", backend)
+    assert (await client.get("/api/detection")).json()["frames_leave_network"] is True
+
+
+async def test_the_vision_backend_is_configured_by_its_key_and_not_by_a_detector_address(
+    client: AsyncClient, hub: FakeHub, monkeypatch
+):
+    monkeypatch.setattr(settings, "detector_backend", "vision")
+    monkeypatch.setattr(settings, "detector_url", "")
+    monkeypatch.setattr(settings, "vision_api_key", "key")
+    assert (await client.get("/api/detection")).json()["configured"] is True
+
+
 async def test_the_status_never_shows_the_detector_address(client: AsyncClient, hub: FakeHub, monkeypatch):
     monkeypatch.setattr(settings, "detector_url", "http://detector:3333")
     assert "detector:3333" not in (await client.get("/api/detection")).text

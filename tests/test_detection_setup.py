@@ -82,11 +82,22 @@ async def database(tmp_path: Path) -> Database:
     return database
 
 
-def make_settings(tmp_path: Path, detector_url: str = "http://detector:3333") -> SimpleNamespace:
+def make_settings(
+    tmp_path: Path,
+    detector_url: str = "http://detector:3333",
+    detector_backend: str = "obico",
+    vision_api_key: str = "",
+) -> SimpleNamespace:
     return SimpleNamespace(
         detector_url=detector_url,
         detector_token="",
         detector_snapshot_url=SNAPSHOT_URL,
+        detector_backend=detector_backend,
+        vision_api_key=vision_api_key,
+        vision_model="claude-haiku-5-5",
+        vision_base_url="https://api.example.test",
+        chained_low=0.3,
+        chained_high=0.7,
         uploads_dir=str(tmp_path / "uploads"),
     )
 
@@ -147,3 +158,38 @@ async def test_with_the_pause_action_the_printer_is_paused(tmp_path: Path, datab
     with pytest.raises(StopTestError):
         await monitor.run()
     assert printer.posted == ["/printer/print/pause"]
+
+
+def build_with(tmp_path: Path, database: Database, **settings: str):
+    return build_detection_monitor(
+        make_settings(tmp_path, **settings),
+        database,
+        FakeHub(),
+        lambda *arguments: None,  # type: ignore[arg-type,return-value]
+        FakeMoonraker(),
+        lambda: PRINTING,
+        http_client_factory=lambda: FakeHttpClient(),
+        sleep=CountingSleep(1),
+    )
+
+
+@pytest.mark.parametrize(
+    ("backend", "detector_url", "vision_api_key", "is_built"),
+    [
+        ("obico", "http://detector:3333", "", True),
+        ("obico", "", "key", False),
+        ("vision", "", "key", True),
+        ("vision", "http://detector:3333", "", False),
+        ("chained", "http://detector:3333", "key", True),
+        ("chained", "", "key", False),
+        ("chained", "http://detector:3333", "", False),
+        ("unknown", "http://detector:3333", "key", False),
+    ],
+)
+def test_the_backend_decides_what_must_be_set_for_the_monitor_to_be_built(
+    tmp_path: Path, database: Database, backend: str, detector_url: str, vision_api_key: str, is_built: bool
+):
+    monitor = build_with(
+        tmp_path, database, detector_backend=backend, detector_url=detector_url, vision_api_key=vision_api_key
+    )
+    assert (monitor is not None) is is_built

@@ -46,3 +46,16 @@ def test_detection_is_off_until_a_detector_address_is_set() -> None:
 def test_the_detector_token_never_shows_when_the_settings_are_printed() -> None:
     settings = Settings(_env_file=None, detector_token="detector-secret")
     assert "detector-secret" not in repr(settings)
+
+
+def test_the_detector_is_obico_unless_another_backend_is_chosen() -> None:
+    assert Settings(_env_file=None).detector_backend == "obico"
+
+
+def test_the_vision_key_never_shows_when_the_settings_are_printed() -> None:
+    assert "vision-secret" not in repr(Settings(_env_file=None, vision_api_key="vision-secret"))
+
+
+def test_a_borderline_band_sits_between_the_two_ends_by_default() -> None:
+    settings = Settings(_env_file=None)
+    assert 0 < settings.chained_low < settings.chained_high < 1
