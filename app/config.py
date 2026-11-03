@@ -39,6 +39,15 @@ class Settings(BaseSettings):
     detector_url: str = ""
     detector_token: str = Field(default="", repr=False)
     detector_snapshot_url: str = "http://hoard/api/webcams/0/snapshot"
+    # Which detector judges the camera image: obico (the container behind detector_url), vision (a vision model,
+    # which needs vision_api_key and sends the camera image out of the network), or chained (obico first, and the
+    # vision model only for a score between chained_low and chained_high).
+    detector_backend: str = "obico"
+    vision_api_key: str = Field(default="", repr=False)
+    vision_model: str = "claude-haiku-5-5"
+    vision_base_url: str = "https://api.anthropic.com"
+    chained_low: float = 0.3
+    chained_high: float = 0.7
 
     # The clients of the MCP endpoint (/mcp), as comma separated name:scope:hash entries. The scope is read, control
     # or admin; the hash is the SHA-256 of the client's token. Make an entry with `python -m app.mcp.new_token`.

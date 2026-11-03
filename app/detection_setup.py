@@ -8,10 +8,10 @@ from typing import Any
 import httpx
 
 from app.detection_alerts import DetectionAlertStore
+from app.detection_backends import build_detector
 from app.detection_monitor import DetectionMonitor
 from app.detection_settings import DetectionSettings, build_detection_settings
 from app.failure_response import FailureResponder
-from app.obico_detector import ObicoDetector
 from app.spaghetti_watch import PrintWatcher
 
 DETECTION_FRAMES_FOLDER = "detections"
@@ -33,7 +33,8 @@ def build_detection_monitor(
     http_client_factory: Callable[[], Any] = _default_http_client,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> DetectionMonitor | None:
-    if not app_settings.detector_url:
+    detector = build_detector(app_settings, http_client_factory)
+    if detector is None:
         return None
 
     async def load_settings() -> DetectionSettings:
@@ -48,7 +49,6 @@ def build_detection_monitor(
     async def pause_print() -> None:
         await moonraker_client.post(PAUSE_PATH)
 
-    detector = ObicoDetector(app_settings.detector_url, app_settings.detector_token, http_client_factory)
     frames_directory = Path(app_settings.uploads_dir) / DETECTION_FRAMES_FOLDER
     alert_store = DetectionAlertStore(database, frames_directory, fetch_frame)
     responder = FailureResponder(alert_store, notify, pause_print, load_settings)

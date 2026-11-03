@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.detection_backends import is_detection_configured, sends_frames_away
 from app.detection_settings import InvalidDetectionSettingsError, build_detection_settings
 from app.routes.dependencies import Database
 from app.server_sent_events import SSEHub, hub
@@ -50,12 +51,13 @@ def _show_alert(alert: dict[str, Any]) -> dict[str, Any]:
 
 @router.get("")
 async def get_detection(database: Database, event_hub: EventHub) -> dict[str, Any]:
-    configured = bool(settings.detector_url)
+    configured = is_detection_configured(settings)
     announced = event_hub.last_value("detection")
     current = await _read_settings(database)
     suggestion = suggest_threshold(await database.list_detection_alerts(limit=500), current["threshold"])
     return {
         "configured": configured,
+        "frames_leave_network": sends_frames_away(settings),
         "state": announced.get("state", "idle") if configured else "off",
         "score": announced.get("score") if configured else None,
         "settings": current,
