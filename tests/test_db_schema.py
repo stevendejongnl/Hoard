@@ -244,6 +244,22 @@ FRESH_SCHEMA: dict[str, dict] = {
         "sql": "CREATE TABLE detection_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
         "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
     },
+    "detection_alerts": {
+        "type": "table",
+        "table": "detection_alerts",
+        "sql": "CREATE TABLE detection_alerts ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "created_at INTEGER NOT NULL, filename TEXT NOT NULL, score REAL NOT NULL, "
+        "detections TEXT NOT NULL, has_frame INTEGER NOT NULL DEFAULT 0, verdict TEXT )",
+        "columns": [
+            ("id", "INTEGER", 0, None, 1),
+            ("created_at", "INTEGER", 1, None, 0),
+            ("filename", "TEXT", 1, None, 0),
+            ("score", "REAL", 1, None, 0),
+            ("detections", "TEXT", 1, None, 0),
+            ("has_frame", "INTEGER", 1, "0", 0),
+            ("verdict", "TEXT", 0, None, 0),
+        ],
+    },
     "system_faults": {
         "type": "table",
         "table": "system_faults",
@@ -424,6 +440,22 @@ MIGRATED_SCHEMA: dict[str, dict] = {
         "table": "detection_settings",
         "sql": "CREATE TABLE detection_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
         "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
+    },
+    "detection_alerts": {
+        "type": "table",
+        "table": "detection_alerts",
+        "sql": "CREATE TABLE detection_alerts ( id INTEGER PRIMARY KEY AUTOINCREMENT, "
+        "created_at INTEGER NOT NULL, filename TEXT NOT NULL, score REAL NOT NULL, "
+        "detections TEXT NOT NULL, has_frame INTEGER NOT NULL DEFAULT 0, verdict TEXT )",
+        "columns": [
+            ("id", "INTEGER", 0, None, 1),
+            ("created_at", "INTEGER", 1, None, 0),
+            ("filename", "TEXT", 1, None, 0),
+            ("score", "REAL", 1, None, 0),
+            ("detections", "TEXT", 1, None, 0),
+            ("has_frame", "INTEGER", 1, "0", 0),
+            ("verdict", "TEXT", 0, None, 0),
+        ],
     },
     "system_faults": {
         "type": "table",
