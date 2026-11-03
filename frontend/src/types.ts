@@ -135,7 +135,7 @@ export interface Project {
 export interface ProjectFile {
   id: number
   project_id: number
-  type: 'gcode' | 'stl'
+  type: 'gcode' | 'stl' | '3mf'
   filename: string
   label: string | null
   print_count?: number

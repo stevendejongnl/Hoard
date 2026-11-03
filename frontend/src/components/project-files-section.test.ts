@@ -91,6 +91,33 @@ describe('project-files-section', () => {
     expect(kinds).toEqual(['G-code · linked', 'STL'])
   })
 
+  it('shows the thumbnail of a gcode file', async () => {
+    const files = [createFile({ id: 1, filename: 'folder/plate one.gcode' })]
+    const section = await mountSection(new FakeProjectFiles(), files)
+    const image = section.querySelector('.file-row img') as HTMLImageElement
+    expect(image.getAttribute('src')).toBe('/api/files/thumbnail/from-gcode?filename=folder%2Fplate%20one.gcode')
+  })
+
+  it('shows the file icon when the thumbnail cannot be loaded', async () => {
+    const section = await mountSection(new FakeProjectFiles(), [createFile({ id: 1 })])
+    section.querySelector('.file-row img')?.dispatchEvent(new Event('error'))
+    await section.updateComplete
+    expect(section.querySelector('.file-row img')).toBeNull()
+    expect(section.querySelector('.file-row .file-icon svg')).not.toBeNull()
+  })
+
+  it('shows the file icon and no thumbnail for a model file', async () => {
+    const files = [createFile({ id: 2, type: 'stl', filename: 'gear.stl' })]
+    const section = await mountSection(new FakeProjectFiles(), files)
+    expect(section.querySelector('.file-row img')).toBeNull()
+    expect(section.querySelector('.file-row .file-icon svg')).not.toBeNull()
+  })
+
+  it('names a 3MF file as a 3MF and not as an STL', async () => {
+    const section = await mountSection(new FakeProjectFiles(), [createFile({ id: 3, type: '3mf', filename: 'a.3mf' })])
+    expect(section.querySelector('.file-kind')?.textContent?.trim()).toBe('3MF')
+  })
+
   it('says there are no files yet when the project has none', async () => {
     const section = await mountSection(new FakeProjectFiles(), [])
     expect(section.querySelector('.panel-body')?.textContent).toContain('No files yet')

@@ -18,7 +18,7 @@ function describeError(error: unknown): string {
 
 function describeFileKind(file: ProjectFile): string {
   if (file.type === 'gcode') return 'G-code · linked'
-  return 'STL'
+  return file.type.toUpperCase()
 }
 
 /** The files panel of a project: the G-code linked to it and the model files uploaded to it. */
@@ -41,6 +41,7 @@ export class ProjectFilesSection extends LitElement {
   @state() private isPickerOpen = false
   @state() private printMessage = ''
   @state() private gcodeFilenames: string[] = []
+  @state() private failedThumbnails = new Set<number>()
 
   createRenderRoot() {
     return this
@@ -114,9 +115,26 @@ export class ProjectFilesSection extends LitElement {
     return html`<div class="muted print-message" role="status">${this.printMessage}</div>`
   }
 
+  private renderThumbnail(file: ProjectFile): TemplateResult {
+    const source = `/api/files/thumbnail/from-gcode?filename=${encodeURIComponent(file.filename)}`
+    return html`<img
+      src=${source}
+      alt=""
+      loading="lazy"
+      @error=${() => (this.failedThumbnails = new Set([...this.failedThumbnails, file.id]))}
+    />`
+  }
+
+  private renderFileIcon(file: ProjectFile): TemplateResult {
+    const hasThumbnail = file.type === 'gcode' && !this.failedThumbnails.has(file.id)
+    return html`<span class="muted file-icon ${hasThumbnail ? 'thumbnail' : ''}"
+      >${hasThumbnail ? this.renderThumbnail(file) : renderIcon('file', 16)}</span
+    >`
+  }
+
   private renderFile(file: ProjectFile): TemplateResult {
     return html`<div class="file-row">
-      <span class="muted file-icon">${renderIcon('file', 16)}</span>
+      ${this.renderFileIcon(file)}
       <span class="monospace file-name">${file.label ?? findBaseName(file.filename)}</span>
       <span class="muted file-kind">${describeFileKind(file)}</span>
       ${this.renderPrintButton(file)}
