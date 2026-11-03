@@ -115,3 +115,14 @@ async def test_a_camera_that_does_not_answer_means_the_detector_is_unavailable()
     with pytest.raises(DetectorUnavailableError):
         await make_detector(client).detect(SNAPSHOT_URL)
     assert client.posted == []
+
+
+async def test_the_model_gets_room_to_think_and_still_answer_and_is_asked_for_little_effort():
+    # The current models think by default and thinking counts against max_tokens, so a small limit can leave no
+    # room for the answer. A short JSON answer needs the least effort.
+    client = FakeHttpClient()
+    await make_detector(client).detect(SNAPSHOT_URL)
+    body = client.posted[0][1]["json"]
+    assert body["max_tokens"] >= 2000
+    assert body["output_config"] == {"effort": "low"}
+    assert "thinking" not in body
