@@ -17,6 +17,7 @@ const ALERT: DetectionAlert = {
 function statusIn(state: DetectionState): DetectionStatus {
   return {
     configured: true,
+    frames_leave_network: false,
     state,
     score: 0.8,
     settings: {

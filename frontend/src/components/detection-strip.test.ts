@@ -5,6 +5,7 @@ import type { DetectionStatus } from '../types'
 
 const STATUS: DetectionStatus = {
   configured: true,
+  frames_leave_network: false,
   state: 'watching',
   score: 0.123,
   settings: {

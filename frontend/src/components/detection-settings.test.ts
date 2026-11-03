@@ -14,6 +14,7 @@ const SETTINGS: DetectionSettings = {
 
 const STATUS: DetectionStatus = {
   configured: true,
+  frames_leave_network: false,
   state: 'watching',
   score: 0.1,
   settings: SETTINGS,
@@ -141,5 +142,15 @@ describe('detection settings', () => {
   it('offers no suggestion when there is none', async () => {
     const { form } = await createForm()
     expect(form.textContent).not.toContain('Suggested')
+  })
+
+  it('says plainly that the camera image is sent out of the network when a vision model judges it', async () => {
+    const { form } = await createForm({}, { ...STATUS, frames_leave_network: true })
+    expect(form.textContent).toContain('sent to an outside service')
+  })
+
+  it('says nothing about it while the detector is in the network', async () => {
+    const { form } = await createForm()
+    expect(form.textContent).not.toContain('outside service')
   })
 })
