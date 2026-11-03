@@ -1,0 +1,97 @@
+# Optional: Obico's ml_api, the failure detector behind Hoard's print failure detection.
+# Hoard works without it. It is not applied with the rest of k8s/ (kubectl apply -f k8s/ skips this folder).
+#
+# 1. Build the image from Obico's source with ./build-ml-api.sh and push it to the registry.
+# 2. Put ML_API_TOKEN in the hoard-secrets secret (optional, but it keeps other pods out).
+# 3. kubectl apply -f k8s/optional/ml-api.yaml
+# 4. Give the hoard deployment DETECTOR_URL=http://ml-api:3333 and, if the token is set, DETECTOR_TOKEN
+#    from the same secret key. The detector fetches the camera image itself, from DETECTOR_SNAPSHOT_URL
+#    (default http://hoard/api/webcams/0/snapshot, the in-cluster address, because the public one asks for a login).
+#
+# The detector is Obico's code (AGPL-3.0), run unmodified as a separate service.
+# The memory and CPU numbers are a first guess and have not been measured on this cluster.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ml-api
+  namespace: hoard
+  labels:
+    app: ml-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ml-api
+  template:
+    metadata:
+      labels:
+        app: ml-api
+    spec:
+      containers:
+        - name: ml-api
+          image: ghcr.io/stevendejongnl/obico-ml-api:6f93896
+          # One worker, and a long timeout: the model loads while the worker boots, and the default of
+          # 30 seconds has the arbiter kill the worker again and again.
+          command: ["bash", "-c", "gunicorn --bind 0.0.0.0:3333 --workers 1 --timeout 120 wsgi"]
+          ports:
+            - containerPort: 3333
+              name: http
+          env:
+            - name: ML_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: hoard-secrets
+                  key: ML_API_TOKEN
+                  optional: true
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              memory: 3Gi
+          startupProbe:
+            httpGet:
+              path: /hc/
+              port: 3333
+            periodSeconds: 10
+            failureThreshold: 18
+          readinessProbe:
+            httpGet:
+              path: /hc/
+              port: 3333
+            periodSeconds: 30
+            timeoutSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ml-api
+  namespace: hoard
+spec:
+  selector:
+    app: ml-api
+  ports:
+    - port: 3333
+      targetPort: 3333
+      name: http
+---
+# Only Hoard may ask the detector. It needs a network plugin that enforces policies.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: ml-api
+  namespace: hoard
+spec:
+  podSelector:
+    matchLabels:
+      app: ml-api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: hoard
+      ports:
+        - protocol: TCP
+          port: 3333
