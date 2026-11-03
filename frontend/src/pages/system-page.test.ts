@@ -189,3 +189,10 @@ describe('choosing rows', () => {
     expect(environment.saved).toEqual([['fans.fan', 'host']])
   })
 })
+
+describe('failure detection on the system page', () => {
+  it('has its settings form between the faults and the sections', async () => {
+    const { page } = await createPage()
+    expect(page.querySelector('.system-faults + detection-settings + .system-sections')).not.toBeNull()
+  })
+})
