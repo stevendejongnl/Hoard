@@ -1,3 +1,9 @@
+## [1.53.0](https://github.com/stevendejongnl/Hoard/compare/v1.52.0...v1.53.0) (2026-11-03)
+
+### Features
+
+* **projects:** show the gcode thumbnail on a project file and name a 3MF as 3MF ([92f14bf](https://github.com/stevendejongnl/Hoard/commit/92f14bf91529b5f885c29dd5b3bc1ce15ff010dc))
+
 ## [1.52.0](https://github.com/stevendejongnl/Hoard/compare/v1.51.0...v1.52.0) (2026-11-02)
 
 ### Features
