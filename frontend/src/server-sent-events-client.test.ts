@@ -172,3 +172,14 @@ describe('ServerSentEventsClient subscriptions', () => {
     expect(statuses.map((status) => status.isConnected)).toEqual([false, true])
   })
 })
+
+describe('ServerSentEventsClient detection events', () => {
+  it('hands on what the print failure watcher announces', () => {
+    const { client, eventSources } = createClient()
+    const received: unknown[] = []
+    client.subscribe((payload) => received.push(payload))
+    client.connect()
+    eventSources[0].receive('detection', JSON.stringify({ state: 'alert', score: 0.84 }))
+    expect(received).toEqual([{ type: 'detection', data: { state: 'alert', score: 0.84 } }])
+  })
+})
