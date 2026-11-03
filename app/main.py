@@ -23,6 +23,7 @@ from app.moonraker import moonraker
 from app.routes import (
     chunks,
     control,
+    detection,
     files,
     history,
     predict,
@@ -114,6 +115,7 @@ _ROUTERS = (
     push.router,
     temperatures.router,
     system.router,
+    detection.router,
 )
 
 # Real files of the built frontend (PWA manifest, sw.js, icons) are served as they are, every other path gets

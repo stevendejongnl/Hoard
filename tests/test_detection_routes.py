@@ -7,7 +7,7 @@ from httpx import AsyncClient
 from app.config import settings
 from app.db import default_database
 from app.main import app
-from app.routes.dependencies import provide_event_hub
+from app.routes.detection import provide_event_hub
 
 
 class FakeHub:
