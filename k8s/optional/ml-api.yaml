@@ -9,7 +9,8 @@
 #    (default http://hoard/api/webcams/0/snapshot, the in-cluster address, because the public one asks for a login).
 #
 # The detector is Obico's code (AGPL-3.0), run unmodified as a separate service.
-# The memory and CPU numbers are a first guess and have not been measured on this cluster.
+# Measured with this image on a desktop: 371 MiB of memory once the model is loaded, and about 5.5 seconds of
+# CPU time per frame. Not measured on this cluster, so check both after the first deploy.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,9 +47,9 @@ spec:
           resources:
             requests:
               cpu: 500m
-              memory: 1Gi
+              memory: 512Mi
             limits:
-              memory: 3Gi
+              memory: 1Gi
           startupProbe:
             httpGet:
               path: /hc/

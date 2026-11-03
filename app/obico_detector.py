@@ -7,7 +7,8 @@ import httpx
 
 from app.detectors import Detection, DetectorUnavailableError
 
-REQUEST_TIMEOUT = 10.0
+# Measured with the real container: about 5.5 seconds a frame on a desktop CPU. A slower node needs more.
+REQUEST_TIMEOUT = 30.0
 
 
 def _read_detection(entry: list[Any]) -> Detection:
