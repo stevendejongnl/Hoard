@@ -121,3 +121,12 @@ async def test_pruning_keeps_the_newest_alerts_and_deletes_the_frames_of_the_res
     assert [alert["id"] for alert in await database.list_detection_alerts()] == [new]
     assert store.frame_path(old) is None
     assert store.frame_path(new) is not None
+
+
+async def test_saving_an_alert_prunes_the_ones_beyond_the_limit(database: Database, tmp_path: Path):
+    clock = Clock(1000)
+    store = DetectionAlertStore(database, tmp_path / "frames", FakeCamera(), clock, kept_alerts=1)
+    await store.save(REPORT)
+    clock.now = 2000
+    newest = await store.save(REPORT)
+    assert [alert["id"] for alert in await database.list_detection_alerts()] == [newest]
