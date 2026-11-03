@@ -1,12 +1,13 @@
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import FileResponse
 from pydantic import BaseModel, Field
 
 from app.config import settings
 from app.detection_backends import is_detection_configured, sends_frames_away
+from app.detection_dataset import build_dataset_archive
 from app.detection_settings import InvalidDetectionSettingsError, build_detection_settings
 from app.routes.dependencies import Database
 from app.server_sent_events import SSEHub, hub
@@ -101,3 +102,19 @@ async def get_frame(alert_id: int) -> FileResponse:
     if not path.exists():
         raise HTTPException(404, "No frame was kept for this alert")
     return FileResponse(path, media_type="image/jpeg")
+
+
+def _read_frame(alert_id: int) -> bytes | None:
+    path = frames_directory() / f"{alert_id}.jpg"
+    return path.read_bytes() if path.exists() else None
+
+
+@router.get("/dataset")
+async def download_dataset(database: Database) -> Response:
+    """The labelled alerts with their frames, for training a detector of the owner's own."""
+    archive = build_dataset_archive(await database.list_detection_alerts(limit=100_000), _read_frame)
+    return Response(
+        archive,
+        media_type="application/zip",
+        headers={"Content-Disposition": 'attachment; filename="hoard-detection-dataset.zip"'},
+    )

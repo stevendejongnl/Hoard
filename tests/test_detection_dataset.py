@@ -4,6 +4,8 @@ import zipfile
 from pathlib import Path
 from typing import Any
 
+from app.config import settings
+from app.db import default_database
 from app.detection_dataset import build_dataset_archive
 
 
@@ -69,9 +71,6 @@ def test_an_empty_dataset_is_an_archive_with_only_the_header():
 
 
 async def test_the_route_serves_the_labelled_frames_as_a_zip(client, tmp_path: Path, monkeypatch):
-    from app.config import settings
-    from app.db import default_database
-
     monkeypatch.setattr(settings, "uploads_dir", str(tmp_path / "uploads"))
     alert_id = await default_database.add_detection_alert(1000, "benchy.gcode", 0.8, [])
     frames = tmp_path / "uploads" / "detections"
