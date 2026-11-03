@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from app.detectors import Detection, DetectorUnavailableError, highest_score
-from app.obico_detector import ObicoDetector
+from app.obico_detector import REQUEST_TIMEOUT, ObicoDetector
 
 SNAPSHOT_URL = "http://camera/snapshot"
 
@@ -93,3 +93,8 @@ def test_the_highest_score_is_the_one_of_the_most_certain_detection():
 
 def test_no_detections_score_zero():
     assert highest_score([]) == 0.0
+
+
+def test_the_detector_gets_time_to_judge_a_frame_on_a_slow_cpu():
+    # Measured with the real container: about 5.5 seconds a frame on a desktop CPU, so a slower node needs more.
+    assert REQUEST_TIMEOUT >= 30
