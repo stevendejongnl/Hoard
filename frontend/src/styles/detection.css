@@ -147,6 +147,11 @@ detection-banner:not([hidden]) {
   padding: 8px 12px;
 }
 
+.detection-privacy {
+  margin: 0 0 4px;
+  font-size: 13px;
+}
+
 .detection-setting {
   display: flex;
   align-items: center;

@@ -142,6 +142,13 @@ export class DetectionSettingsForm extends LitElement {
     </div>`
   }
 
+  private renderPrivacyNote(framesLeaveNetwork: boolean): TemplateResult | typeof nothing {
+    if (!framesLeaveNetwork) return nothing
+    return html`<p class="muted detection-privacy">
+      The camera image is sent to an outside service to be judged. Keep people out of its view.
+    </p>`
+  }
+
   private renderMessage(): TemplateResult | typeof nothing {
     if (this.message === 'saved') return html`<span class="muted">Saved</span>`
     if (this.message === 'failed') return html`<span class="detection-banner-error">Could not save the settings</span>`
@@ -154,7 +161,8 @@ export class DetectionSettingsForm extends LitElement {
     return html`<section class="section detection-settings-section" aria-label="Failure detection">
       <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Failure detection</div>
       <div class="section-body detection-settings-body">
-        ${this.renderEnabled(draft)} ${this.renderNumber('limitPercent', 'Limit', '%', draft.limitPercent)}
+        ${this.renderPrivacyNote(this.status.frames_leave_network)} ${this.renderEnabled(draft)}
+        ${this.renderNumber('limitPercent', 'Limit', '%', draft.limitPercent)}
         ${this.renderNumber('interval_seconds', 'Look every', 'seconds', draft.interval_seconds)}
         ${this.renderNumber('required_frames', 'Frames that must look failed', '', draft.required_frames)}
         ${this.renderNumber('window_size', 'Out of the newest', 'frames', draft.window_size)}

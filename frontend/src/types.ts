@@ -290,6 +290,8 @@ export interface ThresholdSuggestion {
 export interface DetectionStatus {
   /** false while the server has no detector address: nothing about detection is shown then */
   configured: boolean
+  /** true when a vision model outside the network judges the camera image */
+  frames_leave_network: boolean
   state: DetectionState
   score: number | null
   settings: DetectionSettings
