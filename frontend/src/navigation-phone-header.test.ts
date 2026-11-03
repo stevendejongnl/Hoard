@@ -17,3 +17,9 @@ describe('describePhoneHeader', () => {
     expect(describePhoneHeader('/projects/1')).toEqual({ title: 'Project', backPath: '/projects' })
   })
 })
+
+describe('describePhoneHeader for the detections page', () => {
+  it('is titled Detections and goes back to the system page', () => {
+    expect(describePhoneHeader('/detections')).toEqual({ title: 'Detections', backPath: '/system' })
+  })
+})

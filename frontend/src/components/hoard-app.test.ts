@@ -132,3 +132,20 @@ describe('printer app cleanup', () => {
     expect(environment.isRouteUnsubscribed).toBe(true)
   })
 })
+
+describe('failed print banner in the app frame', () => {
+  it('sits between the top bar and the page', async () => {
+    const element = await createHoardApp(new FakeEnvironment())
+    const order = [...element.children].map((child) => child.localName)
+    expect(order.indexOf('detection-banner')).toBeGreaterThan(order.indexOf('top-navigation'))
+    expect(order.indexOf('detection-banner')).toBeLessThan(order.indexOf('main'))
+  })
+
+  it('knows what the printer is doing, so it only offers to pause a print that prints', async () => {
+    const environment = new FakeEnvironment()
+    const element = await createHoardApp(environment)
+    environment.receivePrinterState('printing')
+    await element.updateComplete
+    expect(element.querySelector('detection-banner')?.getAttribute('printerstate')).toBe('printing')
+  })
+})

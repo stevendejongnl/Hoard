@@ -52,6 +52,18 @@ afterEach(() => {
   document.body.replaceChildren()
 })
 
+describe('print failure strip on the dashboard', () => {
+  it('sits right under the camera on the desktop', async () => {
+    const { page } = await createPage()
+    expect(page.querySelector('.dashboard-main camera-panel + detection-strip')).not.toBeNull()
+  })
+
+  it('sits right under the camera on the phone', async () => {
+    const { page } = await createPage({ isPhoneLayout: () => true })
+    expect(page.querySelector('.dashboard-phone camera-panel + detection-strip')).not.toBeNull()
+  })
+})
+
 describe('desktop dashboard', () => {
   it('shows the parameters, the camera, the chart, the timeline and the lists', async () => {
     const { page } = await createPage()

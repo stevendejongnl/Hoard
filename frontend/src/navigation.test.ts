@@ -53,3 +53,10 @@ describe('followNavigationLink', () => {
     expect(click.defaultPrevented).toBe(false)
   })
 })
+
+describe('the detections page in the navigation', () => {
+  it('belongs to the system section, so the top bar keeps its five tabs', () => {
+    expect(findNavigationSection('/detections')).toBe('system')
+    expect(NAVIGATION_ITEMS).toHaveLength(5)
+  })
+})

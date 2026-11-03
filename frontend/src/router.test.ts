@@ -120,3 +120,15 @@ describe('listening', () => {
     expect(second).toEqual(['/history'])
   })
 })
+
+describe('the detections page', () => {
+  it('is a route of its own', () => {
+    expect(createRouter(new FakeEnvironment('/detections')).current).toBe('/detections')
+  })
+
+  it('can be gone to', () => {
+    const environment = new FakeEnvironment()
+    createRouter(environment).navigate('/detections')
+    expect(environment.pushedPaths).toEqual(['/detections'])
+  })
+})
