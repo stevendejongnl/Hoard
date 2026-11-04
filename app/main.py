@@ -25,6 +25,7 @@ from app.moonraker import moonraker
 from app.routes import (
     chunks,
     control,
+    control_layout,
     detection,
     files,
     history,
@@ -118,6 +119,7 @@ def create_lifespan(app_settings: Any = settings):
 
 _ROUTERS = (
     control.router,
+    control_layout.router,
     printer_commands.router,
     chunks.router,
     files.router,

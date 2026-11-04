@@ -207,6 +207,12 @@ async def _create_system_tables(connection: aiosqlite.Connection) -> None:
             key TEXT PRIMARY KEY
         )
     """)
+    await connection.execute("""
+        CREATE TABLE IF NOT EXISTS control_layouts (
+            device TEXT PRIMARY KEY,
+            layout TEXT NOT NULL
+        )
+    """)
 
 
 async def _create_indexes(connection: aiosqlite.Connection) -> None:
@@ -455,6 +461,28 @@ class Database:
             await connection.execute(f"DELETE FROM detection_alerts WHERE id IN ({placeholders})", removed)
             await connection.commit()
         return removed
+
+    async def get_control_layout(self, device: str) -> dict[str, Any] | None:
+        async with (
+            self.open_connection() as connection,
+            connection.execute("SELECT layout FROM control_layouts WHERE device = ?", (device,)) as cursor,
+        ):
+            row = await cursor.fetchone()
+        return json.loads(row[0]) if row else None
+
+    async def save_control_layout(self, device: str, layout: dict[str, Any]) -> None:
+        async with self.open_connection() as connection:
+            await connection.execute(
+                "INSERT INTO control_layouts (device, layout) VALUES (?, ?) "
+                "ON CONFLICT(device) DO UPDATE SET layout = excluded.layout",
+                (device, json.dumps(layout)),
+            )
+            await connection.commit()
+
+    async def delete_control_layout(self, device: str) -> None:
+        async with self.open_connection() as connection:
+            await connection.execute("DELETE FROM control_layouts WHERE device = ?", (device,))
+            await connection.commit()
 
     async def list_hidden_system_rows(self) -> list[str]:
         async with (

@@ -238,6 +238,12 @@ FRESH_SCHEMA: dict[str, dict] = {
         "sql": "CREATE TABLE hidden_system_rows ( key TEXT PRIMARY KEY )",
         "columns": [("key", "TEXT", 0, None, 1)],
     },
+    "control_layouts": {
+        "type": "table",
+        "table": "control_layouts",
+        "sql": "CREATE TABLE control_layouts ( device TEXT PRIMARY KEY, layout TEXT NOT NULL )",
+        "columns": [("device", "TEXT", 0, None, 1), ("layout", "TEXT", 1, None, 0)],
+    },
     "detection_settings": {
         "type": "table",
         "table": "detection_settings",
@@ -434,6 +440,12 @@ MIGRATED_SCHEMA: dict[str, dict] = {
         "table": "hidden_system_rows",
         "sql": "CREATE TABLE hidden_system_rows ( key TEXT PRIMARY KEY )",
         "columns": [("key", "TEXT", 0, None, 1)],
+    },
+    "control_layouts": {
+        "type": "table",
+        "table": "control_layouts",
+        "sql": "CREATE TABLE control_layouts ( device TEXT PRIMARY KEY, layout TEXT NOT NULL )",
+        "columns": [("device", "TEXT", 0, None, 1), ("layout", "TEXT", 1, None, 0)],
     },
     "detection_settings": {
         "type": "table",
