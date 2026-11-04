@@ -1,3 +1,39 @@
+## [1.54.0](https://github.com/stevendejongnl/Hoard/compare/v1.53.0...v1.54.0) (2026-11-04)
+
+### Features
+
+* **detection-ui:** the banner above every page, the strip under the camera, and the detections route ([e169a1c](https://github.com/stevendejongnl/Hoard/commit/e169a1c1db5419e0f169801bc148d6a6d30d213c))
+* **detection-ui:** the detections page, one dense row per alert with bulk labelling ([cfc809f](https://github.com/stevendejongnl/Hoard/commit/cfc809f24fe3603f4fc91b52059a507bcda3bcbf))
+* **detection-ui:** the settings of failure detection on the system page ([199b750](https://github.com/stevendejongnl/Hoard/commit/199b750d826880d499695d70af85e1613a3201b7))
+* **detection-ui:** the settings say plainly when the camera image is sent out of the network ([59a9401](https://github.com/stevendejongnl/Hoard/commit/59a940112c36d2edc95cb036640ba488f62f0116))
+* **detection-ui:** the status strip, the failed print banner and the frame with its boxes ([0af7919](https://github.com/stevendejongnl/Hoard/commit/0af7919140bf0e3bb5e4b322176409b9079e3b94))
+* **detection-ui:** types, calls and words for the detection screens ([3a69bfe](https://github.com/stevendejongnl/Hoard/commit/3a69bfe3eaa18d2a5107867bbcdb1ad1c39ab3da))
+* **detection:** a vision model as detector, a chain of two, and a backend chosen in the settings ([8732fd2](https://github.com/stevendejongnl/Hoard/commit/8732fd28c27a18f9ffb3858b4c8555410b361f54))
+* **detection:** detector address from the environment, tunable values in the database ([2d93a70](https://github.com/stevendejongnl/Hoard/commit/2d93a70e200ddb906d69869592df44812b2cefdf))
+* **detection:** download the labelled frames as a dataset ([ad3124c](https://github.com/stevendejongnl/Hoard/commit/ad3124c3018edd0e613f36cf8507c6976680f9d8))
+* **detection:** keep each alert with its camera frame, and let the owner label it ([13a9049](https://github.com/stevendejongnl/Hoard/commit/13a9049e730ea97332fe14fec8c5dc80a76c7967))
+* **detection:** routes for the status, the settings, the alerts and their verdicts ([23a16a6](https://github.com/stevendejongnl/Hoard/commit/23a16a68c36c205bfea4d34ab98763011f8a4626))
+* **detection:** run the watcher all the time and count an alert as a fault ([9c07a27](https://github.com/stevendejongnl/Hoard/commit/9c07a27b677f28263372e5a3a374258f5f312fce))
+* **detection:** save, notify and optionally pause when a print looks failed ([d7dd21f](https://github.com/stevendejongnl/Hoard/commit/d7dd21ffb97f9141685128fff794372d4b3077ec))
+* **detection:** score a labelled image set per tier and show the rates at each threshold ([101bb1d](https://github.com/stevendejongnl/Hoard/commit/101bb1dc102a024ef66e40fbe59462209a213597))
+* **detection:** start the print failure monitor with the app when a detector is set ([a9ceda9](https://github.com/stevendejongnl/Hoard/commit/a9ceda9d6bbd93041018740aa272e1bded7284c8))
+* **detection:** suggest a threshold from the verdicts ([5fe1ead](https://github.com/stevendejongnl/Hoard/commit/5fe1eadc7a0ed289826c5c5c7ff9f9bbea7d5d14))
+* **detection:** swappable print failure detectors and the Obico ml_api client ([3c254fc](https://github.com/stevendejongnl/Hoard/commit/3c254fc7f604cd3d4dc6a5d2635a363cc8a2d468))
+* **detection:** tell a failing print from one noisy frame ([e7e761c](https://github.com/stevendejongnl/Hoard/commit/e7e761c875d22b8dbf2c7c1d6d01811c72f94220))
+* **detection:** watch the camera during a print and alert once per failure ([0e3c1d9](https://github.com/stevendejongnl/Hoard/commit/0e3c1d96eb1e72510a7dc8d0e0292ed85943f1e0))
+* **k8s:** an optional deployment of Obico's ml_api that only Hoard can reach ([018e0cb](https://github.com/stevendejongnl/Hoard/commit/018e0cbfabd14b56aa9ec239ba7ac43c19142bc6))
+
+### Bug Fixes
+
+* **detection-ui:** spacing, stacked phone banner and a phone table that keeps its verdict buttons ([6a33822](https://github.com/stevendejongnl/Hoard/commit/6a33822180ab04c5c364b52f66f86fcca39485ea))
+* **detection:** leave the vision model room to think and answer ([96811da](https://github.com/stevendejongnl/Hoard/commit/96811da032ebec2a6186ce1af094270f35af1b4f))
+* **detection:** the report says one image and not one images ([948eb0b](https://github.com/stevendejongnl/Hoard/commit/948eb0bdfbb1da049117c2526b312f35c32f0ab5))
+* **detection:** wait 30 seconds for the detector and size its pod from a real run ([d420118](https://github.com/stevendejongnl/Hoard/commit/d420118b53280ff4ab1757a82d2fe129d6bcd901))
+
+### Documentation
+
+* **detection:** the readme and the example settings tell about failure detection ([3ea579c](https://github.com/stevendejongnl/Hoard/commit/3ea579cd0fd5a46630062a4fc6ddd4a935c2a67a))
+
 ## [1.53.0](https://github.com/stevendejongnl/Hoard/compare/v1.52.0...v1.53.0) (2026-11-03)
 
 ### Features
