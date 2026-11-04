@@ -11,6 +11,7 @@ from app.printer_commands import (
     HomeRequest,
     MacroRequest,
     MoveRequest,
+    ProbeRequest,
     SpeedRequest,
     TemperatureRequest,
     describe_status,
@@ -119,6 +120,11 @@ async def macro(request: MacroRequest, moonraker: Moonraker) -> dict:
 @router.post("/gcode", dependencies=[Idle])
 async def gcode(request: GcodeRequest, moonraker: Moonraker) -> dict:
     return await run_script(moonraker, request.script)
+
+
+@router.post("/probe", dependencies=[Idle])
+async def probe(request: ProbeRequest, moonraker: Moonraker) -> dict:
+    return await run_script(moonraker, request.script())
 
 
 @router.post("/calibrate/{step}", dependencies=[Idle])

@@ -28,6 +28,7 @@ NEEDS_APPROVAL_TOOLS = {
     "macro",
     "gcode",
     "calibrate",
+    "probe",
 }
 DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "power_off", "switch_off"}
 OPERATION_ID_SEPARATOR = "_api_"

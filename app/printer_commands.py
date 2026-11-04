@@ -14,8 +14,6 @@ CALIBRATION_STEPS = {
     "bed_mesh": "BED_MESH_CALIBRATE",
     "screws_tilt": "SCREWS_TILT_CALCULATE",
     "manual_probe": "MANUAL_PROBE",
-    "probe_up": "TESTZ Z=+0.1",
-    "probe_down": "TESTZ Z=-0.1",
     "accept": "ACCEPT",
     "abort": "ABORT",
 }
@@ -108,6 +106,17 @@ class BabystepRequest(BaseModel):
 
     def script(self) -> str:
         return f"SET_GCODE_OFFSET Z_ADJUST={number(self.offset)} MOVE=1"
+
+
+class ProbeRequest(BaseModel):
+    """A step of the probe that is moved by hand, while the printer calibrates."""
+
+    direction: Literal["up", "down"]
+    step: float = Field(gt=0, le=1)
+
+    def script(self) -> str:
+        sign = "+" if self.direction == "up" else "-"
+        return f"TESTZ Z={sign}{number(self.step)}"
 
 
 class MacroRequest(BaseModel):
