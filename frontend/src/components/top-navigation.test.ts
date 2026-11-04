@@ -96,3 +96,31 @@ describe('top bar bell', () => {
     expect(children.indexOf('push-toggle')).toBeLessThan(children.indexOf('button', children.indexOf('push-toggle')))
   })
 })
+
+describe('top navigation links to the web clients of the printer host', () => {
+  function findWebClientLinks(element: TopNavigation): HTMLAnchorElement[] {
+    return [...element.querySelectorAll<HTMLAnchorElement>('a.web-client-link')]
+  }
+
+  it('has no link when the printer host has none', async () => {
+    expect(findWebClientLinks(await createTopNavigation())).toEqual([])
+  })
+
+  it('links each one that is there, in a tab of its own, named for screen readers', async () => {
+    const element = await createTopNavigation({
+      webClients: [
+        { name: 'Fluidd', url: 'http://printer.local' },
+        { name: 'Mainsail', url: 'http://printer.local:81' },
+      ],
+    })
+    const links = findWebClientLinks(element)
+    expect(links.map((link) => link.getAttribute('href'))).toEqual(['http://printer.local', 'http://printer.local:81'])
+    expect(links.map((link) => link.getAttribute('aria-label'))).toEqual(['Open Fluidd', 'Open Mainsail'])
+    expect(links.every((link) => link.target === '_blank' && link.rel.includes('noopener'))).toBe(true)
+  })
+
+  it('shows the name as a tooltip', async () => {
+    const element = await createTopNavigation({ webClients: [{ name: 'Fluidd', url: 'http://printer.local' }] })
+    expect(findWebClientLinks(element)[0].title).toBe('Fluidd')
+  })
+})

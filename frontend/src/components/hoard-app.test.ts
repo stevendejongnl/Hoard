@@ -149,3 +149,25 @@ describe('failed print banner in the app frame', () => {
     expect(element.querySelector('detection-banner')?.getAttribute('printerstate')).toBe('printing')
   })
 })
+
+describe('the links to the web clients of the printer host', () => {
+  it('asks for them and gives them to the top bar', async () => {
+    const environment = new FakeEnvironment()
+    const element = document.createElement('hoard-app') as HoardApp
+    element.subscribeToPayloads = environment.subscribeToPayloads
+    element.subscribeToRoute = environment.subscribeToRoute
+    element.readCurrentRoute = environment.readCurrentRoute
+    element.setDocumentTitle = environment.setDocumentTitle
+    element.renderPage = environment.renderPage
+    element.loadWebClients = async () => [{ name: 'Fluidd', url: 'http://printer.local' }]
+    document.body.appendChild(element)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await element.updateComplete
+    expect(element.querySelector('a.web-client-link')?.getAttribute('href')).toBe('http://printer.local')
+  })
+
+  it('has the Klipper banner under the top bar', async () => {
+    const element = await createHoardApp(new FakeEnvironment())
+    expect(element.querySelector('klipper-banner')).not.toBeNull()
+  })
+})
