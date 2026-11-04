@@ -1,3 +1,10 @@
+## [1.58.0](https://github.com/stevendejongnl/Hoard/compare/v1.57.0...v1.58.0) (2026-11-04)
+
+### Features
+
+* **detection:** the settings save by themselves after a pause, so there is no Save button ([5e6fd7f](https://github.com/stevendejongnl/Hoard/commit/5e6fd7f3cbf0cc9367ce262178691c020c879110))
+* **system:** related report sections on one page, listed by heading, with Faults and detection as pages ([2d9a220](https://github.com/stevendejongnl/Hoard/commit/2d9a2205990e1a35324dc3c54ba4aaedd9581105))
+
 ## [1.57.0](https://github.com/stevendejongnl/Hoard/compare/v1.56.0...v1.57.0) (2026-11-04)
 
 ### Features
