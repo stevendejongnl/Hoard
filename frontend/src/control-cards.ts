@@ -2,6 +2,7 @@ import { html } from 'lit'
 import type { TemplateResult } from 'lit'
 import type { CardKey } from './control-layout'
 import './components/control-bed-mesh-card'
+import './components/control-calibration-card'
 import './components/control-camera-card'
 import './components/control-console-card'
 import './components/control-extruder-card'
@@ -44,6 +45,11 @@ export const renderControlCard: CardRenderer = (key, context) => {
       return html`<control-macros-card .status=${context.status} ?locked=${context.locked}></control-macros-card>`
     case 'console':
       return html`<control-console-card .status=${context.status} ?locked=${context.locked}></control-console-card>`
+    case 'calibration':
+      return html`<control-calibration-card
+        .status=${context.status}
+        ?locked=${context.locked}
+      ></control-calibration-card>`
     default:
       return html`<section class="control-card">${key}</section>`
   }

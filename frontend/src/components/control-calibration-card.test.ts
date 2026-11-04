@@ -84,7 +84,7 @@ describe('the calibration card', () => {
   it('lists the screws of the last screws tilt adjust with what to turn', async () => {
     const { card } = await mount({ lines: RESULT })
     const rows = [...card.querySelectorAll('.control-screw-row')].map((row) =>
-      row.textContent?.replace(/\s+/g, ' ').trim(),
+      [...row.children].map((part) => part.textContent?.trim()).join(' '),
     )
     expect(rows).toEqual(['front_left base', 'front_right CW 00:15'])
   })
