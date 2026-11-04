@@ -2,8 +2,8 @@ import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import { getControlLayout, getControlStatus, resetControlLayout, saveControlLayout } from '../api'
-import { renderControlCard } from '../control-cards'
-import type { CardRenderer } from '../control-cards'
+import { renderControlCameraFocus, renderControlCard } from '../control-cards'
+import type { CameraFocusRenderer, CardContext, CardRenderer } from '../control-cards'
 import {
   CARDS,
   DEFAULT_LAYOUT,
@@ -70,10 +70,12 @@ export class ControlPage extends LitElement {
   @property({ attribute: false }) repeatEvery: (callback: () => void) => StopFunction = repeatWithInterval
   @property({ attribute: false }) scheduleSave: (callback: () => void) => () => void = waitForPause
   @property({ attribute: false }) renderCard: CardRenderer = renderControlCard
+  @property({ attribute: false }) renderCameraFocus: CameraFocusRenderer = renderControlCameraFocus
 
   @state() private layout: ControlLayout = structuredClone(DEFAULT_LAYOUT)
   @state() private filter: CardFilter = 'all'
   @state() private isEditing = false
+  @state() private isCameraFocusOpen = false
   @state() private status: ControlStatus | null = null
   @state() private message: SaveMessage = ''
 
@@ -93,18 +95,24 @@ export class ControlPage extends LitElement {
     void this.refreshStatus()
     this.stopRepeating = this.repeatEvery(() => void this.refreshStatus())
     this.addEventListener('control-changed', this.handleCommandSent)
+    this.addEventListener('control-camera-focus', this.openCameraFocus)
   }
 
   disconnectedCallback(): void {
     super.disconnectedCallback()
     this.stopRepeating?.()
     this.removeEventListener('control-changed', this.handleCommandSent)
+    this.removeEventListener('control-camera-focus', this.openCameraFocus)
     if (!this.cancelPendingSave) return
     this.cancelPendingSave()
     void this.save()
   }
 
   private readonly handleCommandSent = (): void => void this.refreshStatus()
+
+  private readonly openCameraFocus = (): void => {
+    this.isCameraFocusOpen = true
+  }
 
   private async loadStoredLayout(): Promise<void> {
     try {
@@ -225,6 +233,15 @@ export class ControlPage extends LitElement {
     </div>`
   }
 
+  private createCardContext(): CardContext {
+    return { status: this.status, locked: this.isLocked, refresh: () => void this.refreshStatus() }
+  }
+
+  private renderCameraFocusOverlay(): TemplateResult | typeof nothing {
+    if (!this.isCameraFocusOpen) return nothing
+    return this.renderCameraFocus(this.createCardContext(), () => (this.isCameraFocusOpen = false))
+  }
+
   private renderSlot(key: CardKey, shown: CardKey[]): TemplateResult {
     const isAlone = this.filter === key
     const span = isAlone ? FULL_WIDTH : readSpan(this.layout, key)
@@ -238,8 +255,7 @@ export class ControlPage extends LitElement {
       @drop=${(event: Event) => this.drop(key, event)}
       @dragend=${() => (this.draggedCard = null)}
     >
-      ${this.isEditing ? this.renderEditBar(key, shown) : nothing}
-      ${this.renderCard(key, { status: this.status, locked: this.isLocked, refresh: () => void this.refreshStatus() })}
+      ${this.isEditing ? this.renderEditBar(key, shown) : nothing} ${this.renderCard(key, this.createCardContext())}
     </div>`
   }
 
@@ -348,6 +364,7 @@ export class ControlPage extends LitElement {
           ${this.renderHiddenTray()}
         </div>
       </div>
+      ${this.renderCameraFocusOverlay()}
     </div>`
   }
 }

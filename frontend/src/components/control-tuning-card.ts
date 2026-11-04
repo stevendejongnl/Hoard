@@ -1,9 +1,9 @@
 import { html } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
-import { renderIcon } from '../icons'
 import type { ControlStatus } from '../types'
 import { ControlCard } from './control-card'
+import './control-z-offset'
 
 interface Slider {
   name: string
@@ -17,7 +17,6 @@ interface Slider {
   offText: boolean
 }
 
-const Z_STEPS = [0.01, 0.05, 0.1]
 const SPEED_RANGE = { minimum: 10, maximum: 200 }
 const FLOW_RANGE = { minimum: 50, maximum: 200 }
 const FAN_RANGE = { minimum: 0, maximum: 100 }
@@ -29,7 +28,6 @@ function describeValue(slider: Slider, value: number): string {
 /** Speed, flow and fans as sliders, and the Z offset in small steps. All of it stays available during a print. */
 @customElement('control-tuning-card')
 export class ControlTuningCard extends ControlCard {
-  @state() private zStep = 0.05
   /** what a slider shows while it is dragged and the printer has not heard of it yet */
   @state() private drafts: Record<string, number> = {}
 
@@ -84,45 +82,11 @@ export class ControlTuningCard extends ControlCard {
     </div>`
   }
 
-  private renderZStepChips(): TemplateResult {
-    return html`<div class="control-chips">
-      ${Z_STEPS.map(
-        (step) =>
-          html`<button
-            class="control-chip"
-            aria-pressed=${this.zStep === step ? 'true' : 'false'}
-            @click=${() => (this.zStep = step)}
-          >
-            ${step}
-          </button>`,
-      )}
-    </div>`
-  }
-
-  private renderZKey(label: string, icon: 'arrow-up' | 'arrow-down', offset: number): TemplateResult {
-    return html`<button
-      class="control-key"
-      aria-label=${label}
-      @click=${() => void this.command('babystep', { offset })}
-    >
-      ${renderIcon(icon, 18)}
-    </button>`
-  }
-
-  private renderZOffset(offset: number): TemplateResult {
-    return html`<div class="control-z-offset">
-        <span class="control-z-offset-label">Z offset</span>
-        ${this.renderZKey(`Lower ${this.zStep}`, 'arrow-down', -this.zStep)}
-        <span class="monospace control-z-offset-value">${offset.toFixed(3)} mm</span>
-        ${this.renderZKey(`Raise ${this.zStep}`, 'arrow-up', this.zStep)}
-      </div>
-      ${this.renderZStepChips()}`
-  }
-
   render(): TemplateResult {
     const sliders = this.listSliders()
     const body = this.status
-      ? html`${sliders.map((slider) => this.renderSlider(slider))} ${this.renderZOffset(this.status.z_offset)}`
+      ? html`${sliders.map((slider) => this.renderSlider(slider))}
+          <control-z-offset .status=${this.status} .send=${this.send}></control-z-offset>`
       : html`<div class="muted control-empty">No reading</div>`
     return this.renderFrame('Speed, flow and fans', 'sliders', body)
   }

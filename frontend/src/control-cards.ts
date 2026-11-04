@@ -4,6 +4,7 @@ import type { CardKey } from './control-layout'
 import './components/control-bed-mesh-card'
 import './components/control-calibration-card'
 import './components/control-camera-card'
+import './components/control-camera-focus'
 import './components/control-console-card'
 import './components/control-extruder-card'
 import './components/control-macros-card'
@@ -54,3 +55,13 @@ export const renderControlCard: CardRenderer = (key, context) => {
       return html`<section class="control-card">${key}</section>`
   }
 }
+
+/** The camera on a screen of its own; `close` is called when the person is done with it. */
+export type CameraFocusRenderer = (context: CardContext, close: () => void) => TemplateResult
+
+export const renderControlCameraFocus: CameraFocusRenderer = (context, close) =>
+  html`<control-camera-focus
+    .status=${context.status}
+    ?locked=${context.locked}
+    @control-camera-focus-close=${close}
+  ></control-camera-focus>`

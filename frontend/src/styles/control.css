@@ -659,3 +659,78 @@
   border-top: 1px solid var(--border-color);
   font-size: 13px;
 }
+
+.control-focus {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-color);
+}
+
+.control-focus-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 0 4px 0 12px;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.control-focus-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 15px var(--font-family);
+}
+
+.control-focus-close {
+  width: 44px;
+  min-height: 44px;
+}
+
+.control-focus-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  gap: 12px;
+  padding: 12px;
+}
+
+.control-focus-camera {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  overflow: hidden;
+}
+
+.control-focus-controls {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  width: 360px;
+  overflow-y: auto;
+}
+
+@media (max-width: 800px) {
+  .control-focus-body {
+    flex-direction: column;
+    padding: 8px;
+    overflow-y: auto;
+  }
+
+  .control-focus-camera {
+    flex: none;
+    min-height: 220px;
+  }
+
+  .control-focus-controls {
+    width: auto;
+    overflow-y: visible;
+  }
+}
