@@ -63,4 +63,11 @@ describe('groupSections', () => {
       'control-boards',
     ])
   })
+
+  it('gives every page an icon that says what it holds', () => {
+    const pages = groupSections(
+      ['host', 'software', 'board.mcu', 'motion', 'temperatures', 'chamber_lights'].map((key) => section(key)),
+    )
+    expect(pages.map((page) => page.icon)).toEqual(['server', 'code', 'cpu', 'move', 'thermometer', 'cube'])
+  })
 })

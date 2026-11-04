@@ -28,6 +28,10 @@ describe('renderIcon', () => {
     )
   })
 
+  it('has the icons of the system pages', () => {
+    expect(ICON_NAMES).toEqual(expect.arrayContaining(['alert', 'server', 'code', 'cpu', 'move', 'thermometer', 'eye']))
+  })
+
   it('is decorative: hidden from screen readers', () => {
     const svg = renderIntoElement(renderIcon('search')).querySelector('svg')
     expect(svg?.getAttribute('aria-hidden')).toBe('true')

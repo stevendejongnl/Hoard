@@ -132,6 +132,13 @@ describe('system page', () => {
     expect(headings).toEqual(['Computer', 'Printer', 'Settings'])
   })
 
+  it('draws an icon on every page of the list, Faults and detection too', async () => {
+    const { page } = await createPage()
+    const items = [...page.querySelectorAll('.system-list-item')]
+    expect(items.length).toBeGreaterThan(0)
+    expect(items.every((item) => item.querySelector('.system-list-icon svg') !== null)).toBe(true)
+  })
+
   it('marks the open page', async () => {
     const { page } = await createPage()
     expect(page.querySelector('.system-list-item.selected')?.textContent).toContain('Host')
