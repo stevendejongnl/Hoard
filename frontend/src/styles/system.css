@@ -147,6 +147,77 @@
   margin-left: 0;
 }
 
+.system-body {
+  display: flex;
+  align-items: stretch;
+  min-height: 100%;
+}
+
+.system-list {
+  flex: none;
+  box-sizing: border-box;
+  width: 240px;
+  padding-bottom: 8px;
+  background: var(--chrome-color);
+  border-right: 1px solid var(--border-color);
+}
+
+.system-list-heading {
+  padding: 14px 12px 6px;
+  font: 600 11px var(--font-family);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.system-list-item {
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-left: 3px solid transparent;
+  background: transparent;
+  color: var(--secondary-text-color);
+  font: 600 13px var(--font-family);
+  text-align: left;
+  cursor: pointer;
+}
+
+.system-list-item.selected {
+  background: var(--selection-tint);
+  border-left-color: var(--accent);
+  color: #fff;
+}
+
+.system-list-title {
+  flex: 1;
+  text-align: left;
+}
+
+.system-list-count {
+  color: #ffd54f;
+}
+
+.system-list-chevron {
+  display: none;
+}
+
+.system-pane {
+  flex: 1;
+  min-width: 0;
+}
+
+.system-back {
+  display: none;
+}
+
+.system-pane .system-sections {
+  columns: 2 320px;
+}
+
 @media (max-width: 800px) {
   .system-layout {
     height: auto;
@@ -171,8 +242,58 @@
     min-height: 36px;
   }
 
-  .system-sections {
+  .system-sections,
+  .system-pane .system-sections {
     columns: auto;
+  }
+
+  .system-list {
+    width: auto;
+    flex: 1;
+    border-right: 0;
+  }
+
+  .system-list-item {
+    min-height: 52px;
+    padding: 0 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 14px;
+  }
+
+  .system-list-item.selected {
+    background: transparent;
+    border-left-color: transparent;
+    color: var(--secondary-text-color);
+  }
+
+  .system-list-chevron {
+    display: flex;
+    margin-left: 8px;
+  }
+
+  .system-list-count {
+    margin-left: auto;
+  }
+
+  .system-body:not([data-open]) .system-pane,
+  .system-body[data-open] .system-list {
+    display: none;
+  }
+
+  .system-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--chrome-color);
+    color: var(--secondary-text-color);
+    font: 600 13px var(--font-family);
+    cursor: pointer;
   }
 
   .active-fault,
@@ -204,30 +325,6 @@
     min-height: 44px;
     align-items: center;
   }
-}
-
-.system-tabs {
-  display: flex;
-  overflow-x: auto;
-  background: var(--chrome-color);
-  border-bottom: 1px solid var(--border-color);
-}
-
-.system-tab {
-  flex: none;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 0;
-  border-bottom: 3px solid transparent;
-  background: transparent;
-  color: var(--secondary-text-color);
-  font: 600 13px var(--font-family);
-  cursor: pointer;
-}
-
-.system-tab.selected {
-  border-bottom-color: var(--accent);
-  color: #fff;
 }
 
 .fault-history-toggle {

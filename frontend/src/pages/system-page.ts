@@ -6,12 +6,15 @@ import '../components/detection-settings'
 import { renderIcon } from '../icons'
 import { formatPrintDuration } from '../print-history-list'
 import type { FaultRecord, SystemFault, SystemReport, SystemRow, SystemSection } from '../types'
+import { groupSections } from './system-pages'
+import type { SystemPageEntry } from './system-pages'
 import '../styles/system.css'
 
 type StopFunction = () => void
 type LoadState = 'loading' | 'ready' | 'error'
 
-const DETECTION_TAB = 'detection'
+const FAULTS_PAGE = 'faults'
+const DETECTION_PAGE = 'detection'
 
 const REFRESH_MILLISECONDS = 10_000
 const MILLISECONDS_PER_SECOND = 1000
@@ -59,7 +62,7 @@ export class SystemPage extends LitElement {
   @state() private isChoosingRows = false
   @state() private hiddenKeys: string[] = []
   @state() private isHistoryOpen = false
-  @state() private chosenTab = ''
+  @state() private openPageKey: string | null = null
 
   private stopRefreshing: StopFunction | null = null
 
@@ -172,47 +175,66 @@ export class SystemPage extends LitElement {
     </section>`
   }
 
-  private visibleSections(report: SystemReport): SystemSection[] {
-    return findVisibleSections(report.sections, this.hiddenKeys)
-  }
-
-  private openTab(sections: SystemSection[]): string {
-    const names = [...sections.map((section) => section.key), DETECTION_TAB]
-    return names.includes(this.chosenTab) ? this.chosenTab : names[0]
-  }
-
-  private renderTab(key: string, title: string, openTab: string): TemplateResult {
-    const isSelected = key === openTab
+  private renderListItem(key: string, title: string, openKey: string, count?: number): TemplateResult {
+    const isSelected = key === openKey
     return html`<button
-      class="system-tab ${isSelected ? 'selected' : ''}"
-      role="tab"
-      aria-selected=${isSelected}
-      @click=${() => (this.chosenTab = key)}
+      class="system-list-item ${isSelected ? 'selected' : ''}"
+      aria-current=${isSelected ? 'page' : nothing}
+      @click=${() => (this.openPageKey = key)}
     >
-      ${title}
+      <span class="system-list-title">${title}</span>
+      ${count === undefined ? nothing : html`<span class="monospace system-list-count">${count}</span>`}
+      <span class="system-list-chevron">${renderIcon('chevron-right', 14, 2.4)}</span>
     </button>`
   }
 
-  private renderTabs(sections: SystemSection[], openTab: string): TemplateResult {
-    return html`<div class="system-tabs" role="tablist" aria-label="System">
-      ${sections.map((section) => this.renderTab(section.key, section.title, openTab))}
-      ${this.renderTab(DETECTION_TAB, 'Detection', openTab)}
+  private renderListGroup(heading: string, pages: SystemPageEntry[], openKey: string): TemplateResult {
+    const pagesUnderHeading = pages.filter((page) => page.heading === heading)
+    return html`<div class="system-list-heading">${heading}</div>
+      ${pagesUnderHeading.map((page) => this.renderListItem(page.key, page.title, openKey))}`
+  }
+
+  private renderList(report: SystemReport, pages: SystemPageEntry[], openKey: string): TemplateResult {
+    const headings = [...new Set(pages.map((page) => page.heading))]
+    return html`<nav class="system-list" aria-label="System">
+      ${this.renderListItem(FAULTS_PAGE, 'Faults', openKey, report.active_faults.length)}
+      ${headings.map((heading) => this.renderListGroup(heading, pages, openKey))}
+      <div class="system-list-heading">Settings</div>
+      ${this.renderListItem(DETECTION_PAGE, 'Failure detection', openKey)}
+    </nav>`
+  }
+
+  private renderPageContent(report: SystemReport, pages: SystemPageEntry[], openKey: string): TemplateResult {
+    if (openKey === FAULTS_PAGE) return this.renderFaults(report)
+    if (openKey === DETECTION_PAGE) return html`<detection-settings></detection-settings>`
+    const page = pages.find((candidate) => candidate.key === openKey)!
+    return html`<div class="system-sections">${page.sections.map((section) => this.renderSection(section))}</div>`
+  }
+
+  private renderPane(report: SystemReport, pages: SystemPageEntry[], openKey: string): TemplateResult {
+    return html`<div class="system-pane">
+      <button class="system-back" @click=${() => (this.openPageKey = null)}>
+        ${renderIcon('chevron-left', 14, 2.4)}System
+      </button>
+      ${this.renderPageContent(report, pages, openKey)}
     </div>`
   }
 
-  private renderChosenTab(sections: SystemSection[], openTab: string): TemplateResult {
-    if (openTab === DETECTION_TAB) return html`<detection-settings></detection-settings>`
-    const section = sections.find((candidate) => candidate.key === openTab)!
-    return html`<div class="system-sections">${this.renderSection(section)}</div>`
+  private openKey(pages: SystemPageEntry[]): string {
+    const keys = [FAULTS_PAGE, DETECTION_PAGE, ...pages.map((page) => page.key)]
+    if (this.openPageKey !== null && keys.includes(this.openPageKey)) return this.openPageKey
+    return pages[0]?.key ?? FAULTS_PAGE
   }
 
   private renderReports(report: SystemReport): TemplateResult {
     if (this.isChoosingRows) {
       return html`<div class="system-sections">${report.sections.map((section) => this.renderSection(section))}</div>`
     }
-    const sections = this.visibleSections(report)
-    const openTab = this.openTab(sections)
-    return html`${this.renderTabs(sections, openTab)} ${this.renderChosenTab(sections, openTab)}`
+    const pages = groupSections(findVisibleSections(report.sections, this.hiddenKeys))
+    const openKey = this.openKey(pages)
+    return html`<div class="system-body" ?data-open=${this.openPageKey !== null}>
+      ${this.renderList(report, pages, openKey)} ${this.renderPane(report, pages, openKey)}
+    </div>`
   }
 
   private renderChooseRowsButton(report: SystemReport): TemplateResult | typeof nothing {
@@ -235,9 +257,7 @@ export class SystemPage extends LitElement {
   render(): TemplateResult {
     if (this.loadState === 'loading') return html`<div class="state-message">Loading system…</div>`
     if (!this.report) return html`<div class="state-message">Could not load the system information</div>`
-    return html`<div class="system-layout">
-      ${this.renderStrip(this.report)} ${this.renderFaults(this.report)} ${this.renderReports(this.report)}
-    </div>`
+    return html`<div class="system-layout">${this.renderStrip(this.report)} ${this.renderReports(this.report)}</div>`
   }
 }
 

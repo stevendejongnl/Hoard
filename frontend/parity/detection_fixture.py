@@ -50,7 +50,7 @@ DETECTION_SHOWCASE_SCREENS = {
     "dashboard-alert-desktop": DetectionScreen("/", DESKTOP_SIZE, "dashboard-alert.png"),
     "detections-desktop": DetectionScreen("/detections", DESKTOP_SIZE, "detections.png"),
     "detection-settings-desktop": DetectionScreen(
-        "/system", DESKTOP_SIZE, "detection-settings.png", (("click", ".system-tab:last-child"),)
+        "/system", DESKTOP_SIZE, "detection-settings.png", (("click", ".system-list-item:last-child"),)
     ),
     "dashboard-alert-phone": DetectionScreen("/", PHONE_SIZE, "dashboard-alert-phone.png"),
 }
