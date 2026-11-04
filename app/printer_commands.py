@@ -159,6 +159,10 @@ def describe_fans(status: dict, fan_objects: list[str]) -> list[dict]:
     return fans
 
 
+def describe_manual_probe(readings: dict) -> dict:
+    return {"active": readings["is_active"], "z": readings["z_position"]}
+
+
 def describe_status(status: dict, fan_objects: list[str]) -> dict:
     """What the cards of the Control page show, from the objects the printer reported."""
     state = status["print_stats"]["state"]
@@ -173,5 +177,6 @@ def describe_status(status: dict, fan_objects: list[str]) -> dict:
         "speed_percent": round(motion["speed_factor"] * 100),
         "flow_percent": round(motion["extrude_factor"] * 100),
         "z_offset": motion["homing_origin"][2],
+        "manual_probe": describe_manual_probe(status["manual_probe"]),
         "fans": describe_fans(status, fan_objects),
     }

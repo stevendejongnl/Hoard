@@ -57,7 +57,7 @@ async def lock_state(moonraker: Moonraker) -> dict:
     return {"locked": is_locked(state), "state": state}
 
 
-STATUS_OBJECTS = ("print_stats", "toolhead", "extruder", "heater_bed", "fan", "gcode_move")
+STATUS_OBJECTS = ("print_stats", "toolhead", "extruder", "heater_bed", "fan", "gcode_move", "manual_probe")
 
 
 @router.get("/status")
@@ -135,6 +135,18 @@ async def macros(moonraker: Moonraker) -> list[str]:
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
     return visible_macros(answer["objects"])
+
+
+CONSOLE_LINES = 100
+
+
+@router.get("/console")
+async def console(moonraker: Moonraker) -> list[dict]:
+    try:
+        answer = await moonraker.get("/server/gcode_store", count=CONSOLE_LINES)
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+    return answer["gcode_store"]
 
 
 @router.get("/bed_mesh")
