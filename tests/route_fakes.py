@@ -22,6 +22,7 @@ class FakeMoonraker:
         self.failure: Exception | None = None
         self.gcode: bytes | None = None
         self.downloads: list[str] = []
+        self.logs: dict[str, bytes] = {}
 
     def _client_base(self) -> str:
         return "http://printer.test"
@@ -66,6 +67,11 @@ class FakeMoonraker:
 
     async def download_file_partial(self, filename: str, size: int = 131072) -> bytes:
         return await self.download_file(filename)
+
+    async def download_log(self, name: str) -> bytes:
+        if self.failure:
+            raise self.failure
+        return self.logs[name]
 
     async def get_file_metadata(self, filename: str) -> Any:
         if self.failure:

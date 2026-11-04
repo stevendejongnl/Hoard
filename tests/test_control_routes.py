@@ -17,6 +17,7 @@ from tests.route_fakes import (
 CLOSED_ADDRESS = "http://127.0.0.1:1"
 
 COMMANDS = [
+    ("/api/control/restart", "/printer/restart"),
     ("/api/control/firmware_restart", "/printer/firmware_restart"),
     ("/api/control/emergency_stop", "/printer/emergency_stop"),
     ("/api/control/pause", "/printer/print/pause"),
