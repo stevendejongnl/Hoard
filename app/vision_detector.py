@@ -11,7 +11,7 @@ from typing import Any
 
 import httpx
 
-from app.detectors import Detection, DetectorUnavailableError
+from app.detectors import Detection, DetectorUnavailableError, describe_failure
 
 REQUEST_TIMEOUT = 30.0
 API_VERSION = "2023-06-01"
@@ -54,7 +54,7 @@ class VisionDetector:
             answer = await self._ask(frame)
             return [Detection("failure", _read_probability(answer), None)]
         except Exception as exc:
-            raise DetectorUnavailableError(str(exc)) from exc
+            raise DetectorUnavailableError(describe_failure(exc)) from exc
 
     async def _fetch_frame(self, snapshot_url: str) -> bytes:
         async with self._http_client_factory() as client:

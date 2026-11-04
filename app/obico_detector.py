@@ -5,7 +5,7 @@ from typing import Any
 
 import httpx
 
-from app.detectors import Detection, DetectorUnavailableError
+from app.detectors import Detection, DetectorUnavailableError, describe_failure
 
 # Measured with the real container: about 5.5 seconds a frame on a desktop CPU. A slower node needs more.
 REQUEST_TIMEOUT = 30.0
@@ -32,7 +32,7 @@ class ObicoDetector:
             body = await self._ask(snapshot_url)
             return [_read_detection(entry) for entry in body["detections"]]
         except Exception as exc:
-            raise DetectorUnavailableError(str(exc)) from exc
+            raise DetectorUnavailableError(describe_failure(exc)) from exc
 
     async def _ask(self, snapshot_url: str) -> dict[str, Any]:
         headers = {"Authorization": f"Bearer {self._token}"} if self._token else {}
