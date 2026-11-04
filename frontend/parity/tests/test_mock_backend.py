@@ -146,7 +146,10 @@ def test_fixture_print_job_is_the_helicopter_blade_print(fixture_backend):
 
 def test_fixture_search_finds_the_doorhandle_prints_and_project(fixture_backend):
     results = fetch_json(fixture_backend, "/api/search?q=door")
-    assert [item["filename"] for item in results["history"]] == ["Doorhandle/Doorhandle_body.gcode", "Doorhandle_parts.gcode"]
+    assert [item["filename"] for item in results["history"]] == [
+        "Doorhandle/Doorhandle_body.gcode",
+        "Doorhandle_parts.gcode",
+    ]
     assert results["projects"][0]["name"] == "Doorhandle"
     assert results["spools"] == []
 
@@ -175,7 +178,9 @@ def test_fixture_project_detail_has_two_prints_and_one_file_and_one_link(fixture
 
 def test_fixture_has_one_enabled_enclosure_camera(fixture_backend):
     webcams = fetch_json(fixture_backend, "/api/webcams")
-    assert [(webcam["name"], webcam["enabled"], webcam["target_fps"]) for webcam in webcams] == [("Enclosure", True, 15)]
+    assert [(webcam["name"], webcam["enabled"], webcam["target_fps"]) for webcam in webcams] == [
+        ("Enclosure", True, 15)
+    ]
 
 
 def test_fixture_stream_starts_with_the_printing_state_temperatures_power_and_pi_stats(fixture_backend):
@@ -184,3 +189,13 @@ def test_fixture_stream_starts_with_the_printing_state_temperatures_power_and_pi
     assert events["temps"]["hotend_actual"] == 204.9
     assert events["power"]["watts"] == 109
     assert events["pi_stats"]["cpu_temp"] == 37.6
+
+
+def test_a_response_of_bytes_is_served_as_a_jpeg_image():
+    server = start_mock_backend({"/api/picture": b"\xff\xd8jpeg"}, [])
+    try:
+        with urllib.request.urlopen(build_address(server, "/api/picture"), timeout=REQUEST_TIMEOUT_SECONDS) as response:
+            assert response.headers["Content-Type"] == "image/jpeg"
+            assert response.read() == b"\xff\xd8jpeg"
+    finally:
+        server.shutdown()
