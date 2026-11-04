@@ -29,6 +29,7 @@ from app.routes import (
     files,
     history,
     predict,
+    printer_commands,
     prints,
     projects,
     push,
@@ -117,6 +118,7 @@ def create_lifespan(app_settings: Any = settings):
 
 _ROUTERS = (
     control.router,
+    printer_commands.router,
     chunks.router,
     files.router,
     webcams.router,
