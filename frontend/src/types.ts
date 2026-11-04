@@ -379,3 +379,15 @@ export interface ControlAccessSnapshot {
   pending: AccessRequest[]
   granted: AccessGrant[]
 }
+
+/** What Klipper says about itself: ready, startup, shutdown, error, or disconnected from Moonraker. */
+export interface KlipperState {
+  state: string
+  message: string
+}
+
+/** A web client of the printer host, such as Fluidd or Mainsail, and where it is served. */
+export interface WebClient {
+  name: string
+  url: string
+}

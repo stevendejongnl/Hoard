@@ -3,16 +3,19 @@ import type { TemplateResult } from 'lit'
 import { customElement, state } from 'lit/decorators.js'
 import { property } from 'lit/decorators.js'
 import { keyed } from 'lit/directives/keyed.js'
+import { getWebClients } from '../api'
 import { buildDocumentTitle } from '../document-title'
 import { renderIcon } from '../icons'
 import { canStartPull, isPullComplete, measurePull } from '../pull-to-refresh'
 import type { TouchPoint } from '../pull-to-refresh'
 import { router } from '../router'
 import type { ServerSentEventPayload } from '../server-sent-events-client'
+import type { WebClient } from '../types'
 import { sseClient } from '../sse'
 import './bottom-tabs'
 import './control-access-prompt'
 import './detection-banner'
+import './klipper-banner'
 import './status-bar'
 import './top-navigation'
 import '../pages/control-page'
@@ -56,6 +59,7 @@ export class HoardApp extends LitElement {
   @property({ attribute: false }) setDocumentTitle: (title: string) => void = (title) => {
     document.title = title
   }
+  @property({ attribute: false }) loadWebClients: () => Promise<WebClient[]> = getWebClients
   @property({ attribute: false }) renderPage: (route: string) => TemplateResult = renderPageForRoute
 
   @state() private route = '/'
@@ -64,6 +68,7 @@ export class HoardApp extends LitElement {
   @state() private pullDistance = 0
   /** a new value makes the page element new, so it loads everything again */
   @state() private pageGeneration = 0
+  @state() private webClients: WebClient[] = []
 
   private pullStart: TouchPoint | null = null
   private readonly pullMoveListener = {
@@ -83,6 +88,15 @@ export class HoardApp extends LitElement {
     this.route = this.readCurrentRoute()
     this.stopListeningToRoute = this.subscribeToRoute((route) => (this.route = route))
     this.stopListeningToStream = this.subscribeToPayloads((payload) => this.handlePayload(payload))
+    void this.loadLinks()
+  }
+
+  private async loadLinks(): Promise<void> {
+    try {
+      this.webClients = await this.loadWebClients()
+    } catch {
+      this.webClients = []
+    }
   }
 
   disconnectedCallback(): void {
@@ -140,7 +154,9 @@ export class HoardApp extends LitElement {
         route=${this.route}
         printerstate=${this.printerState}
         .faultCount=${this.faultCount}
+        .webClients=${this.webClients}
       ></top-navigation>
+      <klipper-banner></klipper-banner>
       <detection-banner printerstate=${this.printerState}></detection-banner>
       <control-access-prompt></control-access-prompt>
       ${this.renderPullIndicator()}

@@ -13,6 +13,7 @@ import {
   followNavigationLink,
 } from '../navigation'
 import type { NavigationItem, NavigationPath } from '../navigation'
+import type { WebClient } from '../types'
 import { router } from '../router'
 import './search-modal'
 import './push-toggle'
@@ -35,6 +36,8 @@ export class TopNavigation extends LitElement {
   /** the printer state from the stream: printing, paused, error, standby, ... */
   @property({ type: String }) printerState = ''
   @property({ type: Number }) faultCount = 0
+  /** Fluidd or Mainsail on the printer host, when it has one */
+  @property({ attribute: false }) webClients: WebClient[] = []
   @property({ attribute: false }) navigate: NavigateFunction = navigateWithRouter
   @property({ attribute: false }) confirmEmergencyStop: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) stopEmergency: () => Promise<unknown> = () => emergencyStop()
@@ -98,6 +101,18 @@ export class TopNavigation extends LitElement {
     </button>`
   }
 
+  private renderWebClientLink(client: WebClient): TemplateResult {
+    return html`<a
+      class="button icon-only web-client-link"
+      href=${client.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title=${client.name}
+      aria-label="Open ${client.name}"
+      >${renderIcon('external')}</a
+    >`
+  }
+
   private renderFaultCount(item: NavigationItem): TemplateResult | typeof nothing {
     if (item.section !== 'system' || this.faultCount === 0) return nothing
     return html`<span class="fault-count" aria-label="${this.faultCount} active faults">${this.faultCount}</span>`
@@ -141,7 +156,9 @@ export class TopNavigation extends LitElement {
     return html`<header class="top-navigation">
       ${this.renderBrandArea()} ${this.renderTabs()}
       <div class="top-navigation-actions">
-        ${this.renderStateBadge()}${this.renderSearchButton()}<push-toggle></push-toggle>${this.renderEmergencyStop()}
+        ${this.renderStateBadge()}${this.webClients.map((client) =>
+          this.renderWebClientLink(client),
+        )}${this.renderSearchButton()}<push-toggle></push-toggle>${this.renderEmergencyStop()}
       </div>
       <search-modal></search-modal>
     </header>`

@@ -58,6 +58,8 @@ const ICON_SHAPES = {
   lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
   'arrow-left': '<path d="M19 12H5M11 6l-6 6 6 6"/>',
   'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  external: '<path d="M14 4h6v6M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  download: '<path d="M12 4v12M6 10l6 6 6-6M4 20h16"/>',
 } as const
 
 export type IconName = keyof typeof ICON_SHAPES

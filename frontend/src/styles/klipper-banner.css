@@ -1,0 +1,121 @@
+.klipper-banner {
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+  border-left: 3px solid var(--hotend-color);
+  font-size: 13px;
+}
+
+.klipper-banner.alarm {
+  border-left-color: var(--emergency-color);
+}
+
+.klipper-banner-main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 2px 8px 2px 0;
+}
+
+.klipper-banner-toggle {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text-color);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.klipper-banner-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--hotend-color);
+}
+
+.klipper-banner.alarm .klipper-banner-dot {
+  background: var(--danger-color);
+}
+
+.klipper-banner-text {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.klipper-banner-text span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--secondary-text-color);
+}
+
+.klipper-banner-actions {
+  display: inline-flex;
+  flex: none;
+  gap: 6px;
+}
+
+.klipper-banner .button {
+  min-height: 36px;
+}
+
+.klipper-banner-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 10px 33px;
+}
+
+.klipper-banner-message {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--well-color);
+  border-radius: 2px;
+  font: 400 12px/1.5 var(--monospace-family);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--secondary-text-color);
+}
+
+.klipper-banner-logs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.klipper-banner-failure {
+  padding: 0 12px 8px 33px;
+  font-size: 12px;
+  color: var(--danger-color);
+}
+
+@media (max-width: 800px) {
+  .klipper-banner-main {
+    flex-wrap: wrap;
+    padding-bottom: 6px;
+  }
+
+  .klipper-banner-toggle {
+    flex-basis: 100%;
+    min-height: 44px;
+  }
+
+  .klipper-banner-actions {
+    padding-left: 12px;
+  }
+
+  .klipper-banner .button {
+    min-height: 44px;
+  }
+}

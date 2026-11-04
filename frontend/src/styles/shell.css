@@ -389,3 +389,9 @@ push-toggle {
     min-height: 44px;
   }
 }
+
+@media (max-width: 800px) {
+  .web-client-link {
+    display: none;
+  }
+}

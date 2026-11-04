@@ -5,6 +5,7 @@ import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
 import type { ControlLayout } from './control-layout'
 import type { BedMesh, ConsoleLine, ControlAccessSnapshot, ControlDevice, ControlStatus } from './types'
+import type { KlipperState, WebClient } from './types'
 
 const BAD_GATEWAY_STATUS = 502
 const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
@@ -290,3 +291,8 @@ export const denyControlAccess = (requestId: string) =>
   postJson(`/api/control/access/${encodeURIComponent(requestId)}/deny`)
 export const takeControlAccessBack = (client: string) =>
   fetchJson<{ ok: boolean }>(`/api/control/access/grants/${encodeURIComponent(client)}`, { method: 'DELETE' })
+
+// Klipper
+export const getKlipperState = () => fetchJson<KlipperState>('/api/control/klipper')
+export const restartKlipper = () => postJson('/api/control/restart')
+export const getWebClients = () => fetchJson<WebClient[]>('/api/control/web_clients')
