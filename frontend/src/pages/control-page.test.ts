@@ -80,6 +80,8 @@ async function createPage(
     return () => void (entry.isCancelled = true)
   }
   page.renderCard = (key) => html`<p class="fake-card">${key}</p>`
+  page.renderCameraFocus = (_context, close) =>
+    html`<div class="fake-focus"><button @click=${close}>Close fake</button></div>`
   document.body.appendChild(page)
   await settle(page)
   return { page, saved, resets, scheduled, loaded, refreshes }
@@ -429,5 +431,21 @@ describe('keeping the status fresh', () => {
     expect(reads).toBe(2)
     page.remove()
     expect(stopped).toBe(true)
+  })
+})
+
+describe('the camera on a screen of its own', () => {
+  it('is not there until a card asks for it', async () => {
+    const { page } = await createPage()
+    expect(page.querySelector('.fake-focus')).toBeNull()
+  })
+
+  it('opens when the camera card asks, and closes when it is closed', async () => {
+    const setup = await createPage()
+    slot(setup.page, 'camera').dispatchEvent(new CustomEvent('control-camera-focus', { bubbles: true }))
+    await settle(setup.page)
+    expect(setup.page.querySelector('.fake-focus')).not.toBeNull()
+    await pressAndSettle(setup, setup.page, 'Close fake')
+    expect(setup.page.querySelector('.fake-focus')).toBeNull()
   })
 })

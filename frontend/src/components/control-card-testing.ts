@@ -44,6 +44,7 @@ export async function mountCard<T extends ControlCard>(tag: string, options: Mou
   }
   document.body.appendChild(card)
   await card.updateComplete
+  await new Promise((resolve) => setTimeout(resolve, 0))
   return { card, sent }
 }
 
