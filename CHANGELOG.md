@@ -1,3 +1,14 @@
+## [1.61.0](https://github.com/stevendejongnl/Hoard/compare/v1.60.0...v1.61.0) (2026-11-04)
+
+### Features
+
+* **control:** a slim Klipper banner with the restarts and the logs, and a link to Fluidd or Mainsail in the top bar ([b440f8c](https://github.com/stevendejongnl/Hoard/commit/b440f8cc87d1a47adf0a0d729d5eb920139ce37d))
+* **control:** the state and message of Klipper, restart, the logs, and the web clients of the printer host ([eac97c7](https://github.com/stevendejongnl/Hoard/commit/eac97c7a5412ad283784b5e6bf6299f1675f965e))
+
+### Documentation
+
+* the Klipper banner and the link to Fluidd or Mainsail ([c4b9fb6](https://github.com/stevendejongnl/Hoard/commit/c4b9fb6d41ce359088d9c314d8a0f68bfc242b69))
+
 ## [1.60.0](https://github.com/stevendejongnl/Hoard/compare/v1.59.0...v1.60.0) (2026-11-04)
 
 ### Features
