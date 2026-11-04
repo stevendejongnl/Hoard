@@ -340,7 +340,16 @@ export interface ControlStatus {
   speed_percent: number
   flow_percent: number
   z_offset: number
+  /** the probe that is moved by hand during a manual calibration */
+  manual_probe: { active: boolean; z: number | null }
   fans: ControlFan[]
+}
+
+export interface ConsoleLine {
+  message: string
+  /** seconds since 1970 */
+  time: number
+  type: 'command' | 'response'
 }
 
 export interface BedMesh {

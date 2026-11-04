@@ -15,6 +15,7 @@ const STATUS: ControlStatus = {
   speed_percent: 100,
   flow_percent: 100,
   z_offset: 0,
+  manual_probe: { active: false, z: null },
   fans: [],
 }
 

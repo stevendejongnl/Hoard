@@ -4,7 +4,7 @@ import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
 import type { ControlLayout } from './control-layout'
-import type { BedMesh, ControlAccessSnapshot, ControlDevice, ControlStatus } from './types'
+import type { BedMesh, ConsoleLine, ControlAccessSnapshot, ControlDevice, ControlStatus } from './types'
 
 const BAD_GATEWAY_STATUS = 502
 const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
@@ -270,6 +270,7 @@ const postJson = (path: string, body: object = {}) =>
 export const getControlStatus = () => fetchJson<ControlStatus>('/api/control/status')
 export const sendControlCommand = (route: string, body: object = {}) => postJson(`/api/control/${route}`, body)
 export const getMacros = () => fetchJson<string[]>('/api/control/macros')
+export const getConsole = () => fetchJson<ConsoleLine[]>('/api/control/console')
 export const getBedMesh = () => fetchJson<BedMesh>('/api/control/bed_mesh')
 export const getControlLayout = (device: ControlDevice) => fetchJson<unknown>(`/api/control/layout/${device}`)
 export const saveControlLayout = (device: ControlDevice, layout: ControlLayout) =>

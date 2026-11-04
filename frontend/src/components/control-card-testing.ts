@@ -13,6 +13,7 @@ export const IDLE_STATUS: ControlStatus = {
   speed_percent: 100,
   flow_percent: 98,
   z_offset: -0.12,
+  manual_probe: { active: false, z: null },
   fans: [
     { key: '', label: 'Part fan', percent: 50 },
     { key: 'aux', label: 'Aux fan', percent: 0 },
