@@ -12,7 +12,7 @@ import {
   shiftCard,
   showCard,
 } from './control-layout'
-import type { ControlLayout } from './control-layout'
+import type { CardKey, ControlLayout } from './control-layout'
 
 const ALL = ['camera', 'move', 'temperatures', 'extruder', 'tuning', 'bed_mesh', 'calibration', 'macros', 'console']
 
@@ -117,7 +117,7 @@ describe('changing the layout', () => {
   it('leaves the layout as it is when a card is dropped on itself or on a card that is not there', () => {
     const layout = layoutOf(['camera', 'move'])
     expect(moveCard(layout, 'camera', 'camera')).toEqual(layout)
-    expect(moveCard(layout, 'camera', 'zzz')).toEqual(layout)
+    expect(moveCard(layout, 'camera', 'zzz' as CardKey)).toEqual(layout)
   })
 
   it('moves a card one place up or down, and stops at the ends', () => {
@@ -134,9 +134,9 @@ describe('changing the layout', () => {
   })
 
   it('sets the span of a card, and one column is the same as none', () => {
-    expect(setSpan(layoutOf(['camera']), 'camera', 3).spans).toEqual({ a: 3 })
-    expect(setSpan(layoutOf(['camera'], [], { a: 3 }), 'camera', 1).spans).toEqual({})
-    expect(readSpan(layoutOf(['camera'], [], { a: 2 }), 'camera')).toBe(2)
+    expect(setSpan(layoutOf(['camera']), 'camera', 3).spans).toEqual({ camera: 3 })
+    expect(setSpan(layoutOf(['camera'], [], { camera: 3 }), 'camera', 1).spans).toEqual({})
+    expect(readSpan(layoutOf(['camera'], [], { camera: 2 }), 'camera')).toBe(2)
     expect(readSpan(layoutOf(['camera']), 'camera')).toBe(1)
   })
 
