@@ -13,7 +13,9 @@ from app.printer_commands import (
     MoveRequest,
     SpeedRequest,
     TemperatureRequest,
+    describe_status,
     is_locked,
+    list_fan_objects,
     visible_macros,
 )
 from app.routes.dependencies import Moonraker
@@ -53,6 +55,20 @@ async def run_script(moonraker: MoonrakerClient, script: str) -> dict:
 async def lock_state(moonraker: Moonraker) -> dict:
     state = await read_print_state(moonraker)
     return {"locked": is_locked(state), "state": state}
+
+
+STATUS_OBJECTS = ("print_stats", "toolhead", "extruder", "heater_bed", "fan", "gcode_move")
+
+
+@router.get("/status")
+async def status(moonraker: Moonraker) -> dict:
+    try:
+        fan_objects = list_fan_objects((await moonraker.get("/printer/objects/list"))["objects"])
+        queried = dict.fromkeys([*STATUS_OBJECTS, *fan_objects], "")
+        answer = await moonraker.get(OBJECTS_QUERY, **queried)
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+    return describe_status(answer["status"], fan_objects)
 
 
 @router.post("/move", dependencies=[Idle])

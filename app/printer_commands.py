@@ -92,9 +92,14 @@ class FlowRequest(BaseModel):
 
 
 class FanRequest(BaseModel):
+    """The part fan when no name is given, otherwise the named fan."""
+
     percent: int = Field(ge=0, le=100)
+    name: str | None = Field(default=None, pattern=MACRO_NAME_PATTERN)
 
     def script(self) -> str:
+        if self.name:
+            return f"SET_FAN_SPEED FAN={self.name} SPEED={number(self.percent / 100)}"
         return f"M106 S{round(self.percent * 255 / 100)}"
 
 
@@ -127,3 +132,46 @@ def visible_macros(objects: list[str]) -> list[str]:
     prefix = "gcode_macro "
     names = [name.removeprefix(prefix) for name in objects if name.startswith(prefix)]
     return sorted(name for name in names if not name.startswith("_"))
+
+
+HEATER_LABELS = {"extruder": "Nozzle", "heater_bed": "Bed"}
+FAN_OBJECT_PREFIX = "fan_generic "
+
+
+def list_fan_objects(objects: list[str]) -> list[str]:
+    return sorted(name for name in objects if name.startswith(FAN_OBJECT_PREFIX))
+
+
+def describe_heater(key: str, readings: dict) -> dict:
+    return {
+        "key": key,
+        "label": HEATER_LABELS[key],
+        "temperature": round(readings["temperature"], 1),
+        "target": readings["target"],
+    }
+
+
+def describe_fans(status: dict, fan_objects: list[str]) -> list[dict]:
+    fans = [{"key": "", "label": "Part fan", "percent": round(status["fan"]["speed"] * 100)}]
+    for fan_object in fan_objects:
+        name = fan_object.removeprefix(FAN_OBJECT_PREFIX)
+        fans.append({"key": name, "label": name, "percent": round(status[fan_object]["speed"] * 100)})
+    return fans
+
+
+def describe_status(status: dict, fan_objects: list[str]) -> dict:
+    """What the cards of the Control page show, from the objects the printer reported."""
+    state = status["print_stats"]["state"]
+    x, y, z = status["toolhead"]["position"][:3]
+    motion = status["gcode_move"]
+    return {
+        "state": state,
+        "locked": is_locked(state),
+        "position": {"x": x, "y": y, "z": z},
+        "homed": status["toolhead"]["homed_axes"],
+        "heaters": [describe_heater(key, status[key]) for key in HEATER_LABELS],
+        "speed_percent": round(motion["speed_factor"] * 100),
+        "flow_percent": round(motion["extrude_factor"] * 100),
+        "z_offset": motion["homing_origin"][2],
+        "fans": describe_fans(status, fan_objects),
+    }

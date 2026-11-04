@@ -308,7 +308,7 @@ async def test_the_status_gathers_what_the_cards_show(client: AsyncClient, monke
             {"key": "aux", "label": "aux", "percent": 0},
         ],
     }
-    queried = moonraker.asked[0][1]
+    queried = moonraker.asked[-1][1]
     assert set(queried) == {
         "print_stats",
         "toolhead",
