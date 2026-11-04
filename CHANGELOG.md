@@ -1,3 +1,9 @@
+## [1.56.0](https://github.com/stevendejongnl/Hoard/compare/v1.55.0...v1.56.0) (2026-11-04)
+
+### Features
+
+* **detection:** an unavailable detector names the failure and says what to check ([ead89f8](https://github.com/stevendejongnl/Hoard/commit/ead89f8392c7ee83aea7d3a68a3f1292b9424600))
+
 ## [1.55.0](https://github.com/stevendejongnl/Hoard/compare/v1.54.0...v1.55.0) (2026-11-04)
 
 ### Features
