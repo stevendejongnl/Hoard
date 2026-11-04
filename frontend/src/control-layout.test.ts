@@ -100,22 +100,32 @@ describe('listing the cards', () => {
 
 describe('changing the layout', () => {
   it('moves a card before another one', () => {
-    expect(moveCard(layoutOf(['a', 'b', 'c', 'd']), 'd', 'b').order).toEqual(['a', 'd', 'b', 'c'])
-    expect(moveCard(layoutOf(['a', 'b', 'c', 'd']), 'a', 'c').order).toEqual(['b', 'a', 'c', 'd'])
+    expect(moveCard(layoutOf(['camera', 'move', 'temperatures', 'extruder']), 'extruder', 'move').order).toEqual([
+      'camera',
+      'extruder',
+      'move',
+      'temperatures',
+    ])
+    expect(moveCard(layoutOf(['camera', 'move', 'temperatures', 'extruder']), 'camera', 'temperatures').order).toEqual([
+      'move',
+      'camera',
+      'temperatures',
+      'extruder',
+    ])
   })
 
   it('leaves the layout as it is when a card is dropped on itself or on a card that is not there', () => {
-    const layout = layoutOf(['a', 'b'])
-    expect(moveCard(layout, 'a', 'a')).toEqual(layout)
-    expect(moveCard(layout, 'a', 'zzz')).toEqual(layout)
+    const layout = layoutOf(['camera', 'move'])
+    expect(moveCard(layout, 'camera', 'camera')).toEqual(layout)
+    expect(moveCard(layout, 'camera', 'zzz')).toEqual(layout)
   })
 
   it('moves a card one place up or down, and stops at the ends', () => {
-    const layout = layoutOf(['a', 'b', 'c'])
-    expect(shiftCard(layout, 'b', -1).order).toEqual(['b', 'a', 'c'])
-    expect(shiftCard(layout, 'b', 1).order).toEqual(['a', 'c', 'b'])
-    expect(shiftCard(layout, 'a', -1).order).toEqual(['a', 'b', 'c'])
-    expect(shiftCard(layout, 'c', 1).order).toEqual(['a', 'b', 'c'])
+    const layout = layoutOf(['camera', 'move', 'temperatures'])
+    expect(shiftCard(layout, 'move', -1).order).toEqual(['move', 'camera', 'temperatures'])
+    expect(shiftCard(layout, 'move', 1).order).toEqual(['camera', 'temperatures', 'move'])
+    expect(shiftCard(layout, 'camera', -1).order).toEqual(['camera', 'move', 'temperatures'])
+    expect(shiftCard(layout, 'temperatures', 1).order).toEqual(['camera', 'move', 'temperatures'])
   })
 
   it('moves a card past the cards of another group that the filter hides', () => {
@@ -124,23 +134,23 @@ describe('changing the layout', () => {
   })
 
   it('sets the span of a card, and one column is the same as none', () => {
-    expect(setSpan(layoutOf(['a']), 'a', 3).spans).toEqual({ a: 3 })
-    expect(setSpan(layoutOf(['a'], [], { a: 3 }), 'a', 1).spans).toEqual({})
-    expect(readSpan(layoutOf(['a'], [], { a: 2 }), 'a')).toBe(2)
-    expect(readSpan(layoutOf(['a']), 'a')).toBe(1)
+    expect(setSpan(layoutOf(['camera']), 'camera', 3).spans).toEqual({ a: 3 })
+    expect(setSpan(layoutOf(['camera'], [], { a: 3 }), 'camera', 1).spans).toEqual({})
+    expect(readSpan(layoutOf(['camera'], [], { a: 2 }), 'camera')).toBe(2)
+    expect(readSpan(layoutOf(['camera']), 'camera')).toBe(1)
   })
 
   it('hides a card, takes it out of the order, and shows it again at the end', () => {
-    const hidden = hideCard(layoutOf(['a', 'b', 'c']), 'b')
-    expect(hidden).toEqual(layoutOf(['a', 'c'], ['b']))
-    expect(showCard(hidden, 'b')).toEqual(layoutOf(['a', 'c', 'b']))
+    const hidden = hideCard(layoutOf(['camera', 'move', 'temperatures']), 'move')
+    expect(hidden).toEqual(layoutOf(['camera', 'temperatures'], ['move']))
+    expect(showCard(hidden, 'move')).toEqual(layoutOf(['camera', 'temperatures', 'move']))
   })
 
   it('does not change the layout it was given', () => {
-    const layout = layoutOf(['a', 'b'])
-    hideCard(layout, 'a')
-    moveCard(layout, 'b', 'a')
-    setSpan(layout, 'a', 2)
-    expect(layout).toEqual(layoutOf(['a', 'b']))
+    const layout = layoutOf(['camera', 'move'])
+    hideCard(layout, 'camera')
+    moveCard(layout, 'move', 'camera')
+    setSpan(layout, 'camera', 2)
+    expect(layout).toEqual(layoutOf(['camera', 'move']))
   })
 })
