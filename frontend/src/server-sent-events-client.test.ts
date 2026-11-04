@@ -183,3 +183,15 @@ describe('ServerSentEventsClient detection events', () => {
     expect(received).toEqual([{ type: 'detection', data: { state: 'alert', score: 0.84 } }])
   })
 })
+
+describe('ServerSentEventsClient control access events', () => {
+  it('hands on who asked to control the printer and who may', () => {
+    const { client, eventSources } = createClient()
+    const received: unknown[] = []
+    client.subscribe((payload) => received.push(payload))
+    client.connect()
+    const snapshot = { pending: [{ id: 'a', client: 'claude', reason: '', expires_at: 5 }], granted: [] }
+    eventSources[0].receive('control_access', JSON.stringify(snapshot))
+    expect(received).toEqual([{ type: 'control_access', data: snapshot }])
+  })
+})
