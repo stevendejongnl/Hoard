@@ -12,10 +12,13 @@ const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
 /** A request that the server answered with an error status. */
 export class HttpError extends Error {
   readonly status: number
+  /** what the server said was wrong, when it said; the printer's own words for a command it refused */
+  readonly detail: string
 
-  constructor(status: number, statusText: string) {
+  constructor(status: number, statusText: string, detail = '') {
     super(`${status} ${statusText}`)
     this.status = status
+    this.detail = detail
   }
 }
 
@@ -24,9 +27,18 @@ export function describeLoadFailure(error: unknown, fallback: string): string {
   return error instanceof HttpError && error.status === BAD_GATEWAY_STATUS ? PRINTER_UNREACHABLE_MESSAGE : fallback
 }
 
+async function readErrorDetail(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { detail?: unknown }
+    return typeof body.detail === 'string' ? body.detail : ''
+  } catch {
+    return ''
+  }
+}
+
 async function fetchJson<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(path, options)
-  if (!response.ok) throw new HttpError(response.status, response.statusText)
+  if (!response.ok) throw new HttpError(response.status, response.statusText, await readErrorDetail(response))
   return response.json() as Promise<T>
 }
 

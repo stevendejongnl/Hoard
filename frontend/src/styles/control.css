@@ -283,3 +283,123 @@
     grid-column: span 1 !important;
   }
 }
+
+.control-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--panel-color);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+}
+
+.control-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 12px;
+  background: var(--section-header-color);
+  font: 600 13px var(--font-family);
+  letter-spacing: 0.02em;
+  color: var(--text-color);
+}
+
+.control-card-header svg {
+  color: var(--muted-text-color);
+}
+
+.control-card-header-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--secondary-text-color);
+}
+
+.control-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+}
+
+.control-card-failure {
+  padding: 6px 10px;
+  background: var(--well-color);
+  border-left: 3px solid var(--danger-color);
+  font-size: 12px;
+  color: var(--danger-color);
+}
+
+.control-label {
+  font: 600 11px var(--font-family);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text-color);
+}
+
+.control-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid var(--strong-border-color);
+  background: var(--button-color);
+  color: var(--text-color);
+  border-radius: 2px;
+  font: 600 13px var(--font-family);
+  cursor: pointer;
+}
+
+.control-key:hover:not(:disabled) {
+  background: var(--button-hover-color);
+}
+
+.control-key.home {
+  color: var(--accent);
+}
+
+.control-key:disabled,
+.control-card .button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.control-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  background: var(--well-color);
+  color: var(--secondary-text-color);
+  font: 500 12px var(--monospace-family);
+  cursor: pointer;
+}
+
+.control-chip[aria-pressed='true'] {
+  background: var(--selection-tint);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.control-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.control-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.control-button-row .button {
+  min-height: 44px;
+}
