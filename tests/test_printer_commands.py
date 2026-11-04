@@ -241,8 +241,6 @@ async def test_the_macros_are_listed_from_the_printer_objects(client: AsyncClien
         ("bed_mesh", "BED_MESH_CALIBRATE"),
         ("screws_tilt", "SCREWS_TILT_CALCULATE"),
         ("manual_probe", "MANUAL_PROBE"),
-        ("probe_up", "TESTZ Z=+0.1"),
-        ("probe_down", "TESTZ Z=-0.1"),
         ("accept", "ACCEPT"),
         ("abort", "ABORT"),
     ],
@@ -372,3 +370,33 @@ async def test_the_console_is_a_502_when_the_printer_does_not_answer(client: Asy
     moonraker = FakeMoonraker({"/server/gcode_store": RuntimeError("offline")})
     install_fakes(monkeypatch, moonraker=moonraker)
     assert (await client.get("/api/control/console")).status_code == 502
+
+
+@pytest.mark.parametrize(
+    ("body", "expected"),
+    [
+        ({"direction": "up", "step": 0.1}, "TESTZ Z=+0.1"),
+        ({"direction": "down", "step": 0.05}, "TESTZ Z=-0.05"),
+        ({"direction": "down", "step": 1}, "TESTZ Z=-1"),
+    ],
+)
+async def test_the_probe_is_moved_by_hand_in_steps(client: AsyncClient, monkeypatch, body, expected):
+    response, moonraker = await command(client, monkeypatch, "standby", "probe", body)
+    assert response.status_code == 200
+    assert scripts(moonraker) == [expected]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{"direction": "sideways", "step": 0.1}, {"direction": "up", "step": 0}, {"direction": "up", "step": 5}],
+)
+async def test_a_probe_step_outside_the_limits_is_refused(client: AsyncClient, monkeypatch, body):
+    response, moonraker = await command(client, monkeypatch, "standby", "probe", body)
+    assert response.status_code == 422
+    assert moonraker.posted == []
+
+
+async def test_the_probe_is_locked_while_printing(client: AsyncClient, monkeypatch):
+    response, moonraker = await command(client, monkeypatch, "printing", "probe", {"direction": "up", "step": 0.1})
+    assert response.status_code == 409
+    assert moonraker.posted == []
