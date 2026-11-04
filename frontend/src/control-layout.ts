@@ -12,6 +12,8 @@ export type CardKey =
   | 'console'
 export type CardGroup = 'move' | 'heat' | 'tools'
 export type GroupFilter = CardGroup | 'all'
+/** What the list selects: everything, one group, or one card. */
+export type CardFilter = GroupFilter | CardKey
 export type Span = 1 | 2 | 3
 
 export interface CardDefinition {
@@ -87,11 +89,11 @@ export function findCard(key: CardKey): CardDefinition {
   return CARDS.find((card) => card.key === key) as CardDefinition
 }
 
-function belongsTo(key: CardKey, filter: GroupFilter): boolean {
-  return filter === 'all' || findCard(key).group === filter
+function belongsTo(key: CardKey, filter: CardFilter): boolean {
+  return filter === 'all' || filter === key || findCard(key).group === filter
 }
 
-export function listVisibleCards(layout: ControlLayout, filter: GroupFilter): CardKey[] {
+export function listVisibleCards(layout: ControlLayout, filter: CardFilter): CardKey[] {
   return layout.order.filter((key) => belongsTo(key, filter))
 }
 
@@ -116,7 +118,7 @@ export function shiftCard(
   layout: ControlLayout,
   key: CardKey,
   direction: -1 | 1,
-  filter: GroupFilter = 'all',
+  filter: CardFilter = 'all',
 ): ControlLayout {
   const neighbours = listVisibleCards(layout, filter)
   const neighbour = neighbours[neighbours.indexOf(key) + direction]

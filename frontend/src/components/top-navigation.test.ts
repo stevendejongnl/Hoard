@@ -32,9 +32,16 @@ describe('top navigation brand', () => {
 })
 
 describe('top navigation tabs', () => {
-  it('lists the five sections as links in order', async () => {
+  it('lists the six sections as links in order', async () => {
     const tabs = findTabs(await createTopNavigation())
-    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Dashboard', 'History', 'Projects', 'Spools', 'System'])
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual([
+      'Dashboard',
+      'History',
+      'Projects',
+      'Spools',
+      'Control',
+      'System',
+    ])
     expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual(['/', '/history', '/projects', '/spools', '/system'])
   })
 

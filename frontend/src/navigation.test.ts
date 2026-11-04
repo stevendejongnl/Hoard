@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest'
 import { NAVIGATION_ITEMS, findNavigationSection, followNavigationLink } from './navigation'
 
 describe('NAVIGATION_ITEMS', () => {
-  it('lists the five sections in order with their paths and labels', () => {
+  it('lists the six sections in order with their paths and labels', () => {
     expect(NAVIGATION_ITEMS).toEqual([
       { section: 'dashboard', path: '/', label: 'Dashboard' },
       { section: 'history', path: '/history', label: 'History' },
       { section: 'projects', path: '/projects', label: 'Projects' },
       { section: 'spools', path: '/spools', label: 'Spools' },
+      { section: 'control', path: '/control', label: 'Control' },
       { section: 'system', path: '/system', label: 'System' },
     ])
   })
@@ -21,6 +22,7 @@ describe('findNavigationSection', () => {
     ['/projects', 'projects'],
     ['/projects/1', 'projects'],
     ['/spools', 'spools'],
+    ['/control', 'control'],
     ['/something-unknown', 'dashboard'],
   ])('maps %s to %s', (route, section) => {
     expect(findNavigationSection(route)).toBe(section)
@@ -55,8 +57,8 @@ describe('followNavigationLink', () => {
 })
 
 describe('the detections page in the navigation', () => {
-  it('belongs to the system section, so the top bar keeps its five tabs', () => {
+  it('belongs to the system section, so the top bar does not grow', () => {
     expect(findNavigationSection('/detections')).toBe('system')
-    expect(NAVIGATION_ITEMS).toHaveLength(5)
+    expect(NAVIGATION_ITEMS).toHaveLength(6)
   })
 })

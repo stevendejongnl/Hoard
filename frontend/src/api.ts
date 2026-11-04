@@ -3,6 +3,8 @@ import type { GcodeFile, HomeAssistantSwitch, PredictResult, PrintRecord, Spool,
 import type { Project, ProjectFile, ProjectLink, ProjectPrint } from './types'
 import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
+import type { ControlLayout } from './control-layout'
+import type { BedMesh, ControlAccessSnapshot, ControlDevice, ControlStatus } from './types'
 
 const BAD_GATEWAY_STATUS = 502
 const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
@@ -244,3 +246,34 @@ export const deletePrintPhoto = (jobId: string, photoId: number) =>
 // Temperatures
 export const getTemperatureHistory = () =>
   fetchJson<{ samples: TemperatureSample[] }>('/api/temperatures/history').then((history) => history.samples)
+
+// Control
+const postJson = (path: string, body: object = {}) =>
+  fetchJson<{ ok: boolean }>(path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+export const getControlStatus = () => fetchJson<ControlStatus>('/api/control/status')
+export const sendControlCommand = (route: string, body: object = {}) => postJson(`/api/control/${route}`, body)
+export const getMacros = () => fetchJson<string[]>('/api/control/macros')
+export const getBedMesh = () => fetchJson<BedMesh>('/api/control/bed_mesh')
+export const getControlLayout = (device: ControlDevice) => fetchJson<unknown>(`/api/control/layout/${device}`)
+export const saveControlLayout = (device: ControlDevice, layout: ControlLayout) =>
+  fetchJson<ControlLayout>(`/api/control/layout/${device}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(layout),
+  })
+export const resetControlLayout = (device: ControlDevice) =>
+  fetchJson<{ ok: boolean }>(`/api/control/layout/${device}`, { method: 'DELETE' })
+
+// Access for assistants
+export const getControlAccess = () => fetchJson<ControlAccessSnapshot>('/api/control/access')
+export const allowControlAccess = (requestId: string) =>
+  postJson(`/api/control/access/${encodeURIComponent(requestId)}/allow`)
+export const denyControlAccess = (requestId: string) =>
+  postJson(`/api/control/access/${encodeURIComponent(requestId)}/deny`)
+export const takeControlAccessBack = (client: string) =>
+  fetchJson<{ ok: boolean }>(`/api/control/access/grants/${encodeURIComponent(client)}`, { method: 'DELETE' })

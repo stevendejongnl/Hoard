@@ -19,9 +19,16 @@ afterEach(() => {
 })
 
 describe('bottom tabs', () => {
-  it('lists the five sections as links in order, each with an icon and a label', async () => {
+  it('lists the six sections as links in order, each with an icon and a label', async () => {
     const tabs = findTabs(await createBottomTabs())
-    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual(['Dashboard', 'History', 'Projects', 'Spools', 'System'])
+    expect(tabs.map((tab) => tab.textContent?.trim())).toEqual([
+      'Dashboard',
+      'History',
+      'Projects',
+      'Spools',
+      'Control',
+      'System',
+    ])
     expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual(['/', '/history', '/projects', '/spools', '/system'])
     expect(tabs.every((tab) => tab.querySelector('svg[aria-hidden="true"]') !== null)).toBe(true)
   })

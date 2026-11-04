@@ -44,6 +44,7 @@ describe('the current route', () => {
     ['/', '/'],
     ['/history', '/history'],
     ['/spools', '/spools'],
+    ['/control', '/control'],
     ['/projects', '/projects'],
     ['/projects/7', '/projects/7'],
     ['/prints/job-1', '/prints/job-1'],

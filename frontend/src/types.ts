@@ -315,3 +315,58 @@ export interface DetectionAlert {
   verdict: DetectionVerdict | null
   frame_url: string | null
 }
+
+export interface ControlHeater {
+  key: string
+  label: string
+  temperature: number
+  target: number
+}
+
+export interface ControlFan {
+  /** empty for the part fan */
+  key: string
+  label: string
+  percent: number
+}
+
+/** What the cards of the Control page show, as the printer reports it. */
+export interface ControlStatus {
+  state: string
+  locked: boolean
+  position: { x: number; y: number; z: number }
+  homed: string
+  heaters: ControlHeater[]
+  speed_percent: number
+  flow_percent: number
+  z_offset: number
+  fans: ControlFan[]
+}
+
+export interface BedMesh {
+  profile_name: string
+  mesh_min: number[]
+  mesh_max: number[]
+  probed_matrix: number[][]
+}
+
+export type ControlDevice = 'desktop' | 'phone'
+
+export interface AccessRequest {
+  id: string
+  client: string
+  reason: string
+  /** seconds since 1970: after this the request is gone */
+  expires_at: number
+}
+
+export interface AccessGrant {
+  client: string
+  /** seconds since 1970: after this the access has ended */
+  expires_at: number
+}
+
+export interface ControlAccessSnapshot {
+  pending: AccessRequest[]
+  granted: AccessGrant[]
+}

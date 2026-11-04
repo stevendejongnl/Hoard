@@ -8,6 +8,7 @@ describe('describePhoneHeader', () => {
     ['/prints/job-001', 'History'],
     ['/projects', 'Projects'],
     ['/spools', 'Spools'],
+    ['/control', 'Control'],
     ['/something-unknown', 'Hoard'],
   ])('titles %s as %s without a back link', (route, title) => {
     expect(describePhoneHeader(route)).toEqual({ title, backPath: null })

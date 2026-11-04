@@ -83,6 +83,12 @@ describe('listing the cards', () => {
     expect(listVisibleCards(layout, 'move')).toEqual(['camera', 'move'])
   })
 
+  it('shows one card on its own', () => {
+    const layout = layoutOf(['console', 'camera', 'macros', 'move'])
+    expect(listVisibleCards(layout, 'macros')).toEqual(['macros'])
+    expect(listVisibleCards(layout, 'bed_mesh')).toEqual([])
+  })
+
   it('lists the hidden cards in the order of the list, not of the layout', () => {
     expect(listHiddenCards(layoutOf(['move'], ['console', 'camera']))).toEqual(['camera', 'console'])
   })
