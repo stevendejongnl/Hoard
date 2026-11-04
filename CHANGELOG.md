@@ -1,3 +1,33 @@
+## [1.60.0](https://github.com/stevendejongnl/Hoard/compare/v1.59.0...v1.60.0) (2026-11-04)
+
+### Features
+
+* **control:** an assistant needs the person's approval, given on the dashboard, to move or heat the printer ([ebd6ab7](https://github.com/stevendejongnl/Hoard/commit/ebd6ab70dfd5921f95188bb61bcccd2f01517759))
+* **control:** one status for the cards, and a fan chosen by name ([ddcdb62](https://github.com/stevendejongnl/Hoard/commit/ddcdb625c06cb0fdf1b3dbe5b9859adc42eca656))
+* **control:** printer commands with a lock while printing ([8fe801a](https://github.com/stevendejongnl/Hoard/commit/8fe801a3a6b1dd631896f9c5d90f6378d96407d9))
+* **control:** store the layout of the Control page on the server, one for the desktop and one for the phone ([1640d55](https://github.com/stevendejongnl/Hoard/commit/1640d55e6e1b9f16a41a1b284b385a578d8cbe7c))
+* **control:** the bed mesh, macros and console cards ([33939c7](https://github.com/stevendejongnl/Hoard/commit/33939c7ec089c9e7f45c31000cc807135cb2e4bd))
+* **control:** the calibration card, with the manual probe and the result of the screws tilt adjust ([69b1b6a](https://github.com/stevendejongnl/Hoard/commit/69b1b6a6f5646dc3b119501d27678435993a5469))
+* **control:** the camera card and the move and home card ([1858ccc](https://github.com/stevendejongnl/Hoard/commit/1858cccdc8ea4a7e0fff4e3111fbbab3246879da))
+* **control:** the camera on a screen of its own, with the move controls and the Z babystep ([cfffa37](https://github.com/stevendejongnl/Hoard/commit/cfffa3712e2c5cfa6c1fb5b18047317ffff68f11))
+* **control:** the cards of the Control page, and reading, moving, spanning and hiding them ([947305f](https://github.com/stevendejongnl/Hoard/commit/947305f937a4d527644528b77dd7892f725c059c))
+* **control:** the console lines and the manual probe in the status ([54a17da](https://github.com/stevendejongnl/Hoard/commit/54a17da61381bb5834f312abc06de629a8f88729))
+* **control:** the Control page, with its list, card grid, edit layout, lock note and automatic saving ([3df853d](https://github.com/stevendejongnl/Hoard/commit/3df853dc54f6698abebfcc8fbc4be041e42c430a))
+* **control:** the popup in which a person allows an assistant to control the printer, and takes the access back ([1411a52](https://github.com/stevendejongnl/Hoard/commit/1411a52e580ca9c4696c029d4b79eaecf08cbc57))
+* **control:** the probe is moved by hand in steps ([2d7caab](https://github.com/stevendejongnl/Hoard/commit/2d7caab239ae2a1f1bca1baaed438e966b1d8e65))
+* **control:** the shared part of the cards: frame, sending a command, saying what the printer refused ([79813da](https://github.com/stevendejongnl/Hoard/commit/79813dab6f7ccf85b5a0ee416c6bc6176d67807f))
+* **control:** the speed, flow, fans and Z offset card ([4c29d2d](https://github.com/stevendejongnl/Hoard/commit/4c29d2d71686f9875f54dc4bc38e61a8cd3fea0f))
+* **control:** the temperatures card with presets, and the extruder card ([ad79510](https://github.com/stevendejongnl/Hoard/commit/ad795106c2c4da3e91cc056f1bf02535750ba6a7))
+
+### Bug Fixes
+
+* **control:** the camera card has a height of its own, and the layout starts as in the design ([fdde3bb](https://github.com/stevendejongnl/Hoard/commit/fdde3bb681463d1626f7e02df349409160d34ebf))
+* **control:** the edit bar of a card has no repeated title, and the phone strip has no second title ([fb8aeb5](https://github.com/stevendejongnl/Hoard/commit/fb8aeb5189b51adc1e30ffb0cc13691e22ede493))
+
+### Documentation
+
+* the Control page in the README ([8dabed2](https://github.com/stevendejongnl/Hoard/commit/8dabed223e3591d3778c32cad1fcffc0b8461dcc))
+
 ## [1.59.0](https://github.com/stevendejongnl/Hoard/compare/v1.58.0...v1.59.0) (2026-11-04)
 
 ### Features
