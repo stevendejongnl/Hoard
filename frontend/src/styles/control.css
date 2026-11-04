@@ -403,3 +403,58 @@
 .control-button-row .button {
   min-height: 44px;
 }
+
+.control-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 44px);
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+}
+
+.control-z-column {
+  display: grid;
+  grid-template-rows: repeat(3, 44px);
+  gap: 4px;
+}
+
+.control-move-layout {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.control-move-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.control-move-options {
+  flex: 1;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.control-position {
+  font-size: 12px;
+  white-space: pre;
+}
+
+.control-lock-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -12px -12px;
+  padding: 8px 12px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+  font-size: 12px;
+  color: var(--secondary-text-color);
+}
+
+.control-card-action {
+  width: 44px;
+  min-height: 44px;
+  margin: -4px -8px -4px 0;
+}

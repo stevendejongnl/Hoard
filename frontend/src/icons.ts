@@ -54,6 +54,10 @@ const ICON_SHAPES = {
   'eye-off':
     '<path d="m3 3 18 18"/><path d="M10.6 6.1A10 10 0 0 1 12 5c6 0 10 7 10 7a17 17 0 0 1-3 3.6M6.6 6.6A17 17 0 0 0 2 12s4 7 10 7a9.7 9.7 0 0 0 4.4-1"/>',
   control: '<rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 10v5M4.5 12.5h5M15.5 11h.01M18 14h.01"/>',
+  home: '<path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  'arrow-left': '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
 } as const
 
 export type IconName = keyof typeof ICON_SHAPES

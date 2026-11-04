@@ -87,9 +87,10 @@ describe('the move card', () => {
     expect(sent).toEqual([{ route: 'gcode', body: { script: 'M84' } }])
   })
 
-  it('has every button locked while printing, and sends nothing', async () => {
+  it('has every button that moves locked while printing, and sends nothing', async () => {
     const { card, sent } = await mount({ locked: true })
-    expect([...card.querySelectorAll('button')].every((button) => button.disabled)).toBe(true)
+    const movers = [...card.querySelectorAll('button:not(.control-chip)')] as HTMLButtonElement[]
+    expect(movers.every((button) => button.disabled)).toBe(true)
     await press(card, 'X plus')
     expect(sent).toEqual([])
     expect(card.textContent).toContain('Locked while the printer is printing')

@@ -1,6 +1,8 @@
 import { html } from 'lit'
 import type { TemplateResult } from 'lit'
 import type { CardKey } from './control-layout'
+import './components/control-camera-card'
+import './components/control-move-card'
 import type { ControlStatus } from './types'
 
 /** What a card needs from the page. */
@@ -15,4 +17,13 @@ export interface CardContext {
 export type CardRenderer = (key: CardKey, context: CardContext) => TemplateResult
 
 /** The element of a card, with what the page knows. */
-export const renderControlCard: CardRenderer = (key) => html`<section class="control-card">${key}</section>`
+export const renderControlCard: CardRenderer = (key, context) => {
+  switch (key) {
+    case 'camera':
+      return html`<control-camera-card .status=${context.status} ?locked=${context.locked}></control-camera-card>`
+    case 'move':
+      return html`<control-move-card .status=${context.status} ?locked=${context.locked}></control-move-card>`
+    default:
+      return html`<section class="control-card">${key}</section>`
+  }
+}

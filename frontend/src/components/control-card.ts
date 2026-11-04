@@ -33,6 +33,12 @@ export abstract class ControlCard extends LitElement {
     this.dispatchEvent(new CustomEvent('control-changed', { bubbles: true, composed: true }))
   }
 
+  /** Says why the controls are locked; empty while they are not. */
+  protected renderLockNote(): TemplateResult | typeof nothing {
+    if (!this.locked) return nothing
+    return html`<div class="control-lock-note">${renderIcon('lock', 14)}Locked while the printer is printing</div>`
+  }
+
   protected renderFailure(): TemplateResult | typeof nothing {
     return this.failure ? html`<div class="control-card-failure" role="alert">${this.failure}</div>` : nothing
   }

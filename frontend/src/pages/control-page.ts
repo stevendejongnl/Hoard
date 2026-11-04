@@ -123,7 +123,7 @@ export class ControlPage extends LitElement {
   }
 
   private get isLocked(): boolean {
-    return this.status === null || this.status.locked
+    return this.status?.locked === true
   }
 
   private changeLayout(layout: ControlLayout): void {
