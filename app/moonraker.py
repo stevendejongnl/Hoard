@@ -108,6 +108,15 @@ class MoonrakerClient:
             r.raise_for_status()
             return r.content
 
+    async def download_log(self, name: str) -> bytes:
+        """A log file of Klipper or Moonraker, from the `logs` root of the printer host."""
+        async with self._http_client_factory() as client:
+            r = await client.get(
+                f"{self._settings.moonraker_url}/server/files/logs/{name}.log", timeout=TRANSFER_TIMEOUT
+            )
+            r.raise_for_status()
+            return r.content
+
     async def download_file_partial(self, filename: str, size: int = 131072) -> bytes:
         """Fetch only the first `size` bytes via HTTP Range — fast for thumbnail extraction."""
         async with self._http_client_factory() as client:

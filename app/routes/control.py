@@ -1,8 +1,9 @@
 import asyncio
 from collections.abc import Callable
+from urllib.parse import urlsplit
 
 import httpx
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Response
 
 from app.config import settings
 from app.moonraker import MoonrakerClient
@@ -153,6 +154,59 @@ async def _command_printer(moonraker: MoonrakerClient, path: str, answer: dict |
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
     return answer if answer is not None else {"ok": True}
+
+
+@router.post("/restart")
+async def restart_klipper(moonraker: Moonraker) -> dict:
+    return await _command_printer(moonraker, "/printer/restart")
+
+
+@router.get("/klipper")
+async def klipper_state(moonraker: Moonraker) -> dict:
+    """What Klipper says about itself; when Klipper does not answer, what Moonraker says about Klipper."""
+    try:
+        info = await moonraker.get("/printer/info")
+        return {"state": info["state"], "message": info.get("state_message", "")}
+    except Exception:
+        pass
+    try:
+        return {"state": (await moonraker.get("/server/info"))["klippy_state"], "message": ""}
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+
+
+LOG_NAMES = ("klippy", "moonraker")
+
+
+@router.get("/logs/{name}")
+async def download_log(name: str, moonraker: Moonraker) -> Response:
+    if name not in LOG_NAMES:
+        raise HTTPException(404, "Log not found")
+    try:
+        content = await moonraker.download_log(name)
+    except Exception as exc:
+        raise HTTPException(502, str(exc)) from exc
+    headers = {"Content-Disposition": f'attachment; filename="{name}.log"'}
+    return Response(content, media_type="text/plain; charset=utf-8", headers=headers)
+
+
+WEB_CLIENTS = {"fluidd": "Fluidd", "mainsail": "Mainsail"}
+
+
+def find_installed_clients(config: dict) -> list[str]:
+    sections = [name.lower() for name in config if name.startswith("update_manager")]
+    return [label for key, label in WEB_CLIENTS.items() if any(key in section for section in sections)]
+
+
+@router.get("/web_clients")
+async def web_clients(moonraker: Moonraker) -> list[dict]:
+    """Fluidd or Mainsail, when the printer host has one: they are served on the host's own address."""
+    try:
+        config = (await moonraker.get("/server/config"))["config"]
+    except Exception:
+        return []
+    parts = urlsplit(moonraker._client_base())
+    return [{"name": name, "url": f"{parts.scheme}://{parts.hostname}"} for name in find_installed_clients(config)]
 
 
 @router.post("/firmware_restart")

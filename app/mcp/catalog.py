@@ -14,7 +14,7 @@ LEFT_OUT_OPERATIONS = {
     "serve_photo_api_photos__job_id___filename__get",
     "serve_project_cover_api_projects__project_id__cover_get",
 }
-LEFT_OUT_PATH_PREFIXES = ("/mcp", "/api/control/access", "/api/control/layout")
+LEFT_OUT_PATH_PREFIXES = ("/mcp", "/api/control/access", "/api/control/layout", "/api/control/logs")
 # Tools that move or heat the printer. A person has to allow the client on the dashboard first.
 NEEDS_APPROVAL_TOOLS = {
     "move",
@@ -30,7 +30,7 @@ NEEDS_APPROVAL_TOOLS = {
     "calibrate",
     "probe",
 }
-DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "power_off", "switch_off"}
+DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "restart_klipper", "power_off", "switch_off"}
 OPERATION_ID_SEPARATOR = "_api_"
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
 BODY_MEDIA_TYPE = "application/json"
