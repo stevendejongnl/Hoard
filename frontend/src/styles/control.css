@@ -561,3 +561,73 @@
   min-width: 76px;
   text-align: center;
 }
+
+.control-mesh-grid {
+  display: grid;
+  gap: 2px;
+}
+
+.control-mesh-cell {
+  display: grid;
+  place-items: center;
+  height: 34px;
+  font: 400 10px var(--monospace-family);
+  color: #fff;
+}
+
+.control-mesh-range {
+  font-size: 12px;
+}
+
+.control-macro-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 8px;
+}
+
+.control-macro {
+  justify-content: flex-start;
+  min-height: 44px;
+  overflow-wrap: anywhere;
+}
+
+.control-console-log {
+  height: 160px;
+  padding: 8px 10px;
+  overflow-y: auto;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  font: 400 12px/1.6 var(--monospace-family);
+  color: var(--secondary-text-color);
+}
+
+.control-console-line {
+  overflow-wrap: anywhere;
+}
+
+.control-console-line.command {
+  color: var(--accent);
+}
+
+.control-console-input {
+  display: flex;
+  gap: 8px;
+}
+
+.control-console-input input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 10px;
+  box-sizing: border-box;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  color: var(--text-color);
+  font: 400 12px var(--monospace-family);
+}
+
+.control-console-input .button {
+  min-height: 44px;
+}
