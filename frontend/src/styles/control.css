@@ -809,3 +809,20 @@
 .control-access-grant .button {
   min-height: 36px;
 }
+
+.control-card-body:has(> .control-camera-view) {
+  padding: 0;
+  gap: 0;
+}
+
+.control-camera-view {
+  display: flex;
+  flex-direction: column;
+  height: 330px;
+  background: var(--well-color);
+}
+
+.control-focus-camera {
+  display: flex;
+  flex-direction: column;
+}

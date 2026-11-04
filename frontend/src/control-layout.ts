@@ -53,7 +53,12 @@ export const GROUPS: Array<{ filter: GroupFilter; title: string }> = [
 const CARD_KEYS = CARDS.map((card) => card.key)
 const SPANS: Span[] = [1, 2, 3]
 
-export const DEFAULT_LAYOUT: ControlLayout = { order: [...CARD_KEYS], spans: {}, hidden: [] }
+/** The layout of the design: a wide camera and a wide bed mesh, the other cards one column each. */
+export const DEFAULT_LAYOUT: ControlLayout = {
+  order: ['camera', 'temperatures', 'move', 'extruder', 'tuning', 'bed_mesh', 'calibration', 'macros', 'console'],
+  spans: { camera: 2, bed_mesh: 2 },
+  hidden: [],
+}
 
 function isCardKey(value: unknown): value is CardKey {
   return CARD_KEYS.includes(value as CardKey)

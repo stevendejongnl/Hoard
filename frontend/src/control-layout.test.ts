@@ -36,8 +36,12 @@ describe('the cards of the control page', () => {
     ])
   })
 
-  it('start in the order of the list, all shown, each one column wide', () => {
-    expect(DEFAULT_LAYOUT).toEqual({ order: ALL, spans: {}, hidden: [] })
+  it('start as the design has them: the camera and the bed mesh two columns wide, the rest one', () => {
+    expect(DEFAULT_LAYOUT).toEqual({
+      order: ['camera', 'temperatures', 'move', 'extruder', 'tuning', 'bed_mesh', 'calibration', 'macros', 'console'],
+      spans: { camera: 2, bed_mesh: 2 },
+      hidden: [],
+    })
   })
 })
 

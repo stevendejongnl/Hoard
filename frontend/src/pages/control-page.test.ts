@@ -266,10 +266,10 @@ describe('editing the layout', () => {
   it('moves a card up and down', async () => {
     const setup = await createPage()
     await pressAndSettle(setup, setup.page, 'Edit layout')
-    await pressAndSettle(setup, slot(setup.page, 'move'), 'Move Move and home up')
-    expect(shownCards(setup.page).slice(0, 2)).toEqual(['move', 'camera'])
-    await pressAndSettle(setup, slot(setup.page, 'move'), 'Move Move and home down')
-    expect(shownCards(setup.page).slice(0, 2)).toEqual(['camera', 'move'])
+    await pressAndSettle(setup, slot(setup.page, 'temperatures'), 'Move Temperatures up')
+    expect(shownCards(setup.page).slice(0, 2)).toEqual(['temperatures', 'camera'])
+    await pressAndSettle(setup, slot(setup.page, 'temperatures'), 'Move Temperatures down')
+    expect(shownCards(setup.page).slice(0, 2)).toEqual(['camera', 'temperatures'])
   })
 
   it('has no way up for the first card and no way down for the last', async () => {
@@ -342,8 +342,8 @@ describe('editing the layout', () => {
   it('shows the edit controls of a card in the same way on the phone', async () => {
     const setup = await createPage({ device: 'phone' })
     await pressAndSettle(setup, setup.page, 'Edit layout')
-    await pressAndSettle(setup, slot(setup.page, 'move'), 'Move Move and home up')
-    expect(shownCards(setup.page).slice(0, 2)).toEqual(['move', 'camera'])
+    await pressAndSettle(setup, slot(setup.page, 'temperatures'), 'Move Temperatures up')
+    expect(shownCards(setup.page).slice(0, 2)).toEqual(['temperatures', 'camera'])
   })
 })
 
@@ -351,12 +351,12 @@ describe('saving the layout', () => {
   it('saves a change after a pause, for the device it is on, and says so', async () => {
     const setup = await createPage({ device: 'phone' })
     await pressAndSettle(setup, setup.page, 'Edit layout')
-    await pressAndSettle(setup, slot(setup.page, 'camera'), 'Camera spans 2 columns')
+    await pressAndSettle(setup, slot(setup.page, 'camera'), 'Camera spans 3 columns')
     expect(setup.saved).toEqual([])
     await endPause(setup)
     expect(setup.saved).toHaveLength(1)
     expect(setup.saved[0].device).toBe('phone')
-    expect(setup.saved[0].layout.spans).toEqual({ camera: 2 })
+    expect(setup.saved[0].layout.spans).toEqual({ camera: 3, bed_mesh: 2 })
     expect(setup.page.textContent).toContain('Saved')
   })
 

@@ -20,7 +20,12 @@ export class ControlCameraCard extends ControlCard {
     >
       ${renderIcon('expand', 16)}
     </button>`
-    return this.renderFrame('Camera', 'camera', html`<camera-panel></camera-panel>`, fullscreen)
+    return this.renderFrame(
+      'Camera',
+      'camera',
+      html`<div class="control-camera-view"><camera-panel></camera-panel></div>`,
+      fullscreen,
+    )
   }
 }
 
