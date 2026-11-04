@@ -5,6 +5,7 @@ import './components/control-camera-card'
 import './components/control-extruder-card'
 import './components/control-move-card'
 import './components/control-temperatures-card'
+import './components/control-tuning-card'
 import type { ControlStatus } from './types'
 
 /** What a card needs from the page. */
@@ -32,6 +33,8 @@ export const renderControlCard: CardRenderer = (key, context) => {
       ></control-temperatures-card>`
     case 'extruder':
       return html`<control-extruder-card .status=${context.status} ?locked=${context.locked}></control-extruder-card>`
+    case 'tuning':
+      return html`<control-tuning-card .status=${context.status} ?locked=${context.locked}></control-tuning-card>`
     default:
       return html`<section class="control-card">${key}</section>`
   }

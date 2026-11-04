@@ -526,3 +526,38 @@
   flex: 1;
   min-height: 44px;
 }
+
+.control-slider-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 56px;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 13px;
+}
+
+.control-slider-row input[type='range'] {
+  width: 100%;
+  min-height: 44px;
+  accent-color: var(--accent);
+}
+
+.control-slider-value {
+  text-align: right;
+}
+
+.control-z-offset {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.control-z-offset-label {
+  width: 90px;
+}
+
+.control-z-offset-value {
+  min-width: 76px;
+  text-align: center;
+}
