@@ -458,3 +458,71 @@
   min-height: 44px;
   margin: -4px -8px -4px 0;
 }
+
+.control-heaters {
+  margin: -12px -12px 0;
+}
+
+.control-heater-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 96px;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 12px;
+  border-top: 1px solid var(--border-color);
+  font-size: 13px;
+}
+
+.control-heater-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-swatch {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.control-field {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  min-height: 44px;
+}
+
+.control-field input {
+  box-sizing: border-box;
+  width: 64px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  color: var(--text-color);
+  font: 400 12px var(--monospace-family);
+  text-align: right;
+}
+
+.control-presets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-empty {
+  padding: 12px;
+}
+
+.control-chips-label {
+  width: 100%;
+}
+
+.control-wide-button {
+  flex: 1;
+  min-height: 44px;
+}
