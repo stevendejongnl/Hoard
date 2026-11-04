@@ -9,6 +9,13 @@ import '../styles/detection.css'
 type SaveMessage = '' | 'saved' | 'failed'
 
 const PERCENT = 100
+const SAVE_PAUSE_MILLISECONDS = 600
+
+/** Runs `callback` once the pause is over, and returns a way to take it back. */
+function waitForPause(callback: () => void): () => void {
+  const timer = setTimeout(callback, SAVE_PAUSE_MILLISECONDS)
+  return () => clearTimeout(timer)
+}
 
 /** What the form edits: the same as the settings, but with the limit as a whole percent. */
 interface Draft {
@@ -48,10 +55,13 @@ export class DetectionSettingsForm extends LitElement {
   @property({ attribute: false }) loadStatus: () => Promise<DetectionStatus> = getDetection
   @property({ attribute: false }) saveSettings: (changes: Partial<DetectionSettings>) => Promise<DetectionSettings> =
     saveDetectionSettings
+  @property({ attribute: false }) scheduleSave: (callback: () => void) => () => void = waitForPause
 
   @state() private status: DetectionStatus | null = null
   @state() private draft: Draft | null = null
   @state() private message: SaveMessage = ''
+
+  private cancelPendingSave: (() => void) | null = null
 
   createRenderRoot() {
     return this
@@ -60,6 +70,13 @@ export class DetectionSettingsForm extends LitElement {
   connectedCallback(): void {
     super.connectedCallback()
     void this.load()
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback()
+    if (!this.cancelPendingSave) return
+    this.cancelPendingSave()
+    void this.save()
   }
 
   private async load(): Promise<void> {
@@ -76,11 +93,15 @@ export class DetectionSettingsForm extends LitElement {
   }
 
   private change(changes: Partial<Draft>): void {
-    if (this.draft) this.draft = { ...this.draft, ...changes }
+    if (!this.draft) return
+    this.draft = { ...this.draft, ...changes }
     this.message = ''
+    this.cancelPendingSave?.()
+    this.cancelPendingSave = this.scheduleSave(() => void this.save())
   }
 
   private async save(): Promise<void> {
+    this.cancelPendingSave = null
     if (!this.draft) return
     try {
       await this.saveSettings(createChanges(this.draft))
@@ -150,8 +171,10 @@ export class DetectionSettingsForm extends LitElement {
   }
 
   private renderMessage(): TemplateResult | typeof nothing {
-    if (this.message === 'saved') return html`<span class="muted">Saved</span>`
-    if (this.message === 'failed') return html`<span class="detection-banner-error">Could not save the settings</span>`
+    if (this.message === 'saved') return html`<span class="detection-save-status">Saved</span>`
+    if (this.message === 'failed') {
+      return html`<span class="detection-save-status detection-banner-error">Could not save the settings</span>`
+    }
     return nothing
   }
 
@@ -159,7 +182,7 @@ export class DetectionSettingsForm extends LitElement {
     const draft = this.draft
     if (!this.status?.configured || !draft) return nothing
     return html`<section class="section detection-settings-section" aria-label="Failure detection">
-      <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Failure detection</div>
+      <div class="section-header">${renderIcon('chevron-down', 14, 2.4)}Failure detection ${this.renderMessage()}</div>
       <div class="section-body detection-settings-body">
         ${this.renderPrivacyNote(this.status.frames_leave_network)} ${this.renderEnabled(draft)}
         ${this.renderNumber('limitPercent', 'Limit', '%', draft.limitPercent)}
@@ -167,10 +190,6 @@ export class DetectionSettingsForm extends LitElement {
         ${this.renderNumber('required_frames', 'Frames that must look failed', '', draft.required_frames)}
         ${this.renderNumber('window_size', 'Out of the newest', 'frames', draft.window_size)}
         ${this.renderAction(draft)} ${this.renderSuggestion(this.status.suggestion)}
-        <div class="detection-settings-actions">
-          <button class="button small primary" @click=${() => void this.save()}>Save</button>
-          ${this.renderMessage()}
-        </div>
       </div>
     </section>`
   }

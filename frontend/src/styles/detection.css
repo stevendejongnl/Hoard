@@ -127,8 +127,7 @@ detection-banner:not([hidden]) {
   /* Every button and link can be hit within 44 px of its center. */
   .detection-banner-actions .button,
   .detection-verdicts .button,
-  .detection-suggestion .button,
-  .detection-settings-actions .button {
+  .detection-suggestion .button {
     min-height: 44px;
   }
 
@@ -182,11 +181,10 @@ detection-banner:not([hidden]) {
   font-size: 13px;
 }
 
-.detection-settings-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-top: 4px;
+.detection-save-status {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--success-color, #86e0a4);
 }
 
 /* The detections page: one dense row per alert. */
