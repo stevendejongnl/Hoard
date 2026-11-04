@@ -163,33 +163,45 @@
 }
 
 .system-list-heading {
-  padding: 14px 12px 6px;
+  margin: 22px 18px 6px;
   font: 600 11px var(--font-family);
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--secondary-text-color);
+  color: var(--muted-text-color);
 }
 
 .system-list-item {
   display: flex;
   align-items: center;
+  gap: 10px;
   box-sizing: border-box;
-  width: 100%;
+  width: calc(100% - 16px);
   min-height: 44px;
-  padding: 0 12px;
+  margin: 2px 8px;
+  padding: 0 10px;
   border: 0;
-  border-left: 3px solid transparent;
+  border-radius: 4px;
   background: transparent;
   color: var(--secondary-text-color);
-  font: 600 13px var(--font-family);
+  font: 500 14px var(--font-family);
   text-align: left;
   cursor: pointer;
 }
 
 .system-list-item.selected {
   background: var(--selection-tint);
-  border-left-color: var(--accent);
   color: #fff;
+  font-weight: 600;
+}
+
+.system-list-icon {
+  display: flex;
+  flex: none;
+  color: var(--muted-text-color);
+}
+
+.system-list-item.selected .system-list-icon {
+  color: var(--accent);
 }
 
 .system-list-title {
@@ -198,7 +210,13 @@
 }
 
 .system-list-count {
-  color: #ffd54f;
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: #c62828;
+  color: #fff;
+  font: 700 11px/20px var(--font-family);
+  text-align: center;
 }
 
 .system-list-chevron {
@@ -255,24 +273,22 @@
 
   .system-list-item {
     min-height: 52px;
-    padding: 0 16px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 14px;
+    padding: 0 12px;
   }
 
   .system-list-item.selected {
     background: transparent;
-    border-left-color: transparent;
     color: var(--secondary-text-color);
+    font-weight: 500;
+  }
+
+  .system-list-item.selected .system-list-icon {
+    color: var(--muted-text-color);
   }
 
   .system-list-chevron {
     display: flex;
-    margin-left: 8px;
-  }
-
-  .system-list-count {
-    margin-left: auto;
+    margin-left: 4px;
   }
 
   .system-body:not([data-open]) .system-pane,

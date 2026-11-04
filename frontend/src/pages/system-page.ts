@@ -4,6 +4,7 @@ import { customElement, property, state } from 'lit/decorators.js'
 import { getSystem, setHiddenSystemRows } from '../api'
 import '../components/detection-settings'
 import { renderIcon } from '../icons'
+import type { IconName } from '../icons'
 import { formatPrintDuration } from '../print-history-list'
 import type { FaultRecord, SystemFault, SystemReport, SystemRow, SystemSection } from '../types'
 import { groupSections } from './system-pages'
@@ -175,13 +176,14 @@ export class SystemPage extends LitElement {
     </section>`
   }
 
-  private renderListItem(key: string, title: string, openKey: string, count?: number): TemplateResult {
+  private renderListItem(key: string, title: string, icon: IconName, openKey: string, count?: number): TemplateResult {
     const isSelected = key === openKey
     return html`<button
       class="system-list-item ${isSelected ? 'selected' : ''}"
       aria-current=${isSelected ? 'page' : nothing}
       @click=${() => (this.openPageKey = key)}
     >
+      <span class="system-list-icon">${renderIcon(icon, 16, 2)}</span>
       <span class="system-list-title">${title}</span>
       ${count === undefined ? nothing : html`<span class="monospace system-list-count">${count}</span>`}
       <span class="system-list-chevron">${renderIcon('chevron-right', 14, 2.4)}</span>
@@ -191,16 +193,16 @@ export class SystemPage extends LitElement {
   private renderListGroup(heading: string, pages: SystemPageEntry[], openKey: string): TemplateResult {
     const pagesUnderHeading = pages.filter((page) => page.heading === heading)
     return html`<div class="system-list-heading">${heading}</div>
-      ${pagesUnderHeading.map((page) => this.renderListItem(page.key, page.title, openKey))}`
+      ${pagesUnderHeading.map((page) => this.renderListItem(page.key, page.title, page.icon, openKey))}`
   }
 
   private renderList(report: SystemReport, pages: SystemPageEntry[], openKey: string): TemplateResult {
     const headings = [...new Set(pages.map((page) => page.heading))]
     return html`<nav class="system-list" aria-label="System">
-      ${this.renderListItem(FAULTS_PAGE, 'Faults', openKey, report.active_faults.length)}
+      ${this.renderListItem(FAULTS_PAGE, 'Faults', 'alert', openKey, report.active_faults.length)}
       ${headings.map((heading) => this.renderListGroup(heading, pages, openKey))}
       <div class="system-list-heading">Settings</div>
-      ${this.renderListItem(DETECTION_PAGE, 'Failure detection', openKey)}
+      ${this.renderListItem(DETECTION_PAGE, 'Failure detection', 'eye', openKey)}
     </nav>`
   }
 
