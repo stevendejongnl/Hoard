@@ -283,6 +283,7 @@ STATUS_OBJECTS = {
         "fan": {"speed": 0.5},
         "gcode_move": {"speed_factor": 1.0, "extrude_factor": 0.98, "homing_origin": [0, 0, -0.12, 0]},
         "fan_generic aux": {"speed": 0.0},
+        "manual_probe": {"is_active": False, "z_position": None},
     }
 }
 STATUS_LIST = {"objects": ["extruder", "fan", "fan_generic aux", "heater_bed", "gcode_macro X"]}
@@ -303,6 +304,7 @@ async def test_the_status_gathers_what_the_cards_show(client: AsyncClient, monke
         "speed_percent": 100,
         "flow_percent": 98,
         "z_offset": -0.12,
+        "manual_probe": {"active": False, "z": None},
         "fans": [
             {"key": "", "label": "Part fan", "percent": 50},
             {"key": "aux", "label": "aux", "percent": 0},
@@ -316,6 +318,7 @@ async def test_the_status_gathers_what_the_cards_show(client: AsyncClient, monke
         "heater_bed",
         "fan",
         "gcode_move",
+        "manual_probe",
         "fan_generic aux",
     }
 
@@ -345,3 +348,27 @@ async def test_a_fan_name_that_is_not_a_name_is_refused(client: AsyncClient, mon
     response, moonraker = await command(client, monkeypatch, "standby", "fan", {"percent": 40, "name": "a b"})
     assert response.status_code == 422
     assert moonraker.posted == []
+
+
+async def test_the_probe_is_reported_while_it_is_being_moved_by_hand(client: AsyncClient, monkeypatch):
+    probing = {**STATUS_OBJECTS["status"], "manual_probe": {"is_active": True, "z_position": 1.25}}
+    moonraker = FakeMoonraker({STATE_PATH: {"status": probing}, "/printer/objects/list": STATUS_LIST})
+    install_fakes(monkeypatch, moonraker=moonraker)
+    assert (await client.get("/api/control/status")).json()["manual_probe"] == {"active": True, "z": 1.25}
+
+
+async def test_the_console_lines_are_read_from_the_printer(client: AsyncClient, monkeypatch):
+    lines = [
+        {"message": "M115", "time": 1.5, "type": "command"},
+        {"message": "FIRMWARE_NAME:Klipper", "time": 2.5, "type": "response"},
+    ]
+    moonraker = FakeMoonraker({"/server/gcode_store": {"gcode_store": lines}})
+    install_fakes(monkeypatch, moonraker=moonraker)
+    assert (await client.get("/api/control/console")).json() == lines
+    assert moonraker.asked == [("/server/gcode_store", {"count": 100})]
+
+
+async def test_the_console_is_a_502_when_the_printer_does_not_answer(client: AsyncClient, monkeypatch):
+    moonraker = FakeMoonraker({"/server/gcode_store": RuntimeError("offline")})
+    install_fakes(monkeypatch, moonraker=moonraker)
+    assert (await client.get("/api/control/console")).status_code == 502
