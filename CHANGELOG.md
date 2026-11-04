@@ -1,3 +1,9 @@
+## [1.57.0](https://github.com/stevendejongnl/Hoard/compare/v1.56.0...v1.57.0) (2026-11-04)
+
+### Features
+
+* **system:** tabs for the report sections and failure detection, and a fault history behind a toggle ([7b82166](https://github.com/stevendejongnl/Hoard/commit/7b821664ff967f8f3c0ad3a6ebd86f47e6a9e29d))
+
 ## [1.56.0](https://github.com/stevendejongnl/Hoard/compare/v1.55.0...v1.56.0) (2026-11-04)
 
 ### Features
