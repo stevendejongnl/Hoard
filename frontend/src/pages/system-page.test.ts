@@ -75,6 +75,17 @@ function readText(page: SystemPage, selector: string): string {
   return page.querySelector(selector)?.textContent?.replace(/\s+/g, ' ').trim() ?? ''
 }
 
+async function chooseTab(page: SystemPage, name: string): Promise<void> {
+  const tabs = [...page.querySelectorAll<HTMLButtonElement>('.system-tab')]
+  tabs.find((tab) => tab.textContent?.trim() === name)!.click()
+  await settle(page)
+}
+
+async function openHistory(page: SystemPage): Promise<void> {
+  page.querySelector<HTMLButtonElement>('.fault-history-toggle')!.click()
+  await settle(page)
+}
+
 afterEach(() => {
   document.body.replaceChildren()
 })
@@ -92,6 +103,7 @@ describe('system page', () => {
   it('shows what the host reports, whatever it is', async () => {
     const { page } = await createPage()
     expect(readText(page, '[data-section="host"]')).toContain('Raspberry Pi 3')
+    await chooseTab(page, 'Fans')
     expect(readText(page, '[data-row="fans.fan"]')).toContain('50 %')
   })
 
@@ -110,6 +122,7 @@ describe('system page', () => {
 
   it('shows the history with how long a fault lasted', async () => {
     const { page } = await createPage()
+    await openHistory(page)
     expect(readText(page, '.fault-history-row')).toContain('Under-voltage')
     expect(readText(page, '.fault-history-row')).toContain('0h 4m')
   })
@@ -117,6 +130,7 @@ describe('system page', () => {
   it('shows a fault that has not cleared as ongoing', async () => {
     const [cleared] = report.fault_history
     const { page } = await createPage({ ...report, fault_history: [{ ...cleared, cleared_at: null }] })
+    await openHistory(page)
     expect(readText(page, '.fault-history-row')).toContain('ongoing')
   })
 
@@ -193,6 +207,65 @@ describe('choosing rows', () => {
 describe('failure detection on the system page', () => {
   it('has its settings form between the faults and the sections', async () => {
     const { page } = await createPage()
-    expect(page.querySelector('.system-faults + detection-settings + .system-sections')).not.toBeNull()
+    await chooseTab(page, 'Detection')
+    expect(page.querySelector('.system-tabs ~ detection-settings')).not.toBeNull()
+  })
+})
+
+describe('tabs', () => {
+  it('has a tab for every section that is shown, and one for failure detection', async () => {
+    const { page } = await createPage()
+    const names = [...page.querySelectorAll('.system-tab')].map((tab) => tab.textContent?.trim())
+    expect(names).toEqual(['Host', 'Fans', 'Detection'])
+  })
+
+  it('opens the first section and keeps the others out of the page', async () => {
+    const { page } = await createPage()
+    expect(page.querySelector('[data-section="host"]')).not.toBeNull()
+    expect(page.querySelector('[data-section="fans"]')).toBeNull()
+    expect(page.querySelector('detection-settings')).toBeNull()
+  })
+
+  it('shows the section of the chosen tab and marks the tab', async () => {
+    const { page } = await createPage()
+    await chooseTab(page, 'Fans')
+    expect(page.querySelector('[data-section="host"]')).toBeNull()
+    expect(page.querySelector('[data-section="fans"]')).not.toBeNull()
+    expect(page.querySelector('.system-tab.selected')?.textContent?.trim()).toBe('Fans')
+  })
+
+  it('has no tab for a section that was hidden', async () => {
+    const { page } = await createPage({ ...report, hidden: ['fans'] })
+    expect(page.querySelectorAll('.system-tab')[1]?.textContent?.trim()).toBe('Detection')
+  })
+
+  it('shows every section again, without tabs, while rows are chosen', async () => {
+    const { page } = await createPage()
+    page.querySelector<HTMLButtonElement>('.choose-rows-button')!.click()
+    await settle(page)
+    expect(page.querySelector('.system-tabs')).toBeNull()
+    expect(page.querySelector('[data-section="fans"]')).not.toBeNull()
+  })
+})
+
+describe('fault history', () => {
+  it('is out of the way until it is asked for', async () => {
+    const { page } = await createPage()
+    expect(page.querySelector('.fault-history-row')).toBeNull()
+    expect(readText(page, '.fault-history-toggle')).toContain('History')
+  })
+
+  it('opens and closes on the toggle', async () => {
+    const { page } = await createPage()
+    await openHistory(page)
+    expect(page.querySelector('.fault-history-row')).not.toBeNull()
+    page.querySelector<HTMLButtonElement>('.fault-history-toggle')!.click()
+    await settle(page)
+    expect(page.querySelector('.fault-history-row')).toBeNull()
+  })
+
+  it('has no toggle when nothing ever went wrong', async () => {
+    const { page } = await createPage({ ...report, fault_history: [] })
+    expect(page.querySelector('.fault-history-toggle')).toBeNull()
   })
 })
