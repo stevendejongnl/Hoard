@@ -17,6 +17,11 @@ from frontend.parity.compare_screens import (
     start_app_server,
     wait_until_responding,
 )
+from frontend.parity.detection_fixture import (
+    DETECTION_SHOWCASE_SCREENS,
+    create_detection_events,
+    create_detection_responses,
+)
 from frontend.parity.fixture_data import create_fixture_events, create_fixture_responses
 from frontend.parity.mock_backend import start_mock_backend
 from frontend.parity.showcase_screens import SHOWCASE_SCREENS
@@ -39,6 +44,18 @@ def take_screenshots(app_address: str) -> None:
         browser.close()
 
 
+def take_detection_screenshots(app_address: str) -> None:
+    """The screens of print failure detection, from a backend whose detector has found a failed print."""
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch()
+        page = browser.new_context(**CONTEXT_OPTIONS).new_page()
+        page.clock.set_fixed_time(FIXED_TIME)
+        for screen in DETECTION_SHOWCASE_SCREENS.values():
+            capture_screen(page, f"{app_address}{screen.path}", screen.size, SCREENSHOT_DIRECTORY / screen.file_name)
+            print("saved", screen.file_name, flush=True)
+        browser.close()
+
+
 def main() -> None:
     backend = start_mock_backend(create_fixture_responses(), create_fixture_events(), BACKEND_PORT)
     app_server = start_app_server()
@@ -46,6 +63,11 @@ def main() -> None:
         app_address = f"http://127.0.0.1:{APP_PORT}"
         wait_until_responding(app_address)
         take_screenshots(app_address)
+        backend.shutdown()
+        responses = {**create_fixture_responses(), **create_detection_responses()}
+        events = [*create_fixture_events(), *create_detection_events()]
+        backend = start_mock_backend(responses, events, BACKEND_PORT)
+        take_detection_screenshots(app_address)
     finally:
         app_server.terminate()
         backend.shutdown()

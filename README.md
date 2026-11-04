@@ -18,6 +18,12 @@ It works on a phone as well, with the same features as on desktop: printer power
 |---|---|---|---|
 | ![](docs/screenshots/dashboard-phone.png) | ![](docs/screenshots/history-phone.png) | ![](docs/screenshots/spools-phone.png) | ![](docs/screenshots/spool-sheet-phone.png) |
 
+Print failure detection is optional and off until you give it a detector ([how](https://github.com/stevendejongnl/Hoard/wiki/Failure-detection)). When a print looks failed, a banner shows the image and asks whether the alert was real; the settings, including whether Hoard only notifies or also pauses the print, are on the System page.
+
+| A failed print | The Detections page | Settings |
+|---|---|---|
+| ![The dashboard with the failure banner and the strip under the camera](docs/screenshots/dashboard-alert.png) | ![The alerts as a table with their images and verdicts](docs/screenshots/detections.png) | ![The failure detection settings](docs/screenshots/detection-settings.png) |
+
 The screenshots are taken from the app filled with sample data (`python3 -m frontend.parity.take_screenshots`).
 
 ## What it does

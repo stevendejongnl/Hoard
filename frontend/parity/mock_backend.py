@@ -42,13 +42,13 @@ class MockBackendHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *arguments) -> None:
         return
 
-    def do_GET(self) -> None:
+    def do_GET(self) -> None:  # noqa: N802 - the name http.server looks for
         path = urlparse(self.path).path
         if path == STREAM_PATH:
             self.stream_events()
             return
         if self.path in self.responses:
-            self.send_json(self.responses[self.path])
+            self.send_response_body(self.responses[self.path])
             return
         if path in self.responses:
             self.send_json(self.select_page(self.responses[path], urlparse(self.path).query))
@@ -64,10 +64,19 @@ class MockBackendHandler(BaseHTTPRequestHandler):
         limit = int(arguments.get("limit", [str(len(value["records"]))])[0])
         return {**value, "records": value["records"][offset : offset + limit]}
 
+    def send_response_body(self, value: JsonValue) -> None:
+        """Bytes are an image, anything else is JSON."""
+        if isinstance(value, bytes):
+            self.send_body(value, "image/jpeg")
+        else:
+            self.send_json(value)
+
     def send_json(self, value: JsonValue) -> None:
-        body = json.dumps(value).encode()
+        self.send_body(json.dumps(value).encode(), "application/json")
+
+    def send_body(self, body: bytes, content_type: str) -> None:
         self.send_response(200)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
