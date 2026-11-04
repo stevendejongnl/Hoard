@@ -41,6 +41,7 @@ class DetectionScreen:
     path: str
     size: tuple[int, int]
     file_name: str
+    steps: tuple = ()
 
 
 DESKTOP_SIZE = (1440, 900)
@@ -48,7 +49,9 @@ PHONE_SIZE = (390, 844)
 DETECTION_SHOWCASE_SCREENS = {
     "dashboard-alert-desktop": DetectionScreen("/", DESKTOP_SIZE, "dashboard-alert.png"),
     "detections-desktop": DetectionScreen("/detections", DESKTOP_SIZE, "detections.png"),
-    "detection-settings-desktop": DetectionScreen("/system", DESKTOP_SIZE, "detection-settings.png"),
+    "detection-settings-desktop": DetectionScreen(
+        "/system", DESKTOP_SIZE, "detection-settings.png", (("click", ".system-tab:last-child"),)
+    ),
     "dashboard-alert-phone": DetectionScreen("/", PHONE_SIZE, "dashboard-alert-phone.png"),
 }
 

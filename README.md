@@ -18,7 +18,7 @@ It works on a phone as well, with the same features as on desktop: printer power
 |---|---|---|---|
 | ![](docs/screenshots/dashboard-phone.png) | ![](docs/screenshots/history-phone.png) | ![](docs/screenshots/spools-phone.png) | ![](docs/screenshots/spool-sheet-phone.png) |
 
-Print failure detection is optional and off until you give it a detector ([how](https://github.com/stevendejongnl/Hoard/wiki/Failure-detection)). When a print looks failed, a banner shows the image and asks whether the alert was real; the settings, including whether Hoard only notifies or also pauses the print, are on the System page.
+Print failure detection is optional and off until you give it a detector ([how](https://github.com/stevendejongnl/Hoard/wiki/Failure-detection)). When a print looks failed, a banner shows the image and asks whether the alert was real; the settings, including whether Hoard only notifies or also pauses the print, are on the Detection tab of the System page.
 
 | A failed print | The Detections page | Settings |
 |---|---|---|
@@ -38,7 +38,7 @@ The screenshots are taken from the app filled with sample data (`python3 -m fron
 - **Notifications.** Web push when a print finishes or fails.
 - **Failure detection (optional).** A detector judges the camera while a print runs. When enough of the newest images look failed, a banner on every page shows the image with the buttons Real and False alarm, a push notification opens the Detections page, and the print is paused if you chose that. Your verdicts suggest a limit, and the labelled images download as a dataset. It stays off and hidden until you set a detector: Obico's `ml_api` in a container of its own, or a vision model, which is a service outside your network. See the wiki's Failure detection page.
 - **Appearance.** One accent colour, set by hex in the status bar.
-- **System.** What the printer's host and control boards report, whatever the hardware is, with the active faults and a history of them. Under-voltage shows on a host that reports it. Rows and sections can be hidden.
+- **System.** What the printer's host and control boards report, whatever the hardware is, with the active faults and, behind a toggle, a history of them. A tab for each section keeps the page short. Under-voltage shows on a host that reports it. Rows and sections can be hidden.
 
 ## What it expects
 

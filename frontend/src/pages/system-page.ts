@@ -11,6 +11,8 @@ import '../styles/system.css'
 type StopFunction = () => void
 type LoadState = 'loading' | 'ready' | 'error'
 
+const DETECTION_TAB = 'detection'
+
 const REFRESH_MILLISECONDS = 10_000
 const MILLISECONDS_PER_SECOND = 1000
 
@@ -56,6 +58,8 @@ export class SystemPage extends LitElement {
   @state() private loadState: LoadState = 'loading'
   @state() private isChoosingRows = false
   @state() private hiddenKeys: string[] = []
+  @state() private isHistoryOpen = false
+  @state() private chosenTab = ''
 
   private stopRefreshing: StopFunction | null = null
 
@@ -147,8 +151,15 @@ export class SystemPage extends LitElement {
 
   private renderFaultHistory(report: SystemReport): TemplateResult | typeof nothing {
     if (report.fault_history.length === 0) return nothing
-    return html`<div class="fault-history-title">History</div>
-      ${report.fault_history.map((fault) => this.renderFaultRecord(fault))}`
+    return html`<button
+        class="fault-history-toggle"
+        aria-expanded=${this.isHistoryOpen}
+        @click=${() => (this.isHistoryOpen = !this.isHistoryOpen)}
+      >
+        ${renderIcon(this.isHistoryOpen ? 'chevron-down' : 'chevron-right', 14, 2.4)}History
+        <span class="monospace">${report.fault_history.length}</span>
+      </button>
+      ${this.isHistoryOpen ? report.fault_history.map((fault) => this.renderFaultRecord(fault)) : nothing}`
   }
 
   private renderFaults(report: SystemReport): TemplateResult {
@@ -161,9 +172,47 @@ export class SystemPage extends LitElement {
     </section>`
   }
 
-  private renderSections(report: SystemReport): TemplateResult {
-    const sections = this.isChoosingRows ? report.sections : findVisibleSections(report.sections, this.hiddenKeys)
-    return html`<div class="system-sections">${sections.map((section) => this.renderSection(section))}</div>`
+  private visibleSections(report: SystemReport): SystemSection[] {
+    return findVisibleSections(report.sections, this.hiddenKeys)
+  }
+
+  private openTab(sections: SystemSection[]): string {
+    const names = [...sections.map((section) => section.key), DETECTION_TAB]
+    return names.includes(this.chosenTab) ? this.chosenTab : names[0]
+  }
+
+  private renderTab(key: string, title: string, openTab: string): TemplateResult {
+    const isSelected = key === openTab
+    return html`<button
+      class="system-tab ${isSelected ? 'selected' : ''}"
+      role="tab"
+      aria-selected=${isSelected}
+      @click=${() => (this.chosenTab = key)}
+    >
+      ${title}
+    </button>`
+  }
+
+  private renderTabs(sections: SystemSection[], openTab: string): TemplateResult {
+    return html`<div class="system-tabs" role="tablist" aria-label="System">
+      ${sections.map((section) => this.renderTab(section.key, section.title, openTab))}
+      ${this.renderTab(DETECTION_TAB, 'Detection', openTab)}
+    </div>`
+  }
+
+  private renderChosenTab(sections: SystemSection[], openTab: string): TemplateResult {
+    if (openTab === DETECTION_TAB) return html`<detection-settings></detection-settings>`
+    const section = sections.find((candidate) => candidate.key === openTab)!
+    return html`<div class="system-sections">${this.renderSection(section)}</div>`
+  }
+
+  private renderReports(report: SystemReport): TemplateResult {
+    if (this.isChoosingRows) {
+      return html`<div class="system-sections">${report.sections.map((section) => this.renderSection(section))}</div>`
+    }
+    const sections = this.visibleSections(report)
+    const openTab = this.openTab(sections)
+    return html`${this.renderTabs(sections, openTab)} ${this.renderChosenTab(sections, openTab)}`
   }
 
   private renderChooseRowsButton(report: SystemReport): TemplateResult | typeof nothing {
@@ -187,8 +236,7 @@ export class SystemPage extends LitElement {
     if (this.loadState === 'loading') return html`<div class="state-message">Loading system…</div>`
     if (!this.report) return html`<div class="state-message">Could not load the system information</div>`
     return html`<div class="system-layout">
-      ${this.renderStrip(this.report)} ${this.renderFaults(this.report)}
-      <detection-settings></detection-settings> ${this.renderSections(this.report)}
+      ${this.renderStrip(this.report)} ${this.renderFaults(this.report)} ${this.renderReports(this.report)}
     </div>`
   }
 }

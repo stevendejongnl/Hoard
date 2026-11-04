@@ -51,7 +51,13 @@ def take_detection_screenshots(app_address: str) -> None:
         page = browser.new_context(**CONTEXT_OPTIONS).new_page()
         page.clock.set_fixed_time(FIXED_TIME)
         for screen in DETECTION_SHOWCASE_SCREENS.values():
-            capture_screen(page, f"{app_address}{screen.path}", screen.size, SCREENSHOT_DIRECTORY / screen.file_name)
+            capture_screen(
+                page,
+                f"{app_address}{screen.path}",
+                screen.size,
+                SCREENSHOT_DIRECTORY / screen.file_name,
+                list(screen.steps) or None,
+            )
             print("saved", screen.file_name, flush=True)
         browser.close()
 

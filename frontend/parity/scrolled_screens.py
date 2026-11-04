@@ -14,5 +14,4 @@ class ScrolledScreen(NamedTuple):
 SCROLLED_SCREENS = {
     "dashboard-parameters-phone": ScrolledScreen("MainMobile.dc.html", "main", ".app-content", 700),
     "dashboard-lists-phone": ScrolledScreen("MainMobile.dc.html", "main", ".app-content", 1400),
-    "system-sections-phone": ScrolledScreen("SystemMobile.dc.html", "main", ".app-content", 800, "/system"),
 }
