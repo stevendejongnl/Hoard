@@ -272,3 +272,76 @@ async def test_a_command_the_printer_refuses_is_a_502(client: AsyncClient, monke
     moonraker.failure = RuntimeError("Must home axis first")
     response = await client.post("/api/control/move", json={"axis": "z", "distance": 1})
     assert (response.status_code, response.json()["detail"]) == (502, "Must home axis first")
+
+
+STATUS_OBJECTS = {
+    "status": {
+        "print_stats": {"state": "standby"},
+        "toolhead": {"position": [120.0, 110.0, 24.4, 0.0], "homed_axes": "xyz"},
+        "extruder": {"temperature": 205.34, "target": 210.0},
+        "heater_bed": {"temperature": 59.9, "target": 60.0},
+        "fan": {"speed": 0.5},
+        "gcode_move": {"speed_factor": 1.0, "extrude_factor": 0.98, "homing_origin": [0, 0, -0.12, 0]},
+        "fan_generic aux": {"speed": 0.0},
+    }
+}
+STATUS_LIST = {"objects": ["extruder", "fan", "fan_generic aux", "heater_bed", "gcode_macro X"]}
+
+
+async def test_the_status_gathers_what_the_cards_show(client: AsyncClient, monkeypatch):
+    moonraker = FakeMoonraker({STATE_PATH: STATUS_OBJECTS, "/printer/objects/list": STATUS_LIST})
+    install_fakes(monkeypatch, moonraker=moonraker)
+    assert (await client.get("/api/control/status")).json() == {
+        "state": "standby",
+        "locked": False,
+        "position": {"x": 120.0, "y": 110.0, "z": 24.4},
+        "homed": "xyz",
+        "heaters": [
+            {"key": "extruder", "label": "Nozzle", "temperature": 205.3, "target": 210.0},
+            {"key": "heater_bed", "label": "Bed", "temperature": 59.9, "target": 60.0},
+        ],
+        "speed_percent": 100,
+        "flow_percent": 98,
+        "z_offset": -0.12,
+        "fans": [
+            {"key": "", "label": "Part fan", "percent": 50},
+            {"key": "aux", "label": "aux", "percent": 0},
+        ],
+    }
+    queried = moonraker.asked[0][1]
+    assert set(queried) == {
+        "print_stats",
+        "toolhead",
+        "extruder",
+        "heater_bed",
+        "fan",
+        "gcode_move",
+        "fan_generic aux",
+    }
+
+
+async def test_the_status_says_locked_while_printing(client: AsyncClient, monkeypatch):
+    printing = {"status": {**STATUS_OBJECTS["status"], "print_stats": {"state": "printing"}}}
+    moonraker = FakeMoonraker({STATE_PATH: printing, "/printer/objects/list": STATUS_LIST})
+    install_fakes(monkeypatch, moonraker=moonraker)
+    body = (await client.get("/api/control/status")).json()
+    assert (body["state"], body["locked"]) == ("printing", True)
+
+
+async def test_the_status_is_a_502_when_the_printer_does_not_answer(client: AsyncClient, monkeypatch):
+    moonraker = FakeMoonraker({"/printer/objects/list": RuntimeError("offline")})
+    install_fakes(monkeypatch, moonraker=moonraker)
+    response = await client.get("/api/control/status")
+    assert (response.status_code, response.json()["detail"]) == (502, "offline")
+
+
+async def test_a_named_fan_is_set_with_its_name(client: AsyncClient, monkeypatch):
+    response, moonraker = await command(client, monkeypatch, "standby", "fan", {"percent": 40, "name": "aux"})
+    assert response.status_code == 200
+    assert scripts(moonraker) == ["SET_FAN_SPEED FAN=aux SPEED=0.4"]
+
+
+async def test_a_fan_name_that_is_not_a_name_is_refused(client: AsyncClient, monkeypatch):
+    response, moonraker = await command(client, monkeypatch, "standby", "fan", {"percent": 40, "name": "a b"})
+    assert response.status_code == 422
+    assert moonraker.posted == []
