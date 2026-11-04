@@ -1,3 +1,9 @@
+## [1.59.0](https://github.com/stevendejongnl/Hoard/compare/v1.58.0...v1.59.0) (2026-11-04)
+
+### Features
+
+* **system:** an icon on every page of the list, a clear heading above each group and a pill for the open page ([ed7aeb2](https://github.com/stevendejongnl/Hoard/commit/ed7aeb2ac5e4bf8c7f999624771cad568c620c9c))
+
 ## [1.58.0](https://github.com/stevendejongnl/Hoard/compare/v1.57.0...v1.58.0) (2026-11-04)
 
 ### Features
