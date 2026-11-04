@@ -1,3 +1,9 @@
+## [1.55.0](https://github.com/stevendejongnl/Hoard/compare/v1.54.0...v1.55.0) (2026-11-04)
+
+### Features
+
+* **screenshots:** the screenshots show failure detection, from sample data of a failed print ([07cb1bb](https://github.com/stevendejongnl/Hoard/commit/07cb1bbd0bfe924133829e183b81c3b32b39fd78))
+
 ## [1.54.0](https://github.com/stevendejongnl/Hoard/compare/v1.53.0...v1.54.0) (2026-11-04)
 
 ### Features
