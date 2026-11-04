@@ -148,6 +148,7 @@ describe('the control page', () => {
     page.loadLayout = async () => {
       throw new Error('offline')
     }
+    page.readDevice = () => 'desktop'
     page.repeatEvery = () => () => undefined
     page.renderCard = (key) => html`<p>${key}</p>`
     document.body.appendChild(page)
@@ -414,6 +415,7 @@ describe('keeping the status fresh', () => {
       return STATUS
     }
     page.loadLayout = async () => null
+    page.readDevice = () => 'desktop'
     page.renderCard = () => html``
     page.repeatEvery = (callback) => {
       tick = callback

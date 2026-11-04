@@ -2,6 +2,7 @@ export type Route =
   | '/'
   | '/history'
   | '/spools'
+  | '/control'
   | '/system'
   | '/detections'
   | '/projects'
@@ -37,6 +38,7 @@ export class Router {
     const pathname = this.environment.readPathname()
     if (pathname === '/history') return '/history'
     if (pathname === '/spools') return '/spools'
+    if (pathname === '/control') return '/control'
     if (pathname === '/system') return '/system'
     if (pathname === '/detections') return '/detections'
     if (pathname === '/projects') return '/projects'

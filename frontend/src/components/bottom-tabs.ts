@@ -14,6 +14,7 @@ const ICON_FOR_SECTION: Record<NavigationItem['section'], IconName> = {
   history: 'history',
   projects: 'projects',
   spools: 'spools',
+  control: 'control',
   system: 'system',
 }
 

@@ -14,6 +14,7 @@ import './bottom-tabs'
 import './detection-banner'
 import './status-bar'
 import './top-navigation'
+import '../pages/control-page'
 import '../pages/dashboard-page'
 import '../pages/detections-page'
 import '../pages/history-page'
@@ -33,6 +34,7 @@ function formatLocalClockTime(date: Date): string {
 function renderPageForRoute(route: string): TemplateResult {
   if (route === '/history') return html`<history-page></history-page>`
   if (route === '/spools') return html`<spools-page></spools-page>`
+  if (route === '/control') return html`<control-page></control-page>`
   if (route === '/system') return html`<system-page></system-page>`
   if (route === '/detections') return html`<detections-page></detections-page>`
   if (route === '/projects') return html`<projects-page></projects-page>`

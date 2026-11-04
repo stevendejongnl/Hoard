@@ -29,7 +29,14 @@ describe('bottom tabs', () => {
       'Control',
       'System',
     ])
-    expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual(['/', '/history', '/projects', '/spools', '/system'])
+    expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([
+      '/',
+      '/history',
+      '/projects',
+      '/spools',
+      '/control',
+      '/system',
+    ])
     expect(tabs.every((tab) => tab.querySelector('svg[aria-hidden="true"]') !== null)).toBe(true)
   })
 
@@ -39,6 +46,7 @@ describe('bottom tabs', () => {
     ['/prints/job-001', 'History'],
     ['/projects/1', 'Projects'],
     ['/spools', 'Spools'],
+    ['/control', 'Control'],
   ])('marks the tab for %s as the current page: %s', async (route, label) => {
     const tabs = findTabs(await createBottomTabs({ route }))
     const currentLabels = tabs

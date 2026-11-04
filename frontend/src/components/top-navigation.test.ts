@@ -42,7 +42,14 @@ describe('top navigation tabs', () => {
       'Control',
       'System',
     ])
-    expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual(['/', '/history', '/projects', '/spools', '/system'])
+    expect(tabs.map((tab) => tab.getAttribute('href'))).toEqual([
+      '/',
+      '/history',
+      '/projects',
+      '/spools',
+      '/control',
+      '/system',
+    ])
   })
 
   it.each([
@@ -51,6 +58,7 @@ describe('top navigation tabs', () => {
     ['/prints/job-001', 'History'],
     ['/projects/1', 'Projects'],
     ['/spools', 'Spools'],
+    ['/control', 'Control'],
   ])('marks the tab for %s as the current page: %s', async (route, label) => {
     const tabs = findTabs(await createTopNavigation({ route }))
     const currentLabels = tabs

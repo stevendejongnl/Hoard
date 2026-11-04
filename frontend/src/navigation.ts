@@ -1,5 +1,5 @@
-export type NavigationSection = 'dashboard' | 'history' | 'projects' | 'spools' | 'system'
-export type NavigationPath = '/' | '/history' | '/projects' | '/spools' | '/system'
+export type NavigationSection = 'dashboard' | 'history' | 'projects' | 'spools' | 'control' | 'system'
+export type NavigationPath = '/' | '/history' | '/projects' | '/spools' | '/control' | '/system'
 
 export interface NavigationItem {
   section: NavigationSection
@@ -12,6 +12,7 @@ export const NAVIGATION_ITEMS: NavigationItem[] = [
   { section: 'history', path: '/history', label: 'History' },
   { section: 'projects', path: '/projects', label: 'Projects' },
   { section: 'spools', path: '/spools', label: 'Spools' },
+  { section: 'control', path: '/control', label: 'Control' },
   { section: 'system', path: '/system', label: 'System' },
 ]
 
@@ -20,6 +21,7 @@ export function findNavigationSection(route: string): NavigationSection {
   if (route === '/history' || route.startsWith('/prints/')) return 'history'
   if (route.startsWith('/projects')) return 'projects'
   if (route === '/spools') return 'spools'
+  if (route === '/control') return 'control'
   if (route === '/system' || route === '/detections') return 'system'
   return 'dashboard'
 }
@@ -46,6 +48,7 @@ const PHONE_TITLES: Record<NavigationSection, string> = {
   history: 'History',
   projects: 'Projects',
   spools: 'Spools',
+  control: 'Control',
   system: 'System',
 }
 
