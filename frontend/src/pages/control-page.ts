@@ -211,11 +211,11 @@ export class ControlPage extends LitElement {
   }
 
   private renderEditBar(key: CardKey, shown: CardKey[]): TemplateResult {
-    const { title, icon } = findCard(key)
+    const { title } = findCard(key)
     const position = shown.indexOf(key)
     return html`<div class="control-edit-bar">
       <span class="control-grip" aria-hidden="true">${renderIcon('grip', 16)}</span>
-      <span class="control-edit-title">${renderIcon(icon, 14)}${title}</span>
+      <span class="control-edit-spacer"></span>
       ${this.renderSpanChoice(key)}
       ${this.renderEditButton(
         `Move ${title} up`,

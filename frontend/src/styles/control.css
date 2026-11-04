@@ -155,14 +155,8 @@
   cursor: grab;
 }
 
-.control-edit-title {
-  display: inline-flex;
+.control-edit-spacer {
   flex: 1;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  font: 600 12px var(--font-family);
-  color: var(--secondary-text-color);
 }
 
 .control-span-choice {
@@ -236,6 +230,14 @@
 }
 
 @media (max-width: 800px) {
+  .control-title {
+    display: none;
+  }
+
+  .control-strip {
+    justify-content: flex-end;
+  }
+
   .control-layout {
     height: auto;
     overflow-y: visible;
