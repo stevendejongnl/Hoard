@@ -1,4 +1,4 @@
-import type { DetectionState, PiStats, Power, PrinterState, Temps } from './types'
+import type { ControlAccessSnapshot, DetectionState, PiStats, Power, PrinterState, Temps } from './types'
 
 export type ServerSentEventPayload =
   | { type: 'printer_state'; data: PrinterState }
@@ -8,6 +8,7 @@ export type ServerSentEventPayload =
   | { type: 'history_updated'; data: { job_id: string; filename: string } }
   | { type: 'system_faults'; data: { active_count: number } }
   | { type: 'detection'; data: { state: DetectionState; score: number | null } }
+  | { type: 'control_access'; data: ControlAccessSnapshot }
 
 export interface ConnectionStatus {
   isConnected: boolean
@@ -43,6 +44,7 @@ const EVENT_NAMES: ServerSentEventPayload['type'][] = [
   'history_updated',
   'system_faults',
   'detection',
+  'control_access',
 ]
 
 /** Returns the parsed value, or undefined when the text is not valid JSON. */

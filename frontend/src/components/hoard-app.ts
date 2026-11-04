@@ -11,6 +11,7 @@ import { router } from '../router'
 import type { ServerSentEventPayload } from '../server-sent-events-client'
 import { sseClient } from '../sse'
 import './bottom-tabs'
+import './control-access-prompt'
 import './detection-banner'
 import './status-bar'
 import './top-navigation'
@@ -141,6 +142,7 @@ export class HoardApp extends LitElement {
         .faultCount=${this.faultCount}
       ></top-navigation>
       <detection-banner printerstate=${this.printerState}></detection-banner>
+      <control-access-prompt></control-access-prompt>
       ${this.renderPullIndicator()}
       <main
         class="app-content"
