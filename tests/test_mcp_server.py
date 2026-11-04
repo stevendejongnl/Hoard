@@ -96,8 +96,8 @@ async def test_the_list_holds_only_the_tools_the_client_may_use() -> None:
         reply = await server.handle(request("tools/list"), client)
         names[client.name] = {tool["name"] for tool in reply["result"]["tools"]}
     assert names["laptop"] == {"list_spools"}
-    assert names["claude"] == {"list_spools", "pause_print"}
-    assert names["owner"] == {"list_spools", "pause_print", "delete_spool"}
+    assert names["claude"] == {"list_spools", "pause_print", "request_control_access"}
+    assert names["owner"] == {"list_spools", "pause_print", "delete_spool", "request_control_access"}
 
 
 async def test_a_listed_tool_has_a_name_a_description_and_an_input_schema() -> None:

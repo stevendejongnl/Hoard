@@ -103,5 +103,5 @@ async def test_get_is_not_allowed_because_nothing_is_streamed() -> None:
 async def test_the_client_that_asked_is_the_one_whose_scope_counts() -> None:
     async with create_client() as client:
         response = await client.post("/mcp", json={"jsonrpc": "2.0", "id": 2, "method": "tools/list"}, headers=GOOD)
-    assert [tool["name"] for tool in response.json()["result"]["tools"]] == ["list_spools"]
+    assert [tool["name"] for tool in response.json()["result"]["tools"]] == ["list_spools", "request_control_access"]
     assert McpClient("claude", "control").allows("read")

@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app import cache, db, home_assistant, push_client, recorder, server_sent_events, system_faults
 from app.config import settings
+from app.control_access import control_access
 from app.db import default_database
 from app.detection_setup import build_detection_monitor
 from app.influx import influx
@@ -39,6 +40,9 @@ from app.routes import (
     system,
     temperatures,
     webcams,
+)
+from app.routes import (
+    control_access as control_access_routes,
 )
 from app.routes.projects import enrich_existing_links
 from app.server_sent_events import hub
@@ -119,6 +123,7 @@ def create_lifespan(app_settings: Any = settings):
 
 _ROUTERS = (
     control.router,
+    control_access_routes.router,
     control_layout.router,
     printer_commands.router,
     chunks.router,
@@ -141,13 +146,27 @@ _ROUTERS = (
 _NO_CACHE_FILES = {"sw.js", "manifest.webmanifest", "index.html"}
 
 
+async def _announce_control_access(snapshot: dict) -> None:
+    await hub.broadcast("control_access", snapshot)
+
+
+control_access.announce = _announce_control_access
+
+
 def _create_mcp_server_provider(app: FastAPI) -> Callable[[], McpServer]:
     """The MCP server of `app`, built on the first request, when every route of the app is in place."""
     servers: list[McpServer] = []
 
     def provide_mcp_server() -> McpServer:
         if not servers:
-            servers.append(McpServer(build_tool_definitions(app.openapi()), InProcessApi(app), version=_APP_VERSION))
+            servers.append(
+                McpServer(
+                    build_tool_definitions(app.openapi()),
+                    InProcessApi(app),
+                    version=_APP_VERSION,
+                    control_access=control_access,
+                )
+            )
         return servers[0]
 
     return provide_mcp_server

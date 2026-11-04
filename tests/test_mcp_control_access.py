@@ -1,4 +1,5 @@
 from app.control_access import ControlAccess
+from app.main import app
 from app.mcp.catalog import build_tool_definitions
 from app.mcp.server import McpServer
 from app.mcp.tokens import McpClient
@@ -90,8 +91,6 @@ async def test_the_instructions_tell_the_assistant_to_ask_first():
 
 
 def test_the_commands_that_move_or_heat_the_printer_need_approval_and_the_person_s_own_buttons_are_not_tools():
-    from app.main import app
-
     tools = {tool.name: tool for tool in build_tool_definitions(app.openapi())}
     needing = {
         "move",

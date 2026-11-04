@@ -12,6 +12,7 @@ import httpx
 from fastapi import Depends
 
 from app import cache, home_assistant
+from app.control_access import ControlAccess, control_access
 from app.db import Database as SqliteDatabase
 from app.db import default_database
 from app.gcode_meta import extract_gcode_meta
@@ -30,6 +31,10 @@ def provide_influx() -> InfluxClient:
 
 def provide_home_assistant() -> ModuleType:
     return home_assistant
+
+
+def provide_control_access() -> ControlAccess:
+    return control_access
 
 
 def provide_database() -> SqliteDatabase:

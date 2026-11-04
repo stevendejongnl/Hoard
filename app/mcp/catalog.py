@@ -14,7 +14,21 @@ LEFT_OUT_OPERATIONS = {
     "serve_photo_api_photos__job_id___filename__get",
     "serve_project_cover_api_projects__project_id__cover_get",
 }
-LEFT_OUT_PATH_PREFIXES = ("/mcp",)
+LEFT_OUT_PATH_PREFIXES = ("/mcp", "/api/control/access", "/api/control/layout")
+# Tools that move or heat the printer. A person has to allow the client on the dashboard first.
+NEEDS_APPROVAL_TOOLS = {
+    "move",
+    "home",
+    "extrude",
+    "temperature",
+    "speed",
+    "flow",
+    "fan",
+    "babystep",
+    "macro",
+    "gcode",
+    "calibrate",
+}
 DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "power_off", "switch_off"}
 OPERATION_ID_SEPARATOR = "_api_"
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
@@ -37,6 +51,7 @@ class ToolDefinition:
     query_parameter_names: tuple[str, ...]
     body_property_names: tuple[str, ...]
     is_destructive: bool
+    needs_approval: bool = False
 
 
 def create_tool_name(operation_id: str) -> str:
@@ -70,10 +85,11 @@ def is_left_out(path: str, operation: dict) -> bool:
     return bool(content) and BODY_MEDIA_TYPE not in content
 
 
-def create_description(operation: dict, method: str, path: str, is_destructive: bool) -> str:
+def create_description(operation: dict, method: str, path: str, is_destructive: bool, needs_approval: bool) -> str:
     summary = operation.get("summary", "").strip().rstrip(".")
     warning = " This is destructive and needs confirm=true." if is_destructive else ""
-    return f"{summary}. ({method} {path}){warning}"
+    approval = " A person must allow this client first: call request_control_access." if needs_approval else ""
+    return f"{summary}. ({method} {path}){warning}{approval}"
 
 
 def create_input_schema(parameters: list[dict], body: dict | None, is_destructive: bool) -> dict:
@@ -95,11 +111,12 @@ def create_tool(path: str, method: str, operation: dict, components: dict) -> To
     name = create_tool_name(operation["operationId"])
     http_method = method.upper()
     is_destructive = http_method == "DELETE" or name in DESTRUCTIVE_TOOLS
+    needs_approval = name in NEEDS_APPROVAL_TOOLS
     parameters = operation.get("parameters", [])
     body = read_body_schema(operation, components)
     return ToolDefinition(
         name=name,
-        description=create_description(operation, http_method, path, is_destructive),
+        description=create_description(operation, http_method, path, is_destructive, needs_approval),
         required_scope=find_required_scope(http_method),
         method=http_method,
         path=path,
@@ -108,6 +125,7 @@ def create_tool(path: str, method: str, operation: dict, components: dict) -> To
         query_parameter_names=names_in(parameters, "query"),
         body_property_names=tuple((body or {}).get("properties", {})),
         is_destructive=is_destructive,
+        needs_approval=needs_approval,
     )
 
 
