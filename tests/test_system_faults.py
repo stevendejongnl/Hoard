@@ -106,3 +106,25 @@ async def test_the_watcher_stores_the_faults_and_announces_how_many_are_active()
     assert [fault["key"] for fault in stored[0][0]] == ["host.unreachable"]
     assert stored[0][1] == 500
     assert announced == [("system_faults", {"active_count": 1})]
+
+
+async def test_the_watcher_leaves_out_the_klipper_faults_while_the_power_off_is_expected():
+    stored: list[list[dict[str, Any]]] = []
+
+    class FakeDatabase:
+        async def record_system_faults(self, faults: list[dict[str, Any]], now: int) -> None:
+            stored.append(faults)
+
+        async def prune_system_faults(self) -> None:
+            return None
+
+    class FakeHub:
+        async def broadcast(self, kind: str, data: Any) -> None:
+            return None
+
+    async def read_readings() -> dict[str, Any]:
+        return {**HEALTHY, "printer_info": {"state": "shutdown", "state_message": "Lost communication with MCU"}}
+
+    await check_system_faults(read_readings, FakeDatabase(), FakeHub(), is_expected_off=lambda: True)
+    await check_system_faults(read_readings, FakeDatabase(), FakeHub(), is_expected_off=lambda: False)
+    assert [[fault["key"] for fault in faults] for faults in stored] == [[], ["klipper.shutdown"]]

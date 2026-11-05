@@ -2,7 +2,7 @@ from typing import Any
 
 import pytest
 
-from app.printer_power import PrinterPower, without_expected_faults
+from app.printer_power import PrinterPower, watch_printer_power, without_expected_faults
 
 
 class FakeKlipper:
@@ -31,45 +31,28 @@ class FakeSleep:
         self.slept.append(seconds)
 
 
-def make_power(answers: list[Any], attempts: int = 5) -> tuple[PrinterPower, FakeKlipper, FakeSleep]:
-    klipper, sleep = FakeKlipper(answers), FakeSleep()
-    return PrinterPower(klipper, sleep, attempts=attempts), klipper, sleep
+class FakeClock:
+    def __init__(self) -> None:
+        self.now = 100.0
+
+    def __call__(self) -> float:
+        return self.now
 
 
-async def test_getting_ready_for_a_power_off_shuts_klipper_down_and_marks_the_power_off_as_expected():
-    power, klipper, _ = make_power([{"state": "ready"}])
-    await power.prepare_power_off()
-    assert klipper.posted == ["/printer/emergency_stop"]
-    assert power.is_expected_off()
-
-
-async def test_a_printer_that_does_not_answer_the_shutdown_is_still_marked_as_expected_off():
-    power, klipper, _ = make_power([{"state": "ready"}])
-
-    async def refuse(path: str, **data: Any) -> Any:
-        raise ConnectionError("down")
-
-    klipper.post = refuse  # type: ignore[method-assign]
-    await power.prepare_power_off()
-    assert power.is_expected_off()
-
-
-async def test_switching_the_power_on_ends_the_expected_off():
-    power, _, _ = make_power([{"state": "ready"}])
-    await power.prepare_power_off()
-    power.note_power_on()
-    assert not power.is_expected_off()
+def make_power(answers: list[Any], attempts: int = 5) -> tuple[PrinterPower, FakeKlipper, FakeSleep, FakeClock]:
+    klipper, sleep, clock = FakeKlipper(answers), FakeSleep(), FakeClock()
+    return PrinterPower(klipper, sleep, attempts=attempts, clock=clock, grace_seconds=60), klipper, sleep, clock
 
 
 async def test_a_ready_klipper_needs_no_restart():
-    power, klipper, _ = make_power([{"state": "ready"}])
+    power, klipper, _, _ = make_power([{"state": "ready"}])
     assert await power.wait_until_ready() is True
     assert klipper.posted == []
 
 
 async def test_waiting_for_a_printer_that_just_got_power_restarts_the_firmware_once_and_waits_for_ready():
     unreachable = ConnectionError("not up yet")
-    power, klipper, sleep = make_power(
+    power, klipper, sleep, _ = make_power(
         [unreachable, {"state": "shutdown"}, {"state": "shutdown"}, {"state": "startup"}, {"state": "ready"}]
     )
     assert await power.wait_until_ready() is True
@@ -78,9 +61,56 @@ async def test_waiting_for_a_printer_that_just_got_power_restarts_the_firmware_o
 
 
 async def test_a_printer_that_never_gets_ready_gives_up():
-    power, _, sleep = make_power([{"state": "startup"}], attempts=3)
+    power, _, sleep, _ = make_power([{"state": "startup"}], attempts=3)
     assert await power.wait_until_ready() is False
     assert len(sleep.slept) == 3
+
+
+async def test_a_switch_that_reads_off_means_the_power_off_is_expected():
+    power, _, _, _ = make_power([{"state": "ready"}])
+    assert not power.is_expected_off()
+    power.observe("off")
+    assert power.is_expected_off()
+    power.observe("on")
+    assert not power.is_expected_off()
+
+
+async def test_a_switch_that_cannot_be_read_does_not_hide_faults():
+    power, _, _, _ = make_power([{"state": "ready"}])
+    power.observe("unknown")
+    assert not power.is_expected_off()
+
+
+async def test_the_power_cut_of_hoard_is_expected_until_the_grace_time_is_over():
+    power, _, _, clock = make_power([{"state": "ready"}])
+    power.note_power_cut()
+    assert power.is_expected_off()
+    clock.now += 59
+    assert power.is_expected_off()
+    clock.now += 2
+    assert not power.is_expected_off()
+
+
+async def test_the_power_coming_on_by_any_means_brings_klipper_back():
+    power, klipper, _, _ = make_power([{"state": "shutdown"}, {"state": "ready"}])
+    power.observe("off")
+    power.observe("on")
+    assert await power._recovery is True
+    assert klipper.posted == ["/printer/firmware_restart"]
+
+
+async def test_a_switch_that_was_on_all_along_starts_no_recovery():
+    power, klipper, _, _ = make_power([{"state": "ready"}])
+    power.observe("on")
+    power.observe("on")
+    assert power._recovery is None
+    assert klipper.posted == []
+
+
+async def test_a_switch_that_is_on_when_hoard_starts_starts_no_recovery():
+    power, _, _, _ = make_power([{"state": "ready"}])
+    power.observe("on")
+    assert power._recovery is None
 
 
 def test_while_the_power_off_is_expected_the_klipper_and_board_faults_are_left_out():
@@ -94,7 +124,38 @@ def test_while_the_power_off_is_expected_the_klipper_and_board_faults_are_left_o
     assert without_expected_faults(faults, expected_off=False) == faults
 
 
-@pytest.mark.parametrize("state", ["error", "shutdown"])
-async def test_an_unexpected_loss_of_power_is_still_a_fault_when_nothing_marked_it(state: str):
-    power, _, _ = make_power([{"state": state}])
+class StopTestError(Exception):
+    """Raised by the fake sleep to end the loop."""
+
+
+async def test_the_watcher_hands_the_switch_state_to_the_power_each_round():
+    power, _, _, _ = make_power([{"state": "ready"}])
+    states = iter(["on", "off"])
+    rounds: list[float] = []
+
+    async def read_switch_state() -> str:
+        return next(states)
+
+    async def sleep(seconds: float) -> None:
+        rounds.append(seconds)
+        if len(rounds) == 2:
+            raise StopTestError
+
+    with pytest.raises(StopTestError):
+        await watch_printer_power(read_switch_state, power, sleep, interval=7)
+    assert rounds == [7, 7]
+    assert power.is_expected_off()
+
+
+async def test_a_switch_that_fails_to_read_is_unknown_and_the_watcher_goes_on():
+    power, _, _, _ = make_power([{"state": "ready"}])
+
+    async def read_switch_state() -> str:
+        raise ConnectionError("home assistant is down")
+
+    async def sleep(seconds: float) -> None:
+        raise StopTestError
+
+    with pytest.raises(StopTestError):
+        await watch_printer_power(read_switch_state, power, sleep)
     assert not power.is_expected_off()

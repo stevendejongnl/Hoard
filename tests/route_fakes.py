@@ -143,21 +143,13 @@ class FakeHomeAssistant:
 
 
 class FakePrinterPower:
-    """Records what the routes ask of the printer's power, and answers that the printer gets ready."""
+    """Records what the routes tell the printer's power."""
 
-    def __init__(self, ready: bool = True) -> None:
-        self.ready = ready
+    def __init__(self) -> None:
         self.calls: list[str] = []
 
-    async def prepare_power_off(self) -> None:
-        self.calls.append("prepare_power_off")
-
-    def power_came_on(self) -> None:
-        self.calls.append("power_came_on")
-
-    async def wait_until_ready(self) -> bool:
-        self.calls.append("wait_until_ready")
-        return self.ready
+    def note_power_cut(self) -> None:
+        self.calls.append("note_power_cut")
 
 
 PROVIDERS = {
