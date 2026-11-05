@@ -3,6 +3,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.moonraker import MoonrakerClient
 from app.printer_commands import (
     CALIBRATION_STEPS,
+    FLUIDD_MACROS_KEY,
+    FLUIDD_NAMESPACE,
     BabystepRequest,
     ExtrudeRequest,
     FanRequest,
@@ -14,10 +16,10 @@ from app.printer_commands import (
     ProbeRequest,
     SpeedRequest,
     TemperatureRequest,
+    describe_macros,
     describe_status,
     is_locked,
     list_fan_objects,
-    visible_macros,
 )
 from app.routes.dependencies import Moonraker
 from app.routes.printer_failure import explain_failure
@@ -135,13 +137,24 @@ async def calibrate(step: str, moonraker: Moonraker) -> dict:
     return await run_script(moonraker, CALIBRATION_STEPS[step])
 
 
+async def read_optional(moonraker: Moonraker, path: str, **params: str) -> dict:
+    """What the printer says about something that only decorates a list: nothing, when it cannot say."""
+    try:
+        return await moonraker.get(path, **params)
+    except Exception:
+        return {}
+
+
 @router.get("/macros")
-async def macros(moonraker: Moonraker) -> list[str]:
+async def macros(moonraker: Moonraker) -> list[dict]:
     try:
         answer = await moonraker.get("/printer/objects/list")
     except Exception as exc:
         raise await explain_failure(moonraker, exc) from exc
-    return visible_macros(answer["objects"])
+    config = await read_optional(moonraker, OBJECTS_QUERY, configfile="settings")
+    fluidd = await read_optional(moonraker, "/server/database/item", namespace=FLUIDD_NAMESPACE, key=FLUIDD_MACROS_KEY)
+    settings = config.get("status", {}).get("configfile", {}).get("settings", {})
+    return describe_macros(answer["objects"], settings, fluidd.get("value", {}))
 
 
 CONSOLE_LINES = 100

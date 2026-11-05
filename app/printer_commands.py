@@ -139,10 +139,39 @@ class GcodeRequest(BaseModel):
         return value.strip()
 
 
+MACRO_PREFIX = "gcode_macro "
+DEFAULT_MACRO_DESCRIPTION = "G-Code macro"
+FLUIDD_NAMESPACE = "fluidd"
+FLUIDD_MACROS_KEY = "macros"
+
+
 def visible_macros(objects: list[str]) -> list[str]:
-    prefix = "gcode_macro "
-    names = [name.removeprefix(prefix) for name in objects if name.startswith(prefix)]
+    names = [name.removeprefix(MACRO_PREFIX) for name in objects if name.startswith(MACRO_PREFIX)]
     return sorted(name for name in names if not name.startswith("_"))
+
+
+def read_macro_description(name: str, settings: dict) -> str:
+    description = settings.get(f"{MACRO_PREFIX}{name.lower()}", {}).get("description", "")
+    return "" if description == DEFAULT_MACRO_DESCRIPTION else description
+
+
+def describe_macros(objects: list[str], settings: dict, fluidd: dict) -> list[dict]:
+    """The macros of the printer with their description and the category the person gave them in Fluidd.
+
+    Fluidd keeps its categories in the Moonraker database, in the order the person put them. A macro it hides is left out,
+    a macro it does not know about has no category and comes last.
+    """
+    category_names = {category["id"]: category["name"] for category in fluidd.get("categories", [])}
+    category_order = {category["name"]: place for place, category in enumerate(fluidd.get("categories", []))}
+    stored = {macro["name"].lower(): macro for macro in fluidd.get("stored", [])}
+    macros = []
+    for name in visible_macros(objects):
+        known = stored.get(name.lower(), {})
+        if known.get("visible") is False:
+            continue
+        category = category_names.get(known.get("categoryId"), "")
+        macros.append({"name": name, "description": read_macro_description(name, settings), "category": category})
+    return sorted(macros, key=lambda macro: category_order.get(macro["category"], len(category_order)))
 
 
 HEATER_LABELS = {"extruder": "Nozzle", "heater_bed": "Bed"}
