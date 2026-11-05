@@ -18,6 +18,7 @@ from app.db import default_database
 from app.gcode_meta import extract_gcode_meta
 from app.influx import InfluxClient, influx
 from app.moonraker import MoonrakerClient, moonraker
+from app.printer_power import PrinterPower, printer_power
 from app.routes.thumbnail_cache import ThumbnailCache, thumbnail_cache
 
 
@@ -35,6 +36,10 @@ def provide_home_assistant() -> ModuleType:
 
 def provide_control_access() -> ControlAccess:
     return control_access
+
+
+def provide_printer_power() -> PrinterPower:
+    return printer_power
 
 
 def provide_database() -> SqliteDatabase:
@@ -67,6 +72,7 @@ def provide_printer_client_factory(
 Moonraker = Annotated[MoonrakerClient, Depends(provide_moonraker)]
 Influx = Annotated[InfluxClient, Depends(provide_influx)]
 HomeAssistant = Annotated[ModuleType, Depends(provide_home_assistant)]
+PrinterPowerControl = Annotated[PrinterPower, Depends(provide_printer_power)]
 Database = Annotated[SqliteDatabase, Depends(provide_database)]
 Cache = Annotated[ModuleType, Depends(provide_cache)]
 GcodeMetaReader = Annotated[Callable[[str], Awaitable[dict[str, Any]]], Depends(provide_gcode_meta_reader)]

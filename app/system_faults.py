@@ -8,6 +8,7 @@ from typing import Any
 
 from app.db import default_database
 from app.moonraker import moonraker
+from app.printer_power import printer_power, without_expected_faults
 from app.server_sent_events import hub
 from app.system_readings import read_host
 
@@ -144,8 +145,10 @@ async def check_system_faults(
     event_hub: Any,
     clock: Callable[[], float] = time.time,
     read_extra_faults: Callable[[], list[Fault]] = list,
+    is_expected_off: Callable[[], bool] = lambda: False,
 ) -> None:
-    faults = [*detect_faults(await read_readings()), *read_extra_faults()]
+    detected = without_expected_faults(detect_faults(await read_readings()), is_expected_off())
+    faults = [*detected, *read_extra_faults()]
     await database.record_system_faults(faults, now=int(clock()))
     await database.prune_system_faults()
     await event_hub.broadcast("system_faults", {"active_count": len(faults)})
@@ -158,6 +161,7 @@ async def watch_system_faults(
     event_hub: Any = hub,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     read_extra_faults: Callable[[], list[Fault]] = list,
+    is_expected_off: Callable[[], bool] = printer_power.is_expected_off,
 ) -> None:
     """Runs all the time, so a fault that clears overnight is still in the history."""
 
@@ -166,7 +170,9 @@ async def watch_system_faults(
 
     while True:
         try:
-            await check_system_faults(read_readings, database, event_hub, read_extra_faults=read_extra_faults)
+            await check_system_faults(
+                read_readings, database, event_hub, read_extra_faults=read_extra_faults, is_expected_off=is_expected_off
+            )
         except Exception as exc:
             log.warning("System fault check error: %s", exc)
         await sleep(interval)

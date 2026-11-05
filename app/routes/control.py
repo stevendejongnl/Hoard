@@ -7,7 +7,7 @@ from fastapi import APIRouter, HTTPException, Response
 
 from app.config import settings
 from app.moonraker import MoonrakerClient
-from app.routes.dependencies import HomeAssistant, HttpClientFactory, Moonraker
+from app.routes.dependencies import HomeAssistant, HttpClientFactory, Moonraker, PrinterPowerControl
 from app.routes.printer_failure import explain_failure
 from app.switches import SwitchDefinition, configured_switches, find_dependents, find_printer_switch, find_switch
 
@@ -110,13 +110,18 @@ async def find_dependents_that_are_on(
 
 
 async def turn_switch_off(
-    definition: SwitchDefinition, create_client: CreateClient, home_assistant: HomeAssistant
+    definition: SwitchDefinition,
+    create_client: CreateClient,
+    home_assistant: HomeAssistant,
+    printer_power: PrinterPowerControl,
 ) -> dict:
     """What needs this switch goes off first; one that does not stops the switch from going off."""
     dependents = await find_dependents_that_are_on(definition, home_assistant)
     for dependent in dependents:
         await call_switch_service(create_client, dependent, "turn_off")
     await call_switch_service(create_client, definition, "turn_off")
+    if definition.is_printer or any(dependent.is_printer for dependent in dependents):
+        printer_power.note_power_cut()
     return {"state": "off", "also_off": [dependent.key for dependent in dependents]}
 
 
@@ -126,8 +131,10 @@ async def switch_on(key: str, create_client: HttpClientFactory, home_assistant: 
 
 
 @router.post("/switches/{key}/off")
-async def switch_off(key: str, create_client: HttpClientFactory, home_assistant: HomeAssistant) -> dict:
-    return await turn_switch_off(find_switch_or_404(key), create_client, home_assistant)
+async def switch_off(
+    key: str, create_client: HttpClientFactory, home_assistant: HomeAssistant, printer_power: PrinterPowerControl
+) -> dict:
+    return await turn_switch_off(find_switch_or_404(key), create_client, home_assistant, printer_power)
 
 
 @router.get("/power")
@@ -144,8 +151,10 @@ async def power_on(create_client: HttpClientFactory, home_assistant: HomeAssista
 
 
 @router.post("/power/off")
-async def power_off(create_client: HttpClientFactory, home_assistant: HomeAssistant) -> dict:
-    return await turn_switch_off(find_printer_switch(), create_client, home_assistant)
+async def power_off(
+    create_client: HttpClientFactory, home_assistant: HomeAssistant, printer_power: PrinterPowerControl
+) -> dict:
+    return await turn_switch_off(find_printer_switch(), create_client, home_assistant, printer_power)
 
 
 async def _command_printer(moonraker: MoonrakerClient, path: str, answer: dict | None = None, **data: str) -> dict:
