@@ -227,12 +227,88 @@ async def test_the_console_refuses_an_empty_line(client: AsyncClient, monkeypatc
     assert response.status_code == 422
 
 
-async def test_the_macros_are_listed_from_the_printer_objects(client: AsyncClient, monkeypatch):
-    moonraker = FakeMoonraker(
-        {"/printer/objects/list": {"objects": ["extruder", "gcode_macro CLEAN_NOZZLE", "gcode_macro _HIDDEN", "fan"]}}
+OBJECTS_PATH = "/printer/objects/list"
+DATABASE_PATH = "/server/database/item"
+
+MACRO_OBJECTS = [
+    "extruder",
+    "gcode_macro CLEAN_NOZZLE",
+    "gcode_macro _HIDDEN",
+    "gcode_macro PARK",
+    "gcode_macro G29",
+    "gcode_macro OLD_ONE",
+    "fan",
+]
+
+MACRO_SETTINGS = {
+    "gcode_macro clean_nozzle": {"description": "Wipe the nozzle on the brush"},
+    "gcode_macro park": {"description": "G-Code macro"},
+    "gcode_macro g29": {},
+}
+
+FLUIDD_MACROS = {
+    "value": {
+        "categories": [{"id": "c1", "name": "Printing"}, {"id": "c2", "name": "Calibrate"}],
+        "stored": [
+            {"name": "clean_nozzle", "visible": True, "categoryId": "c2"},
+            {"name": "park", "visible": True, "categoryId": "c1"},
+            {"name": "old_one", "visible": False, "categoryId": "c1"},
+        ],
+    }
+}
+
+
+def macro_moonraker(settings: dict | Exception = MACRO_SETTINGS, fluidd: dict | Exception = FLUIDD_MACROS):
+    return FakeMoonraker(
+        {
+            OBJECTS_PATH: {"objects": MACRO_OBJECTS},
+            STATE_PATH: {"status": {"configfile": {"settings": settings}}} if isinstance(settings, dict) else settings,
+            DATABASE_PATH: fluidd,
+        }
     )
+
+
+async def test_the_macros_are_listed_with_their_description_and_the_category_from_fluidd(
+    client: AsyncClient, monkeypatch
+):
+    install_fakes(monkeypatch, moonraker=macro_moonraker())
+    assert (await client.get("/api/control/macros")).json() == [
+        {"name": "PARK", "description": "", "category": "Printing"},
+        {"name": "CLEAN_NOZZLE", "description": "Wipe the nozzle on the brush", "category": "Calibrate"},
+        {"name": "G29", "description": "", "category": ""},
+    ]
+
+
+async def test_a_macro_that_fluidd_hides_or_that_starts_with_an_underscore_is_not_listed(
+    client: AsyncClient, monkeypatch
+):
+    install_fakes(monkeypatch, moonraker=macro_moonraker())
+    names = [macro["name"] for macro in (await client.get("/api/control/macros")).json()]
+    assert "OLD_ONE" not in names
+    assert "_HIDDEN" not in names
+
+
+async def test_the_macros_are_asked_for_in_the_fluidd_namespace(client: AsyncClient, monkeypatch):
+    moonraker = macro_moonraker()
     install_fakes(monkeypatch, moonraker=moonraker)
-    assert (await client.get("/api/control/macros")).json() == ["CLEAN_NOZZLE"]
+    await client.get("/api/control/macros")
+    assert (DATABASE_PATH, {"namespace": "fluidd", "key": "macros"}) in moonraker.asked
+    assert (STATE_PATH, {"configfile": "settings"}) in moonraker.asked
+
+
+async def test_the_macros_are_still_listed_when_fluidd_or_the_config_cannot_be_read(client: AsyncClient, monkeypatch):
+    moonraker = macro_moonraker(settings=RuntimeError("no config"), fluidd=RuntimeError("no database"))
+    install_fakes(monkeypatch, moonraker=moonraker)
+    response = await client.get("/api/control/macros")
+    assert response.status_code == 200
+    assert [macro["name"] for macro in response.json()] == ["CLEAN_NOZZLE", "G29", "OLD_ONE", "PARK"]
+    assert {macro["category"] for macro in response.json()} == {""}
+
+
+async def test_macros_in_a_category_come_in_the_order_of_fluidd_and_the_rest_last(client: AsyncClient, monkeypatch):
+    install_fakes(monkeypatch, moonraker=macro_moonraker())
+    categories = [macro["category"] for macro in (await client.get("/api/control/macros")).json()]
+    assert categories == ["Printing", "Calibrate", ""]
 
 
 @pytest.mark.parametrize(
