@@ -151,6 +151,8 @@ def test_the_commands_that_move_heat_or_start_work_on_the_printer_need_approval_
         "upload_gcode",
         "start_print",
         "change_auto_power_off",
+        "power_off",
+        "switch_off",
     }
     assert {name for name, tool in tools.items() if tool.needs_approval} == needing
     assert not [tool for tool in tools.values() if tool.path.startswith(("/api/control/access", "/api/control/layout"))]
