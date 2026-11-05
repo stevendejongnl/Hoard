@@ -60,6 +60,10 @@ const ICON_SHAPES = {
   'arrow-right': '<path d="M5 12h14M13 6l6 6-6 6"/>',
   external: '<path d="M14 4h6v6M20 4 10 14"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
   download: '<path d="M12 4v12M6 10l6 6 6-6M4 20h16"/>',
+  repeat:
+    '<path d="m17 2 4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="m7 22-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/>',
+  'flip-horizontal': '<path d="M12 3v18"/><path d="m8 7-5 5 5 5z"/><path d="m16 7 5 5-5 5z"/>',
+  'flip-vertical': '<path d="M3 12h18"/><path d="m7 8 5-5 5 5z"/><path d="m7 16 5 5 5-5z"/>',
 } as const
 
 export type IconName = keyof typeof ICON_SHAPES

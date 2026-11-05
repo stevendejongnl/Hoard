@@ -376,3 +376,120 @@ describe('measured frame rate', () => {
     expect(readHeading(panel)).toBe('Enclosure 9 fps · target 15')
   })
 })
+
+describe('camera view', () => {
+  class FakeStorage {
+    readonly values = new Map<string, string>()
+    getItem(key: string): string | null {
+      return this.values.get(key) ?? null
+    }
+    setItem(key: string, value: string): void {
+      this.values.set(key, value)
+    }
+  }
+
+  const twoCameras = [createWebcam(), createWebcam({ name: 'Toolhead', stream_url: '/two' })]
+  const labels = (panel: CameraPanel) =>
+    Array.from(panel.querySelectorAll('.camera-buttons button')).map((button) => button.getAttribute('aria-label'))
+  const click = async (panel: CameraPanel, selector: string) => {
+    panel.querySelector<HTMLElement>(selector)?.click()
+    await panel.updateComplete
+  }
+  const stream = (panel: CameraPanel) => panel.querySelector<HTMLImageElement>('img.camera-stream')!
+  const viewport = (panel: CameraPanel) => panel.querySelector<HTMLElement>('.camera-viewport')!
+
+  async function createViewPanel(webcams = [createWebcam()], storage = new FakeStorage()) {
+    return createPanel(createCalls(), webcams, { viewStorage: storage })
+  }
+
+  it('has the fullscreen, snapshot and view buttons, and a switch button only with more than one camera', async () => {
+    expect(labels(await createViewPanel())).toEqual(['Open camera fullscreen', 'Save snapshot', 'Camera view'])
+    document.body.replaceChildren()
+    expect(labels(await createViewPanel(twoCameras))).toEqual([
+      'Open camera fullscreen',
+      'Save snapshot',
+      'Switch camera',
+      'Camera view',
+    ])
+  })
+
+  it('opens a menu with fit, fill and stretch, and closes it with Escape or the view button', async () => {
+    const panel = await createViewPanel()
+    expect(panel.querySelector('.camera-view-menu')).toBeNull()
+    await click(panel, 'button[aria-label="Camera view"]')
+    expect(panel.querySelector('.camera-view-menu')).not.toBeNull()
+    expect(panel.querySelector('button[aria-label="Camera view"]')?.getAttribute('aria-expanded')).toBe('true')
+    expect(panel.querySelector('button[data-fit="fit"]')?.getAttribute('aria-pressed')).toBe('true')
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await panel.updateComplete
+    expect(panel.querySelector('.camera-view-menu')).toBeNull()
+    await click(panel, 'button[aria-label="Camera view"]')
+    await click(panel, 'button[aria-label="Camera view"]')
+    expect(panel.querySelector('.camera-view-menu')).toBeNull()
+  })
+
+  it('fills the section with fit, fill and stretch', async () => {
+    const panel = await createViewPanel()
+    expect(viewport(panel).dataset.fit).toBe('fit')
+    expect(stream(panel).style.objectFit).toBe('contain')
+    await click(panel, 'button[aria-label="Camera view"]')
+    await click(panel, 'button[data-fit="fill"]')
+    expect([viewport(panel).dataset.fit, stream(panel).style.objectFit]).toEqual(['fill', 'cover'])
+    expect(panel.querySelector('button[data-fit="fill"]')?.getAttribute('aria-pressed')).toBe('true')
+    await click(panel, 'button[data-fit="stretch"]')
+    expect([viewport(panel).dataset.fit, stream(panel).style.objectFit]).toEqual(['stretch', 'fill'])
+  })
+
+  it('turns a quarter at a time on top of the rotation of the camera, and a quarter turn swaps the box', async () => {
+    const panel = await createViewPanel([createWebcam({ rotation: 90 })])
+    expect(viewport(panel).dataset.quarter).toBe('true')
+    await click(panel, 'button[aria-label="Camera view"]')
+    await click(panel, '[data-action="rotate"]')
+    expect(stream(panel).style.transform).toContain('rotate(180deg)')
+    expect(viewport(panel).dataset.quarter).toBeUndefined()
+    await click(panel, '[data-action="rotate"]')
+    expect(stream(panel).style.transform).toContain('rotate(270deg)')
+    expect(viewport(panel).dataset.quarter).toBe('true')
+  })
+
+  it('flips the picture on each axis and back', async () => {
+    const panel = await createViewPanel()
+    await click(panel, 'button[aria-label="Camera view"]')
+    await click(panel, '[data-action="flip-horizontal"]')
+    expect(stream(panel).style.transform).toContain('scale(-1, 1)')
+    expect(panel.querySelector('[data-action="flip-horizontal"]')?.getAttribute('aria-pressed')).toBe('true')
+    await click(panel, '[data-action="flip-vertical"]')
+    expect(stream(panel).style.transform).toContain('scale(-1, -1)')
+    await click(panel, '[data-action="flip-horizontal"]')
+    expect(stream(panel).style.transform).toContain('scale(1, -1)')
+  })
+
+  it('keeps the view in the browser for each camera, and shows it again on the next visit', async () => {
+    const storage = new FakeStorage()
+    const first = await createViewPanel(twoCameras, storage)
+    await click(first, 'button[aria-label="Camera view"]')
+    await click(first, 'button[data-fit="fill"]')
+    await click(first, '[data-action="rotate"]')
+    document.body.replaceChildren()
+    const second = await createViewPanel(twoCameras, storage)
+    expect([viewport(second).dataset.fit, stream(second).style.transform]).toEqual([
+      'fill',
+      expect.stringContaining('rotate(90deg)'),
+    ])
+    await click(second, 'button[aria-label="Switch camera"]')
+    expect(viewport(second).dataset.fit).toBe('fit')
+  })
+
+  it('saves a snapshot with the same turns and flips as the picture', async () => {
+    const saved: { name: string; rotation: number; flipHorizontal: boolean }[] = []
+    const panel = await createPanel(createCalls(), [createWebcam({ rotation: 90 })], {
+      viewStorage: new FakeStorage(),
+      saveSnapshot: async (webcam, orientation) =>
+        void saved.push({ name: webcam.name, ...orientation, flipVertical: undefined } as never),
+    })
+    await click(panel, 'button[aria-label="Camera view"]')
+    await click(panel, '[data-action="flip-horizontal"]')
+    await click(panel, 'button[aria-label="Save snapshot"]')
+    expect(saved).toEqual([expect.objectContaining({ name: 'Enclosure', rotation: 90, flipHorizontal: true })])
+  })
+})

@@ -30,7 +30,7 @@ export interface SnapshotPlan {
   radians: number
 }
 
-interface ViewStorage {
+export interface ViewStorage {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
 }

@@ -172,6 +172,33 @@ camera-panel {
   position: relative;
 }
 
+/* How the picture fills the section: fit keeps the whole picture, fill covers and crops, stretch distorts. */
+.camera-viewport[data-fit='fill'] .camera-stream,
+.camera-viewport[data-fit='stretch'] .camera-stream,
+.camera-viewport[data-fit='fill'] .camera-last-frame,
+.camera-viewport[data-fit='stretch'] .camera-last-frame {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+
+/* A quarter turn swaps width and height: the picture gets the section turned on its side, and is turned back into it. */
+.camera-viewport[data-quarter] {
+  container-type: size;
+}
+
+.camera-viewport[data-quarter] .camera-stream,
+.camera-viewport[data-quarter] .camera-last-frame {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100cqh;
+  height: 100cqw;
+  max-width: none;
+  max-height: none;
+}
+
 /* The last good frame: under the stream, same size and place, and only shown while the stream has nothing to show. */
 .camera-last-frame {
   position: absolute;
@@ -225,6 +252,35 @@ camera-panel {
   border-radius: 2px;
   background: var(--chrome-color);
   border: 1px solid var(--border-color);
+}
+
+.camera-view-menu {
+  position: absolute;
+  top: 14px;
+  right: 66px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 2px;
+  background: var(--chrome-color);
+  border: 1px solid var(--border-color);
+}
+
+.camera-view-group {
+  display: flex;
+  gap: 4px;
+}
+
+.camera-view-menu .button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+.camera-view-menu .button[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .chart-block {
@@ -574,6 +630,11 @@ cost-predictor-panel .section-header {
     top: 8px;
     right: 8px;
     flex-direction: row;
+  }
+
+  .dashboard-phone .camera-view-menu {
+    top: 64px;
+    right: 8px;
   }
 
   .dashboard-phone .camera-buttons .button {
