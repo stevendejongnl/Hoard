@@ -110,3 +110,54 @@ def test_the_commands_that_move_or_heat_the_printer_need_approval_and_the_person
     assert not [tool for tool in tools.values() if tool.path.startswith(("/api/control/access", "/api/control/layout"))]
     assert {"pause_print", "resume_print", "cancel_print", "emergency_stop"} <= set(tools)
     assert not tools["emergency_stop"].needs_approval
+
+
+async def refusal_after(prepare) -> str:
+    access = ControlAccess()
+    server = create_server(access)
+    await prepare(access)
+    reply = await call_tool(server, OPERATOR, "move")
+    assert reply["result"]["isError"] is True
+    return reply["result"]["content"][0]["text"]
+
+
+async def test_a_request_that_is_waiting_says_so_and_asks_not_to_send_another():
+    async def prepare(access: ControlAccess) -> None:
+        await access.request("claude", "")
+
+    text = await refusal_after(prepare)
+    assert "waiting on the Hoard dashboard" in text
+    assert "do not send another request" in text.lower()
+
+
+async def test_a_denial_says_the_person_said_no_and_asks_not_to_ask_again():
+    async def prepare(access: ControlAccess) -> None:
+        request = await access.request("claude", "")
+        await access.deny(request["id"])
+
+    text = await refusal_after(prepare)
+    assert "denied" in text
+    assert "do not ask again" in text.lower()
+
+
+async def test_access_that_was_taken_back_says_so():
+    async def prepare(access: ControlAccess) -> None:
+        request = await access.request("claude", "")
+        await access.allow(request["id"])
+        await access.revoke("claude")
+
+    text = await refusal_after(prepare)
+    assert "took the access back" in text
+    assert "do not ask again" in text.lower()
+
+
+async def test_access_that_ran_out_can_be_asked_for_again():
+    clock = [1000.0]
+    access = ControlAccess(clock=lambda: clock[0])
+    server = create_server(access)
+    request = await access.request("claude", "")
+    await access.allow(request["id"])
+    clock[0] += 31 * 60
+    text = (await call_tool(server, OPERATOR, "move"))["result"]["content"][0]["text"]
+    assert "30 minutes" in text
+    assert "request_control_access" in text

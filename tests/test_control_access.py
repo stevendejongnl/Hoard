@@ -120,3 +120,42 @@ async def test_every_change_is_announced_to_the_dashboard(access: ControlAccess,
     await access.revoke("claude")
     assert [len(snapshot["pending"]) for snapshot in announcements.snapshots] == [1, 0, 0]
     assert [len(snapshot["granted"]) for snapshot in announcements.snapshots] == [0, 1, 0]
+
+
+async def test_the_state_of_a_client_says_where_it_stands(access: ControlAccess):
+    assert access.find_state("claude") == "none"
+    request = await access.request("claude", "")
+    assert access.find_state("claude") == "waiting"
+    await access.allow(request["id"])
+    assert access.find_state("claude") == "granted"
+
+
+async def test_a_denied_request_is_remembered_as_denied(access: ControlAccess):
+    request = await access.request("claude", "")
+    await access.deny(request["id"])
+    assert access.find_state("claude") == "denied"
+    assert access.find_state("someone-else") == "none"
+
+
+async def test_access_that_was_taken_back_is_remembered_as_revoked(access: ControlAccess):
+    request = await access.request("claude", "")
+    await access.allow(request["id"])
+    await access.revoke("claude")
+    assert access.find_state("claude") == "revoked"
+
+
+async def test_a_grant_that_ran_out_and_a_request_nobody_answered_are_told_apart(access: ControlAccess, clock: Clock):
+    request = await access.request("claude", "")
+    clock.now += REQUEST_SECONDS
+    assert access.find_state("claude") == "unanswered"
+    request = await access.request("claude", "")
+    await access.allow(request["id"])
+    clock.now += GRANT_SECONDS
+    assert access.find_state("claude") == "ended"
+
+
+async def test_asking_again_starts_over(access: ControlAccess):
+    request = await access.request("claude", "")
+    await access.deny(request["id"])
+    await access.request("claude", "")
+    assert access.find_state("claude") == "waiting"
