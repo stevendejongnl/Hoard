@@ -29,11 +29,24 @@ STATUS = {
     ],
 }
 MACROS = [
-    {"name": "PARK", "description": "Park the head at the back", "category": "Printing"},
     {"name": "CLEAN_NOZZLE", "description": "Wipe the nozzle on the brush", "category": "Printing"},
-    {"name": "BED_MESH_CALIBRATE", "description": "Probe the bed and store the mesh", "category": "Calibrate"},
-    {"name": "LOAD_FILAMENT", "description": "Heat the nozzle and load filament", "category": "Filament"},
-    {"name": "UNLOAD_FILAMENT", "description": "Heat the nozzle and pull the filament out", "category": "Filament"},
+    {
+        "name": "CALIBRATE_MESH",
+        "description": "Probe the whole bed at BED_TEMP and store it as mesh_<BED_TEMP>",
+        "category": "Calibrate",
+    },
+    {
+        "name": "BED_MESH_FOR_PRINT",
+        "description": "Load the mesh closest to the bed temperature, then probe the print area",
+        "category": "Calibrate",
+    },
+    {"name": "QUALITY", "description": "Best print quality (0% vibration, 2300 mm/s²)", "category": "Speed Profiles"},
+    {
+        "name": "BALANCED",
+        "description": "Balanced speed/quality (4% vibration, 3700 mm/s²)",
+        "category": "Speed Profiles",
+    },
+    {"name": "SPEED", "description": "Fast printing (14% vibration, 5000 mm/s²)", "category": "Speed Profiles"},
 ]
 CONSOLE_LINES = [
     ("command", "G28"),

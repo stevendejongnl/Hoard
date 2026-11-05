@@ -52,10 +52,6 @@ export class ControlExtruderCard extends ControlCard {
         <div class="control-button-row">
           ${this.renderAction('Retract', () => this.extrude(-1))} ${this.renderAction('Extrude', () => this.extrude(1))}
         </div>
-        <div class="control-button-row">
-          ${this.renderAction('Load filament', () => void this.command('macro', { name: 'LOAD_FILAMENT' }))}
-          ${this.renderAction('Unload', () => void this.command('macro', { name: 'UNLOAD_FILAMENT' }))}
-        </div>
         ${this.renderLockNote()}`,
     )
   }

@@ -74,9 +74,7 @@ def test_difference_image_marks_differing_pixels_in_red():
 
 
 def test_difference_image_dims_pixels_that_match():
-    difference_image = create_difference_image(
-        create_solid_image(WHITE), create_solid_image(WHITE), CHANNEL_TOLERANCE
-    )
+    difference_image = create_difference_image(create_solid_image(WHITE), create_solid_image(WHITE), CHANNEL_TOLERANCE)
     assert difference_image.convert("RGB").getpixel((0, 0)) != WHITE
 
 

@@ -15,9 +15,7 @@ COLOR_SCHEME = "dark"
 # The dashboard shows "finish at 18:23" for a print with 3h27m left, so the clock is fixed at 14:56 UTC, the timezone of the browser.
 FIXED_TIME = datetime(2026, 10, 27, 14, 56, 0, tzinfo=UTC)
 
-FREEZE_MOTION_STYLE = (
-    "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }"
-)
+FREEZE_MOTION_STYLE = "*, *::before, *::after { animation: none !important; transition: none !important; caret-color: transparent !important; }"
 
 CONTEXT_OPTIONS = {
     "device_scale_factor": 1,
