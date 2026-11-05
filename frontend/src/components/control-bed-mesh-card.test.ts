@@ -61,6 +61,12 @@ describe('the bed mesh card', () => {
     expect(card.textContent).toContain('No bed mesh loaded')
   })
 
+  it('says so when Klipper reports one empty row, as it does without a mesh', async () => {
+    const card = await mount(async () => ({ ...MESH, probed_matrix: [[]] }))
+    expect(card.textContent).toContain('No bed mesh loaded')
+    expect(card.textContent).not.toContain('Infinity')
+  })
+
   it('says so when the mesh cannot be read', async () => {
     const card = await mount(async () => {
       throw new Error('offline')

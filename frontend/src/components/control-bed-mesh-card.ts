@@ -69,7 +69,7 @@ export class ControlBedMeshCard extends ControlCard {
   private renderBody(): TemplateResult {
     if (this.hasFailed) return html`<div class="muted control-empty">Could not read the bed mesh</div>`
     const matrix = this.mesh?.probed_matrix ?? []
-    if (matrix.length === 0) return html`<div class="muted control-empty">No bed mesh loaded</div>`
+    if (matrix.flat().length === 0) return html`<div class="muted control-empty">No bed mesh loaded</div>`
     return this.renderCells(matrix)
   }
 
