@@ -1,3 +1,9 @@
+## [1.64.1](https://github.com/stevendejongnl/Hoard/compare/v1.64.0...v1.64.1) (2026-11-05)
+
+### Bug Fixes
+
+* bed mesh card says no mesh loaded when Klipper sends one empty row ([e0638ba](https://github.com/stevendejongnl/Hoard/commit/e0638ba516efb26ab88605ac22b3f73c1f412b42))
+
 ## [1.64.0](https://github.com/stevendejongnl/Hoard/compare/v1.63.0...v1.64.0) (2026-11-05)
 
 ### Features

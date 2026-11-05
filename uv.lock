@@ -642,7 +642,7 @@ wheels = [
 
 [[package]]
 name = "hoard"
-version = "1.64.0"
+version = "1.64.1"
 source = { virtual = "." }
 dependencies = [
     { name = "aiofiles" },
