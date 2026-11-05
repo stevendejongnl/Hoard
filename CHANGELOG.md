@@ -1,3 +1,9 @@
+## [1.67.0](https://github.com/stevendejongnl/Hoard/compare/v1.66.0...v1.67.0) (2026-11-05)
+
+### Features
+
+* **files:** upload_gcode returns a SHA-256 and checks it against the original ([d9019df](https://github.com/stevendejongnl/Hoard/commit/d9019df0b617dc6d84cf1919d20513c6a639ca9b))
+
 ## [1.66.0](https://github.com/stevendejongnl/Hoard/compare/v1.65.0...v1.66.0) (2026-11-05)
 
 ### Features
