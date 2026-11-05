@@ -12,6 +12,8 @@ import httpx
 from fastapi import Depends
 
 from app import cache, home_assistant
+from app.auto_power_off import AutoPowerOff
+from app.auto_power_off_setup import auto_power_off
 from app.control_access import ControlAccess, control_access
 from app.db import Database as SqliteDatabase
 from app.db import default_database
@@ -36,6 +38,10 @@ def provide_home_assistant() -> ModuleType:
 
 def provide_control_access() -> ControlAccess:
     return control_access
+
+
+def provide_auto_power_off() -> AutoPowerOff:
+    return auto_power_off
 
 
 def provide_printer_power() -> PrinterPower:
@@ -72,6 +78,7 @@ def provide_printer_client_factory(
 Moonraker = Annotated[MoonrakerClient, Depends(provide_moonraker)]
 Influx = Annotated[InfluxClient, Depends(provide_influx)]
 HomeAssistant = Annotated[ModuleType, Depends(provide_home_assistant)]
+AutoPowerOffControl = Annotated[AutoPowerOff, Depends(provide_auto_power_off)]
 PrinterPowerControl = Annotated[PrinterPower, Depends(provide_printer_power)]
 Database = Annotated[SqliteDatabase, Depends(provide_database)]
 Cache = Annotated[ModuleType, Depends(provide_cache)]

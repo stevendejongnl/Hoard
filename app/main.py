@@ -12,7 +12,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import cache, db, home_assistant, push_client, recorder, server_sent_events, system_faults
+from app import auto_power_off, cache, db, home_assistant, push_client, recorder, server_sent_events, system_faults
+from app.auto_power_off_setup import auto_power_off as auto_power_off_runner
 from app.config import settings
 from app.control_access import control_access
 from app.db import default_database
@@ -24,6 +25,10 @@ from app.mcp.endpoint import create_mcp_router
 from app.mcp.server import McpServer
 from app.mcp.tokens import McpClient, parse_registered_clients
 from app.moonraker import moonraker
+from app.printer_power import printer_power, watch_printer_power
+from app.routes import (
+    auto_power_off as auto_power_off_routes,
+)
 from app.routes import (
     chunks,
     control,
@@ -67,6 +72,10 @@ async def _price_recorder_loop() -> None:
             log.warning("price recorder error: %s", exc)
 
 
+async def _read_printer_switch_state() -> str:
+    return server_sent_events.hub.last_value("power").get("switch", "unknown")
+
+
 def _start_background_tasks() -> list[asyncio.Task]:
     """Start the long-running tasks and return the ones that must be cancelled on shutdown."""
     detection_monitor = build_detection_monitor(
@@ -82,6 +91,8 @@ def _start_background_tasks() -> list[asyncio.Task]:
         asyncio.create_task(server_sent_events._poll_ha()),
         asyncio.create_task(server_sent_events._poll_pi_stats()),
         asyncio.create_task(server_sent_events._poll_printer_state()),
+        asyncio.create_task(watch_printer_power(_read_printer_switch_state, printer_power)),
+        asyncio.create_task(auto_power_off.watch_auto_power_off(auto_power_off_runner)),
         asyncio.create_task(
             system_faults.watch_system_faults(read_extra_faults=detection_monitor.faults if detection_monitor else list)
         ),
@@ -125,6 +136,7 @@ def create_lifespan(app_settings: Any = settings):
 
 _ROUTERS = (
     control.router,
+    auto_power_off_routes.router,
     control_access_routes.router,
     control_layout.router,
     printer_commands.router,

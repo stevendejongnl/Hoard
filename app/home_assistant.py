@@ -17,6 +17,16 @@ def _headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {settings.ha_token}"}
 
 
+async def get_printer_switch_state(create_client: Callable[..., Any] = httpx.AsyncClient) -> str:
+    """The state of the printer's power switch: "on" or "off"."""
+    async with create_client() as client:
+        response = await client.get(
+            f"{settings.ha_url}/api/states/{settings.ha_power_switch}", headers=_headers(), timeout=10
+        )
+        response.raise_for_status()
+        return response.json()["state"]
+
+
 async def get_state(entity_id: str, http_client_factory: Callable[[], Any] = httpx.AsyncClient) -> dict[str, Any]:
     async with http_client_factory() as client:
         r = await client.get(

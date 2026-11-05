@@ -7,7 +7,6 @@ from typing import Any
 from app import home_assistant, push_client
 from app.moonraker import moonraker
 from app.print_progress import blend_progress, file_relative_progress
-from app.routes.control import _get_switch_state
 
 log = logging.getLogger(__name__)
 
@@ -90,7 +89,7 @@ async def _poll_ha(
     interval: int = 30,
     home_assistant: Any = home_assistant,
     event_hub: Any = hub,
-    read_switch_state: Callable[[], Awaitable[str]] = _get_switch_state,
+    read_switch_state: Callable[[], Awaitable[str]] = home_assistant.get_printer_switch_state,
     sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
 ) -> None:
     while True:

@@ -192,6 +192,12 @@ async def _create_system_tables(connection: aiosqlite.Connection) -> None:
         )
     """)
     await connection.execute("""
+        CREATE TABLE IF NOT EXISTS auto_power_off_settings (
+            key   TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        )
+    """)
+    await connection.execute("""
         CREATE TABLE IF NOT EXISTS detection_alerts (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
             created_at INTEGER NOT NULL,
@@ -403,6 +409,22 @@ class Database:
         async with self.open_connection() as connection:
             await connection.executemany(
                 "INSERT INTO detection_settings (key, value) VALUES (?, ?) "
+                "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                [(key, json.dumps(value)) for key, value in values.items()],
+            )
+            await connection.commit()
+
+    async def get_auto_power_off_settings(self) -> dict[str, Any]:
+        async with (
+            self.open_connection() as connection,
+            connection.execute("SELECT key, value FROM auto_power_off_settings") as cursor,
+        ):
+            return {key: json.loads(value) for key, value in await cursor.fetchall()}
+
+    async def save_auto_power_off_settings(self, values: dict[str, Any]) -> None:
+        async with self.open_connection() as connection:
+            await connection.executemany(
+                "INSERT INTO auto_power_off_settings (key, value) VALUES (?, ?) "
                 "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
                 [(key, json.dumps(value)) for key, value in values.items()],
             )

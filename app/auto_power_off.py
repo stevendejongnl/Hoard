@@ -1,18 +1,39 @@
 """Switches the printer's power off when it has been idle for a set time."""
 
+import asyncio
+import logging
 import time
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+from typing import Any
+
+log = logging.getLogger(__name__)
 
 BUSY_PRINT_STATES = ("printing", "paused")
 COOL_BELOW_CELSIUS = 45.0
 DEFAULT_IDLE_MINUTES = 30
+MAX_IDLE_MINUTES = 24 * 60
+CHECK_SECONDS = 30.0
+HEATERS = ("extruder", "heater_bed")
+
+
+class InvalidAutoPowerOffSettingsError(ValueError):
+    """An idle time that makes no sense."""
 
 
 @dataclass(frozen=True)
 class AutoPowerOffSettings:
     enabled: bool = True
     idle_minutes: int = DEFAULT_IDLE_MINUTES
+
+
+def build_auto_power_off_settings(values: dict[str, Any]) -> AutoPowerOffSettings:
+    """The defaults with the given values on top. Values that are not settings are ignored."""
+    known = {field.name for field in fields(AutoPowerOffSettings)}
+    settings = AutoPowerOffSettings(**{key: value for key, value in values.items() if key in known})
+    if not 1 <= settings.idle_minutes <= MAX_IDLE_MINUTES:
+        raise InvalidAutoPowerOffSettingsError("The idle time is between 1 minute and 24 hours")
+    return settings
 
 
 @dataclass(frozen=True)
@@ -81,3 +102,35 @@ class AutoPowerOff:
 
     def status(self) -> AutoPowerOffStatus:
         return AutoPowerOffStatus(enabled=self._enabled, off_at=self._off_at)
+
+
+async def read_printer_activity(
+    klipper: Any,
+    read_printer_state: Callable[[], dict[str, Any]],
+    read_power: Callable[[], dict[str, Any]],
+) -> PrinterActivity:
+    """What the printer is doing now. A printer that does not answer has no heater readings."""
+    try:
+        status = (await klipper.get("/printer/objects/query", extruder="", heater_bed="")).get("status", {})
+        temperatures = [status[heater]["temperature"] for heater in HEATERS if "temperature" in status.get(heater, {})]
+    except Exception:
+        temperatures = []
+    return PrinterActivity(
+        print_state=read_printer_state().get("state", "standby"),
+        heater_temperatures=temperatures,
+        switch_on=read_power().get("switch") == "on",
+    )
+
+
+async def watch_auto_power_off(
+    auto_power_off: Any,
+    sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
+    interval: float = CHECK_SECONDS,
+) -> None:
+    """Runs all the time, so a printer that has been idle long enough is switched off."""
+    while True:
+        try:
+            await auto_power_off.check()
+        except Exception as exc:
+            log.warning("Auto power-off error: %s", exc)
+        await sleep(interval)

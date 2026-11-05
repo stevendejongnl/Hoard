@@ -6,6 +6,7 @@ import httpx
 from fastapi import APIRouter, HTTPException, Response
 
 from app.config import settings
+from app.home_assistant import get_printer_switch_state
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import HomeAssistant, HttpClientFactory, Moonraker, PrinterPowerControl
 from app.routes.printer_failure import explain_failure
@@ -31,17 +32,6 @@ async def _ha_service(
             timeout=10,
         )
         response.raise_for_status()
-
-
-async def _get_switch_state(create_client: CreateClient = httpx.AsyncClient) -> str:
-    async with create_client() as client:
-        response = await client.get(
-            f"{settings.ha_url}/api/states/{settings.ha_power_switch}",
-            headers=_ha_headers(),
-            timeout=10,
-        )
-        response.raise_for_status()
-        return response.json()["state"]  # "on" or "off"
 
 
 async def read_switch_state(home_assistant: HomeAssistant, entity_id: str) -> str:
@@ -140,7 +130,7 @@ async def switch_off(
 @router.get("/power")
 async def power_state(create_client: HttpClientFactory) -> dict:
     try:
-        return {"state": await _get_switch_state(create_client)}
+        return {"state": await get_printer_switch_state(create_client)}
     except Exception as exc:
         raise HTTPException(502, str(exc)) from exc
 
