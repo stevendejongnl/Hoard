@@ -1,6 +1,7 @@
 import pytest
 
 from app.control_access import GRANT_SECONDS, REQUEST_SECONDS, ControlAccess
+from tests.access_fakes import PassingTime
 
 
 class Clock:
@@ -159,3 +160,50 @@ async def test_asking_again_starts_over(access: ControlAccess):
     await access.deny(request["id"])
     await access.request("claude", "")
     assert access.find_state("claude") == "waiting"
+
+
+def test_a_request_that_nobody_answers_ends_after_thirty_seconds():
+    assert REQUEST_SECONDS == 30
+
+
+async def test_waiting_ends_with_granted_when_the_person_allows(access: ControlAccess):
+    time_passes = PassingTime()
+    waiting = time_passes.access()
+    request = await waiting.request("claude", "")
+
+    async def allow() -> None:
+        await waiting.allow(request["id"])
+
+    time_passes.answer = allow
+    assert await waiting.wait_for_answer("claude") == "granted"
+    assert len(time_passes.slept) == 1
+
+
+async def test_waiting_ends_with_denied_when_the_person_denies():
+    time_passes = PassingTime()
+    waiting = time_passes.access()
+    request = await waiting.request("claude", "")
+
+    async def deny() -> None:
+        await waiting.deny(request["id"])
+
+    time_passes.answer = deny
+    assert await waiting.wait_for_answer("claude") == "denied"
+
+
+async def test_waiting_ends_with_unanswered_when_the_request_runs_out():
+    time_passes = PassingTime()
+    waiting = time_passes.access()
+    await waiting.request("claude", "")
+    assert await waiting.wait_for_answer("claude") == "unanswered"
+    assert 1000.0 + REQUEST_SECONDS <= time_passes.now < 1000.0 + REQUEST_SECONDS + 1
+
+
+async def test_nothing_is_waited_for_when_there_is_no_request_or_it_is_answered_already():
+    time_passes = PassingTime()
+    waiting = time_passes.access()
+    assert await waiting.wait_for_answer("claude") == "none"
+    request = await waiting.request("claude", "")
+    await waiting.allow(request["id"])
+    assert await waiting.wait_for_answer("claude") == "granted"
+    assert time_passes.slept == []

@@ -3,6 +3,7 @@ from app.main import app
 from app.mcp.catalog import build_tool_definitions
 from app.mcp.server import McpServer
 from app.mcp.tokens import McpClient
+from tests.access_fakes import PassingTime
 from tests.test_mcp_server import FakeApi, FakeAudit, call_tool, create_tool, request
 
 READER = McpClient(name="laptop", scope="read")
@@ -17,7 +18,7 @@ def create_server(access: ControlAccess | None = None, api: FakeApi | None = Non
         tools=tools,
         call_api=api or FakeApi(),
         audit=audit or FakeAudit(),
-        control_access=access or ControlAccess(),
+        control_access=access or PassingTime().access(),
     )
 
 
@@ -38,13 +39,55 @@ async def test_a_tool_that_does_not_need_approval_runs_as_before():
     assert len(api.requests) == 1
 
 
-async def test_asking_for_access_puts_a_request_on_the_dashboard():
-    access = ControlAccess()
-    server = create_server(access)
-    reply = await call_tool(server, OPERATOR, "request_control_access", {"reason": "level the bed"})
+async def test_asking_for_access_puts_a_request_on_the_dashboard_and_waits_for_the_person():
+    time_passes = PassingTime()
+    access = time_passes.access()
+    seen: list[tuple[str, str]] = []
+
+    async def look() -> None:
+        seen.extend((item["client"], item["reason"]) for item in access.snapshot()["pending"])
+
+    time_passes.answer = look
+    await call_tool(create_server(access), OPERATOR, "request_control_access", {"reason": "level the bed"})
+    assert seen == [("claude", "level the bed")]
+
+
+async def test_the_answer_of_the_person_comes_back_with_the_call_when_they_allow():
+    time_passes = PassingTime()
+    access = time_passes.access()
+
+    async def allow() -> None:
+        await access.allow(access.snapshot()["pending"][0]["id"])
+
+    time_passes.answer = allow
+    reply = await call_tool(create_server(access), OPERATOR, "request_control_access")
     assert reply["result"]["isError"] is False
-    assert "dashboard" in reply["result"]["content"][0]["text"]
-    assert [(item["client"], item["reason"]) for item in access.snapshot()["pending"]] == [("claude", "level the bed")]
+    assert "allowed" in reply["result"]["content"][0]["text"]
+    assert "30 minutes" in reply["result"]["content"][0]["text"]
+    assert access.is_granted("claude")
+
+
+async def test_the_answer_of_the_person_comes_back_with_the_call_when_they_deny():
+    time_passes = PassingTime()
+    access = time_passes.access()
+
+    async def deny() -> None:
+        await access.deny(access.snapshot()["pending"][0]["id"])
+
+    time_passes.answer = deny
+    reply = await call_tool(create_server(access), OPERATOR, "request_control_access")
+    text = reply["result"]["content"][0]["text"]
+    assert reply["result"]["isError"] is True
+    assert "denied" in text
+    assert "do not ask again" in text.lower()
+
+
+async def test_a_request_that_nobody_answers_comes_back_after_thirty_seconds():
+    reply = await call_tool(create_server(), OPERATOR, "request_control_access")
+    text = reply["result"]["content"][0]["text"]
+    assert reply["result"]["isError"] is True
+    assert "30 seconds" in text
+    assert "request_control_access" in text
 
 
 async def test_a_tool_runs_once_the_person_has_allowed_the_client():
@@ -67,7 +110,7 @@ async def test_the_access_of_one_client_is_not_the_access_of_another():
 
 
 async def test_asking_again_while_allowed_says_so():
-    access = ControlAccess()
+    access = PassingTime().access()
     server = create_server(access)
     pending = await access.request("claude", "")
     await access.allow(pending["id"])

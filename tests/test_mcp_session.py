@@ -8,6 +8,7 @@ from app.mcp.api_request import ApiReply
 from app.mcp.endpoint import create_mcp_router
 from app.mcp.server import McpServer
 from app.mcp.tokens import McpClient, hash_token, parse_registered_clients
+from tests.access_fakes import PassingTime
 from tests.test_mcp_server import create_tool
 
 REGISTERED = parse_registered_clients(f"claude:control:{hash_token('good-token')}")
@@ -69,12 +70,19 @@ async def test_a_grant_covers_one_session_and_not_another_with_the_same_token():
 
 
 async def test_the_dashboard_sees_which_session_asks():
-    access = ControlAccess()
+    time_passes = PassingTime()
+    access = time_passes.access()
+    seen: list[str] = []
+
+    async def look() -> None:
+        seen.extend(item["client"] for item in access.snapshot()["pending"])
+
+    time_passes.answer = look
     async with create_client(access) as client:
         session = await start_session(client)
         asking = {**MOVE, "params": {"name": "request_control_access", "arguments": {"reason": "test"}}}
         await client.post("/mcp", json=asking, headers={**GOOD, SESSION_HEADER: session})
-    assert [item["client"] for item in access.snapshot()["pending"]] == [f"claude (session {session[:8]})"]
+    assert seen == [f"claude (session {session[:8]})"]
 
 
 async def test_a_client_that_sends_no_session_keeps_being_known_by_its_name():
