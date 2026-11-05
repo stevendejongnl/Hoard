@@ -1,3 +1,12 @@
+## [1.69.0](https://github.com/stevendejongnl/Hoard/compare/v1.68.0...v1.69.0) (2026-11-05)
+
+### Features
+
+* **mcp:** changing the auto power-off needs the approval of a person ([94799e4](https://github.com/stevendejongnl/Hoard/commit/94799e41d4ef35bf5b1fc2991b659fd92614bd06))
+* **mcp:** switching the power off needs the approval of a person ([82515a4](https://github.com/stevendejongnl/Hoard/commit/82515a4af48ed42e5dbbdbf679e470070e53e5ef))
+* **power:** the dashboard shows when the power goes off, with keep on and cancel, and what a switch powers ([619b2a6](https://github.com/stevendejongnl/Hoard/commit/619b2a6f5157a8d48aa2252e5cd4936e59708543))
+* **switches:** a switch has a description, and the printer power says Klipper needs it for the MCU ([c7f802f](https://github.com/stevendejongnl/Hoard/commit/c7f802f57dd3255cd7a6b4b17a7dc2a1e683b393))
+
 ## [1.68.0](https://github.com/stevendejongnl/Hoard/compare/v1.67.0...v1.68.0) (2026-11-05)
 
 ### Features
