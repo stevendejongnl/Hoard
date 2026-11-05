@@ -201,6 +201,11 @@ camera-panel {
   font-size: 12px;
 }
 
+/* a measured rate far below the target of the camera */
+.camera-rate-low {
+  color: var(--danger-color);
+}
+
 .live-dot {
   width: 6px;
   height: 6px;

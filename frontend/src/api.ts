@@ -117,6 +117,8 @@ export interface Webcam {
   enabled: boolean
   aspect_ratio: string
   target_fps?: number
+  /** the frame rate that Hoard measured while a stream was open; null when none was */
+  measured_fps?: number | null
 }
 export const getWebcams = () => fetchJson<Webcam[]>('/api/webcams')
 

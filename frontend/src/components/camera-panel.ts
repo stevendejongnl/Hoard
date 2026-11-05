@@ -11,9 +11,18 @@ import { renderIcon } from '../icons'
 const UNAVAILABLE_TEXT = '[Live camera stream]'
 const BUTTON_ICON_SIZE = 18
 const WATCH_INTERVAL_MILLISECONDS = 500
+const RATE_REFRESH_MILLISECONDS = 5000
+/** a measured rate below this part of the target is shown as a problem */
+const LOW_RATE_RATIO = 0.7
+const LOW_RATE_TEXT = 'The camera sends fewer frames than its target'
 
 function startTickingEvery(callback: () => void): () => void {
   const timer = setInterval(callback, WATCH_INTERVAL_MILLISECONDS)
+  return () => clearInterval(timer)
+}
+
+function refreshEveryFewSeconds(callback: () => void): () => void {
+  const timer = setInterval(callback, RATE_REFRESH_MILLISECONDS)
   return () => clearInterval(timer)
 }
 
@@ -53,6 +62,7 @@ export class CameraPanel extends LitElement {
     image: HTMLImageElement,
     canvas: HTMLCanvasElement,
   ) => FrameSample | null = captureFrame
+  @property({ attribute: false }) repeatEvery: (callback: () => void) => () => void = refreshEveryFewSeconds
   @property({ attribute: false }) startTicking: (callback: () => void) => () => void = startTickingEvery
   @property({ attribute: false }) waitBeforeRetry: (callback: () => void, delay: number) => () => void =
     waitBeforeRetrying
@@ -68,6 +78,7 @@ export class CameraPanel extends LitElement {
   private isReconnecting = false
   private failureCount = 0
   private stopWatching: (() => void) | null = null
+  private stopRefreshing: (() => void) | null = null
   private cancelRetry: (() => void) | null = null
 
   createRenderRoot() {
@@ -79,11 +90,13 @@ export class CameraPanel extends LitElement {
     void this.loadAvailableWebcams()
     this.watchdog.reset(this.now())
     this.stopWatching = this.startTicking(() => this.watchStream())
+    this.stopRefreshing = this.repeatEvery(() => void this.refreshWebcams())
     document.addEventListener('visibilitychange', this.handleVisibilityChange)
   }
 
   disconnectedCallback(): void {
     this.stopWatching?.()
+    this.stopRefreshing?.()
     this.cancelRetry?.()
     document.removeEventListener('visibilitychange', this.handleVisibilityChange)
     super.disconnectedCallback()
@@ -138,6 +151,15 @@ export class CameraPanel extends LitElement {
     }
   }
 
+  /** the measured rate changes all the time; a failed read keeps what is shown */
+  private async refreshWebcams(): Promise<void> {
+    try {
+      this.webcams = (await this.loadWebcams()).filter((webcam) => webcam.enabled !== false)
+    } catch {
+      // the cameras stay as they are: a failed refresh is not a reason to hide the picture
+    }
+  }
+
   private findActiveWebcam(): Webcam | null {
     return this.webcams[this.activeIndex] ?? null
   }
@@ -160,21 +182,36 @@ export class CameraPanel extends LitElement {
     if (viewport) this.openFullscreen(viewport)
   }
 
-  private describeFrameRate(webcam: Webcam): string {
-    return webcam.target_fps ? `${webcam.target_fps} fps` : ''
+  /** the measured rate with the target after it; only the target while nothing was measured */
+  private renderFrameRate(webcam: Webcam): TemplateResult | typeof nothing {
+    const measured = webcam.measured_fps
+    const target = webcam.target_fps
+    if (measured == null) return target ? html`target ${target} fps` : nothing
+    const isLow = Boolean(target) && measured < (target as number) * LOW_RATE_RATIO
+    const rate = isLow
+      ? html`<span class="camera-rate-low" title=${LOW_RATE_TEXT}>${measured} fps</span>`
+      : html`${measured} fps`
+    return target ? html`${rate} · target ${target}` : rate
   }
 
   private renderOverlay(webcam: Webcam): TemplateResult {
-    const details = [webcam.aspect_ratio, this.describeFrameRate(webcam)].filter(Boolean).join(' · ')
+    const separator = webcam.aspect_ratio && this.hasFrameRate(webcam) ? ' · ' : ''
     return html`<span class="camera-overlay"
-      ><span class="live-dot"></span>${webcam.name} <span class="monospace muted camera-details">${details}</span></span
+      ><span class="live-dot"></span>${webcam.name}
+      <span class="monospace muted camera-details"
+        >${webcam.aspect_ratio}${separator}${this.renderFrameRate(webcam)}</span
+      ></span
     >`
+  }
+
+  private hasFrameRate(webcam: Webcam): boolean {
+    return webcam.measured_fps != null || Boolean(webcam.target_fps)
   }
 
   private renderHeading(webcam: Webcam): TemplateResult {
     return html`<div class="camera-heading">
       <span class="live-dot"></span>${webcam.name}
-      <span class="monospace muted camera-details">${this.describeFrameRate(webcam)}</span>
+      <span class="monospace muted camera-details">${this.renderFrameRate(webcam)}</span>
     </div>`
   }
 
