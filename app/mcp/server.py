@@ -4,7 +4,7 @@ import json
 import logging
 from collections.abc import Awaitable, Callable
 
-from app.control_access import GRANT_SECONDS, ControlAccess
+from app.control_access import GRANT_SECONDS, REQUEST_SECONDS, ControlAccess
 from app.mcp.api_request import ApiReply, ApiRequest, ToolArgumentError, build_api_request
 from app.mcp.catalog import ToolDefinition
 from app.mcp.tokens import McpClient
@@ -18,8 +18,9 @@ INVALID_PARAMS = -32602
 INSTRUCTIONS = (
     "Hoard manages a 3D printer: print status and control, history, spools, projects and power. Tools that cancel, "
     "stop, cut power or delete need confirm=true: say what will happen to the person before you set it. Tools that "
-    "move or heat the printer, start a print or put a file on it need the person's approval: call request_control_access, tell the person to allow it on "
-    "the Hoard dashboard, and try again once they have. The access ends by itself after a while."
+    "move or heat the printer, start a print or put a file on it need the person's approval: call request_control_access. "
+    "It waits for the person to allow or deny it on the Hoard dashboard, for up to 30 seconds, and returns the answer, "
+    "so tell them to look at the dashboard at once. The access ends by itself after a while."
 )
 ACCESS_TOOL_NAME = "request_control_access"
 ASK_AGAIN = f"Call {ACCESS_TOOL_NAME} to ask again, and tell the person to look at the Hoard dashboard."
@@ -41,9 +42,24 @@ def explain_refusal(tool_name: str, state: str) -> str:
     return f"{tool_name} needs the person's approval. {REFUSAL_BY_STATE.get(state, NO_REQUEST)}"
 
 
+def explain_answer(state: str) -> tuple[str, bool]:
+    """What the person answered to a request, and whether the assistant has to treat it as a refusal."""
+    if state == "granted":
+        return (
+            f"The person allowed it on the Hoard dashboard. It lasts {GRANT_SECONDS // 60} minutes. Try the tool again.",
+            False,
+        )
+    if state == "unanswered":
+        return f"Nobody answered within {REQUEST_SECONDS} seconds. {ASK_AGAIN}", True
+    return REFUSAL_BY_STATE.get(state, NO_REQUEST), True
+
+
 ACCESS_TOOL = {
     "name": ACCESS_TOOL_NAME,
-    "description": "Ask the person to let this client move, heat or start work on the printer. They allow it on the Hoard dashboard.",
+    "description": (
+        "Ask the person to let this client move, heat or start work on the printer. They allow or deny it on the "
+        f"Hoard dashboard; this call waits up to {REQUEST_SECONDS} seconds for the answer and returns it."
+    ),
     "inputSchema": {
         "type": "object",
         "properties": {"reason": {"type": "string", "description": "What you want to do, shown to the person."}},
@@ -138,12 +154,8 @@ class McpServer:
         self.audit(client.name, ACCESS_TOOL_NAME, "ok")
         if request is None:
             return create_tool_result("This client is already allowed to control the printer.", False)
-        minutes = GRANT_SECONDS // 60
-        return create_tool_result(
-            "The person has been asked on the Hoard dashboard. Tell them to allow it, then try again. "
-            f"Once allowed, it lasts {minutes} minutes. Until then these tools are refused.",
-            False,
-        )
+        state = await self.control_access.wait_for_answer(client.access_key)
+        return create_tool_result(*explain_answer(state))
 
     async def call_tool(self, identifier, params: dict, client: McpClient) -> dict:
         if params.get("name") == ACCESS_TOOL_NAME:

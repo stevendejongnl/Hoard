@@ -1,12 +1,14 @@
 """Who may control the printer through MCP: a client asks, a person allows it on the dashboard, and it ends by itself."""
 
+import asyncio
 import secrets
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 GRANT_SECONDS = 30 * 60
-REQUEST_SECONDS = 5 * 60
+REQUEST_SECONDS = 30
+ANSWER_POLL_SECONDS = 0.5
 REASON_CHARACTERS = 200
 
 Announce = Callable[[dict[str, Any]], Awaitable[None]]
@@ -24,10 +26,12 @@ class ControlAccess:
         clock: Callable[[], float] = time.time,
         announce: Announce = announce_nothing,
         new_identifier: Callable[[], str] = lambda: secrets.token_urlsafe(8),
+        sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
     ) -> None:
         self.clock = clock
         self.announce = announce
         self.new_identifier = new_identifier
+        self.sleep = sleep
         self.pending: dict[str, dict[str, Any]] = {}
         self.granted: dict[str, float] = {}
         self.ended: dict[str, str] = {}
@@ -51,6 +55,12 @@ class ControlAccess:
         if any(item["client"] == client for item in self.pending.values()):
             return "waiting"
         return self.ended.get(client, "none")
+
+    async def wait_for_answer(self, client: str) -> str:
+        """Waits while the request of the client is waiting; then how it stands (granted, denied, unanswered, ...)."""
+        while self.find_state(client) == "waiting":
+            await self.sleep(ANSWER_POLL_SECONDS)
+        return self.find_state(client)
 
     def is_granted(self, client: str) -> bool:
         self.forget_what_ended()
