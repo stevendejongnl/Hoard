@@ -582,15 +582,59 @@
 }
 
 .control-macro-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.control-macro {
-  justify-content: flex-start;
+.control-macro-group-title {
+  padding: 0 2px 4px;
+  font: 600 11px var(--font-family);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--secondary-text-color);
+}
+
+.control-macro-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.control-macro-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   min-height: 44px;
+  padding: 4px 2px;
+  border-top: 1px solid var(--field-border-color);
+}
+
+.control-macro-group-title + .control-macro-row {
+  border-top: 0;
+}
+
+.control-macro-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.control-macro-name {
+  font-size: 12px;
   overflow-wrap: anywhere;
+}
+
+.control-macro-description {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.control-macro-run {
+  flex: none;
+  min-width: 72px;
+  min-height: 44px;
+  justify-content: center;
 }
 
 .control-console-log {

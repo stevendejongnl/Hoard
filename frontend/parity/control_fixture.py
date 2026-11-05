@@ -28,7 +28,13 @@ STATUS = {
         {"key": "chamber", "label": "chamber", "percent": 40},
     ],
 }
-MACROS = ["BED_MESH_CALIBRATE", "CLEAN_NOZZLE", "LOAD_FILAMENT", "PARK", "UNLOAD_FILAMENT"]
+MACROS = [
+    {"name": "PARK", "description": "Park the head at the back", "category": "Printing"},
+    {"name": "CLEAN_NOZZLE", "description": "Wipe the nozzle on the brush", "category": "Printing"},
+    {"name": "BED_MESH_CALIBRATE", "description": "Probe the bed and store the mesh", "category": "Calibrate"},
+    {"name": "LOAD_FILAMENT", "description": "Heat the nozzle and load filament", "category": "Filament"},
+    {"name": "UNLOAD_FILAMENT", "description": "Heat the nozzle and pull the filament out", "category": "Filament"},
+]
 CONSOLE_LINES = [
     ("command", "G28"),
     ("response", "ok"),

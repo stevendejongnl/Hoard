@@ -345,6 +345,14 @@ export interface ControlStatus {
   fans: ControlFan[]
 }
 
+export interface Macro {
+  name: string
+  /** what the macro says about itself in the printer config; empty when it says nothing */
+  description: string
+  /** the category the person gave it in Fluidd; empty when it has none */
+  category: string
+}
+
 export interface ConsoleLine {
   message: string
   /** seconds since 1970 */
