@@ -182,11 +182,11 @@ export class CameraPanel extends LitElement {
     if (viewport) this.openFullscreen(viewport)
   }
 
-  /** the measured rate with the target after it; only the target while nothing was measured */
+  /** the measured rate with the target after it; the target as it was until a stream has been open for a moment */
   private renderFrameRate(webcam: Webcam): TemplateResult | typeof nothing {
     const measured = webcam.measured_fps
     const target = webcam.target_fps
-    if (measured == null) return target ? html`target ${target} fps` : nothing
+    if (measured == null) return target ? html`${target} fps` : nothing
     const isLow = Boolean(target) && measured < (target as number) * LOW_RATE_RATIO
     const rate = isLow
       ? html`<span class="camera-rate-low" title=${LOW_RATE_TEXT}>${measured} fps</span>`

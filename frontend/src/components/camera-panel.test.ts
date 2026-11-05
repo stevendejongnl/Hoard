@@ -48,11 +48,9 @@ describe('camera panel', () => {
   it('names the camera with its aspect ratio and frame rate', async () => {
     const panel = await createPanel(createCalls())
     expect(panel.querySelector('.camera-overlay')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      'Enclosure 4:3 · target 15 fps',
+      'Enclosure 4:3 · 15 fps',
     )
-    expect(panel.querySelector('.camera-heading')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
-      'Enclosure target 15 fps',
-    )
+    expect(panel.querySelector('.camera-heading')?.textContent?.replace(/\s+/g, ' ').trim()).toBe('Enclosure 15 fps')
   })
 
   it('shows the stream of the camera', async () => {
@@ -346,7 +344,7 @@ describe('measured frame rate', () => {
     expect(close.querySelector('.camera-rate-low')).toBeNull()
   })
 
-  it('shows only the target while nothing was measured, and only the measured rate when there is no target', async () => {
+  it('shows the measured rate alone when the camera has no target', async () => {
     const withoutTarget = await createPanel(createCalls(), [createWebcam({ measured_fps: 12, target_fps: undefined })])
     expect(readHeading(withoutTarget)).toBe('Enclosure 12 fps')
   })
