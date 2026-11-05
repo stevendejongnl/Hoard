@@ -14,19 +14,7 @@ async function mount(options = {}) {
 describe('the extruder card', () => {
   it('has the lengths, the speeds, retract and extrude, and load and unload', async () => {
     const { card } = await mount()
-    expect(listButtonLabels(card)).toEqual([
-      '5',
-      '10',
-      '25',
-      '50',
-      '2',
-      '5',
-      '10',
-      'Retract',
-      'Extrude',
-      'Load filament',
-      'Unload',
-    ])
+    expect(listButtonLabels(card)).toEqual(['5', '10', '25', '50', '2', '5', '10', 'Retract', 'Extrude'])
   })
 
   it('extrudes ten millimetres at five millimetres a second to begin with', async () => {
@@ -54,19 +42,15 @@ describe('the extruder card', () => {
     expect(sent).toEqual([{ route: 'extrude', body: { length: 25, speed: 600 } }])
   })
 
-  it('loads and unloads filament with the macros the printer has for it', async () => {
-    const { card, sent } = await mount()
-    await press(card, 'Load filament')
-    await press(card, 'Unload')
-    expect(sent).toEqual([
-      { route: 'macro', body: { name: 'LOAD_FILAMENT' } },
-      { route: 'macro', body: { name: 'UNLOAD_FILAMENT' } },
-    ])
+  it('has no buttons for macros, because loading and unloading is extruding and retracting a length', async () => {
+    const { card } = await mount()
+    expect(card.textContent).not.toContain('Load filament')
+    expect(card.textContent).not.toContain('Unload')
   })
 
   it('has everything that moves the filament locked while printing', async () => {
     const { card, sent } = await mount({ locked: true })
-    const actions = ['Retract', 'Extrude', 'Load filament', 'Unload']
+    const actions = ['Retract', 'Extrude']
     expect(actions.every((label) => findButton(card, label).disabled)).toBe(true)
     await press(card, 'Extrude')
     expect(sent).toEqual([])
