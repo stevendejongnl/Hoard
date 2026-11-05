@@ -68,7 +68,9 @@ class TemperatureRequest(BaseModel):
     @model_validator(mode="after")
     def stay_within_the_heater_limit(self) -> "TemperatureRequest":
         if self.target > HEATER_LIMITS[self.heater]:
-            raise ValueError(f"{self.heater} goes up to {HEATER_LIMITS[self.heater]} °C")
+            raise ValueError(
+                f"The {HEATER_LABELS[self.heater].lower()} goes up to {HEATER_LIMITS[self.heater]} °C, not {number(self.target)} °C"
+            )
         return self
 
     def script(self) -> str:

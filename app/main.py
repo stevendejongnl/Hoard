@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -46,6 +47,7 @@ from app.routes import (
 )
 from app.routes.projects import enrich_existing_links
 from app.server_sent_events import hub
+from app.validation_errors import refuse_invalid_request
 
 mimetypes.add_type("application/manifest+json", ".webmanifest")
 
@@ -222,6 +224,7 @@ def _mount_static_site(app: FastAPI, static_directory: Path) -> None:
 def create_app(app_settings: Any = settings) -> FastAPI:
     """The Hoard app: its routes, the MCP endpoint and the built frontend, from the settings it is given."""
     app = FastAPI(title="Hoard", lifespan=create_lifespan(app_settings))
+    app.add_exception_handler(RequestValidationError, refuse_invalid_request)
     for router in _ROUTERS:
         app.include_router(router)
     app.include_router(create_mcp_router(_create_mcp_server_provider(app), _create_client_reader(app_settings)))
