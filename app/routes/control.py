@@ -235,8 +235,27 @@ async def cancel_print(moonraker: Moonraker) -> dict:
     return await _command_printer(moonraker, "/printer/print/cancel")
 
 
+async def power_on_for_print(
+    create_client: CreateClient, home_assistant: HomeAssistant, printer_power: PrinterPowerControl
+) -> None:
+    """A printer that is off is switched on first, and the print waits until Klipper is ready."""
+    printer = find_printer_switch()
+    if await read_switch_state(home_assistant, printer.entity_id) != "off":
+        return
+    await turn_switch_on(printer, create_client, home_assistant)
+    if not await printer_power.wait_until_ready():
+        raise HTTPException(502, "The printer was switched on, but Klipper did not get ready: try again in a minute")
+
+
 @router.post("/print")
-async def start_print(filename: str, moonraker: Moonraker) -> dict:
+async def start_print(
+    filename: str,
+    moonraker: Moonraker,
+    create_client: HttpClientFactory,
+    home_assistant: HomeAssistant,
+    printer_power: PrinterPowerControl,
+) -> dict:
+    await power_on_for_print(create_client, home_assistant, printer_power)
     return await _command_printer(
         moonraker, "/printer/print/start", {"ok": True, "filename": filename}, filename=filename
     )
