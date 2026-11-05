@@ -9,7 +9,7 @@ from fastapi.responses import Response
 
 from app.config import settings
 from app.gcode_thumbnail import extract_thumbnail_png, inject_thumbnails
-from app.gcode_upload import GcodeUploadRequest
+from app.gcode_upload import GcodeUploadRequest, fingerprint
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import Moonraker, PrinterClientFactory, ThumbnailStore
 from app.routes.printer_failure import explain_failure
@@ -219,15 +219,26 @@ async def inject_thumbnail(
 @router.post(
     "/gcode",
     status_code=201,
-    summary="Put G-code on the printer. Send the file name and the whole text; no print is started",
+    summary=(
+        "Put G-code on the printer. Send the file name and the whole text; no print is started. "
+        "Pass expected_sha256, the SHA-256 of the original file worked out on the client, "
+        "and nothing is uploaded when the text that arrived differs"
+    ),
 )
 async def upload_gcode(request: GcodeUploadRequest, moonraker: Moonraker) -> dict[str, Any]:
     content = request.content.encode()
+    received = fingerprint(content)
+    expected = request.expected_sha256
+    if expected and expected.lower() != received:
+        raise HTTPException(
+            422,
+            f"The text arrived with SHA-256 {received}, not {expected.lower()}. Nothing was uploaded: send it again.",
+        )
     try:
         await moonraker.upload_file(request.filename, content)
     except Exception as exc:
         raise await explain_failure(moonraker, exc) from exc
-    return {"filename": request.filename, "size_bytes": len(content)}
+    return {"filename": request.filename, "size_bytes": len(content), "sha256": received}
 
 
 @router.post("/upload", status_code=201)
