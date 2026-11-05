@@ -250,6 +250,12 @@ FRESH_SCHEMA: dict[str, dict] = {
         "sql": "CREATE TABLE detection_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
         "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
     },
+    "auto_power_off_settings": {
+        "type": "table",
+        "table": "auto_power_off_settings",
+        "sql": "CREATE TABLE auto_power_off_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
+        "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
+    },
     "detection_alerts": {
         "type": "table",
         "table": "detection_alerts",
@@ -451,6 +457,12 @@ MIGRATED_SCHEMA: dict[str, dict] = {
         "type": "table",
         "table": "detection_settings",
         "sql": "CREATE TABLE detection_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
+        "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
+    },
+    "auto_power_off_settings": {
+        "type": "table",
+        "table": "auto_power_off_settings",
+        "sql": "CREATE TABLE auto_power_off_settings ( key TEXT PRIMARY KEY, value TEXT NOT NULL )",
         "columns": [("key", "TEXT", 0, None, 1), ("value", "TEXT", 1, None, 0)],
     },
     "detection_alerts": {
