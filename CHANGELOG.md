@@ -1,3 +1,16 @@
+## [1.68.0](https://github.com/stevendejongnl/Hoard/compare/v1.67.0...v1.68.0) (2026-11-05)
+
+### Features
+
+* **power:** a power-off that Hoard does is expected, and the power-on waits until Klipper is ready ([5313a0d](https://github.com/stevendejongnl/Hoard/commit/5313a0d5b868d51c9f5710d9abbf972eb5100e05))
+* **power:** the expected power-off follows the switch state, and a power-on from anywhere brings Klipper back ([35b9dd2](https://github.com/stevendejongnl/Hoard/commit/35b9dd27f4130a529dcbfd4ebd8e332539145e85))
+* **power:** the printer is switched off after a set idle time by Hoard, with settings, routes and a background watch ([9f3ba3a](https://github.com/stevendejongnl/Hoard/commit/9f3ba3ac307faea328f3bf76dd7a3720a9c305ed))
+* **power:** the printer is switched off after a set idle time, and can be postponed or canceled ([18faac9](https://github.com/stevendejongnl/Hoard/commit/18faac970caff2ac169bb2499d5b2d0769e7015c))
+
+### Documentation
+
+* **readme:** the printer is switched off by itself after a set idle time ([78e7ec3](https://github.com/stevendejongnl/Hoard/commit/78e7ec3b5a8faf97f3b5285872043e69b190583d))
+
 ## [1.67.0](https://github.com/stevendejongnl/Hoard/compare/v1.66.0...v1.67.0) (2026-11-05)
 
 ### Features
