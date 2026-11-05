@@ -5,11 +5,12 @@ import httpx
 from app import home_assistant
 from app.config import Settings, settings
 from app.routes.dependencies import provide_http_client_factory
-from app.switches import SwitchDefinition, create_switch_key, parse_switch_definitions
+from app.switches import SwitchDefinition, create_switch_key, parse_switch_definitions, read_switch_definitions
 from tests.route_fakes import override_provider, recording_client_factory
 
 POWER_STRIP = "Power strip=switch.feed_plug"
 PI = "Raspberry Pi=switch.pi_outlet"
+PRINTER_DESCRIPTION = "Powers the printer's boards: Klipper cannot connect to the MCU while it is off"
 DRYER = "Filament dryer=switch.dryer_outlet"
 
 
@@ -74,6 +75,7 @@ async def test_the_list_shows_every_switch_with_its_state(client, monkeypatch) -
             "state": "on",
             "requires": None,
             "is_printer": True,
+            "description": PRINTER_DESCRIPTION,
         },
         {
             "key": "power-strip",
@@ -82,6 +84,7 @@ async def test_the_list_shows_every_switch_with_its_state(client, monkeypatch) -
             "state": "on",
             "requires": None,
             "is_printer": False,
+            "description": "",
         },
         {
             "key": "raspberry-pi",
@@ -90,6 +93,7 @@ async def test_the_list_shows_every_switch_with_its_state(client, monkeypatch) -
             "state": "off",
             "requires": None,
             "is_printer": False,
+            "description": "",
         },
     ]
 
@@ -137,3 +141,28 @@ async def test_a_failing_home_assistant_is_a_bad_gateway(client, monkeypatch) ->
         lambda: httpx.AsyncClient(transport=httpx.MockTransport(refuse)),
     )
     assert (await client.post("/api/control/switches/raspberry-pi/on")).status_code == 502
+
+
+PRINTER_ENTITY = "switch.machine_outlet"
+
+
+def test_the_printer_power_says_that_klipper_needs_it_for_the_mcu_unless_the_config_says_otherwise() -> None:
+    definitions = read_switch_definitions("", PRINTER_ENTITY)
+    assert definitions[0].description == PRINTER_DESCRIPTION
+    text = json.dumps([{"label": "Printer", "printer": True, "description": "Printer outlet, behind the Pi"}])
+    assert read_switch_definitions(text, PRINTER_ENTITY)[0].description == "Printer outlet, behind the Pi"
+
+
+def test_a_switch_has_the_description_of_the_config_and_none_without_one() -> None:
+    text = json.dumps(
+        [
+            {"label": "Pi", "entity": "switch.pi", "description": "The host of Klipper and Moonraker"},
+            {"label": "Dryer", "entity": "switch.dryer"},
+        ]
+    )
+    definitions = read_switch_definitions(text, PRINTER_ENTITY)
+    assert [(item.label, item.description) for item in definitions] == [
+        ("Printer power", PRINTER_DESCRIPTION),
+        ("Pi", "The host of Klipper and Moonraker"),
+        ("Dryer", ""),
+    ]
