@@ -439,7 +439,7 @@ async def test_the_console_lines_are_read_from_the_printer(client: AsyncClient, 
     moonraker = FakeMoonraker({"/server/gcode_store": {"gcode_store": lines}})
     install_fakes(monkeypatch, moonraker=moonraker)
     assert (await client.get("/api/control/console")).json() == lines
-    assert moonraker.asked == [("/server/gcode_store", {"count": 100})]
+    assert moonraker.asked == [("/server/gcode_store", {"count": 300})]
 
 
 async def test_the_console_is_a_502_when_the_printer_does_not_answer(client: AsyncClient, monkeypatch):

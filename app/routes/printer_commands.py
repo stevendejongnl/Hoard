@@ -157,7 +157,7 @@ async def macros(moonraker: Moonraker) -> list[dict]:
     return describe_macros(answer["objects"], settings, fluidd.get("value", {}))
 
 
-CONSOLE_LINES = 100
+CONSOLE_LINES = 300
 
 
 @router.get("/console")

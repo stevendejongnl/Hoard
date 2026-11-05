@@ -39,7 +39,11 @@ CONSOLE_LINES = [
     ("command", "G28"),
     ("response", "ok"),
     ("command", "BED_MESH_CALIBRATE"),
-    ("response", "Mesh Bed Leveling Complete"),
+    ("response", "B:58.9 /60.0 T0:20.6 /0.0"),
+    ("response", "// probe at 53.000,32.000 is z=1.346500"),
+    ("response", "B:59.2 /60.0 T0:20.6 /0.0"),
+    ("response", "// probe at 103.500,32.000 is z=1.536500"),
+    ("response", "// Mesh Bed Leveling Complete"),
     ("command", "SET_HEATER_TEMPERATURE HEATER=extruder TARGET=210"),
     ("response", "ok"),
 ]
@@ -84,4 +88,10 @@ def create_control_events() -> list[tuple[str, JsonObject]]:
 CONTROL_SHOWCASE_SCREENS = {
     "control-desktop": DetectionScreen("/control", DESKTOP_SIZE, "control.png"),
     "control-phone": DetectionScreen("/control", PHONE_SIZE, "control-phone.png"),
+    "control-macros-desktop": DetectionScreen(
+        "/control", DESKTOP_SIZE, "control-macros.png", (("click", '.control-list-item:has-text("Macros")'),)
+    ),
+    "control-console-desktop": DetectionScreen(
+        "/control", DESKTOP_SIZE, "control-console.png", (("click", '.control-list-item:has-text("Console")'),)
+    ),
 }
