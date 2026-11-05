@@ -30,11 +30,27 @@ class ControlAccess:
         self.new_identifier = new_identifier
         self.pending: dict[str, dict[str, Any]] = {}
         self.granted: dict[str, float] = {}
+        self.ended: dict[str, str] = {}
 
     def forget_what_ended(self) -> None:
         now = self.clock()
+        for item in self.pending.values():
+            if item["expires_at"] <= now:
+                self.ended[item["client"]] = "unanswered"
+        for client, expires_at in self.granted.items():
+            if expires_at <= now:
+                self.ended[client] = "ended"
         self.pending = {key: item for key, item in self.pending.items() if item["expires_at"] > now}
         self.granted = {client: expires_at for client, expires_at in self.granted.items() if expires_at > now}
+
+    def find_state(self, client: str) -> str:
+        """granted, waiting, or how it ended last (denied, revoked, ended, unanswered); none when never asked."""
+        self.forget_what_ended()
+        if client in self.granted:
+            return "granted"
+        if any(item["client"] == client for item in self.pending.values()):
+            return "waiting"
+        return self.ended.get(client, "none")
 
     def is_granted(self, client: str) -> bool:
         self.forget_what_ended()
@@ -61,6 +77,7 @@ class ControlAccess:
             "expires_at": self.clock() + REQUEST_SECONDS,
         }
         self.pending[item["id"]] = item
+        self.ended.pop(client, None)
         await self.announce(self.snapshot())
         return item
 
@@ -70,13 +87,16 @@ class ControlAccess:
         if item is None:
             return False
         self.granted[item["client"]] = self.clock() + GRANT_SECONDS
+        self.ended.pop(item["client"], None)
         await self.announce(self.snapshot())
         return True
 
     async def deny(self, request_id: str) -> bool:
         self.forget_what_ended()
-        if self.pending.pop(request_id, None) is None:
+        item = self.pending.pop(request_id, None)
+        if item is None:
             return False
+        self.ended[item["client"]] = "denied"
         await self.announce(self.snapshot())
         return True
 
@@ -84,6 +104,7 @@ class ControlAccess:
         self.forget_what_ended()
         if self.granted.pop(client, None) is None:
             return False
+        self.ended[client] = "revoked"
         await self.announce(self.snapshot())
         return True
 

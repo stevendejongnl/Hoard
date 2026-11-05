@@ -22,6 +22,25 @@ INSTRUCTIONS = (
     "the Hoard dashboard, and try again once they have. The access ends by itself after a while."
 )
 ACCESS_TOOL_NAME = "request_control_access"
+ASK_AGAIN = f"Call {ACCESS_TOOL_NAME} to ask again, and tell the person to look at the Hoard dashboard."
+DO_NOT_ASK_AGAIN = "Do not ask again unless the person asks you to."
+REFUSAL_BY_STATE = {
+    "waiting": (
+        "A request is already waiting on the Hoard dashboard. Tell the person to allow it, then try again. "
+        "Do not send another request."
+    ),
+    "denied": f"The person denied access on the Hoard dashboard. {DO_NOT_ASK_AGAIN}",
+    "revoked": f"The person took the access back on the Hoard dashboard. {DO_NOT_ASK_AGAIN}",
+    "ended": f"The {GRANT_SECONDS // 60} minutes of access have ended. {ASK_AGAIN}",
+    "unanswered": f"Nobody answered the request in time. {ASK_AGAIN}",
+}
+NO_REQUEST = f"Call {ACCESS_TOOL_NAME}, tell them to allow it on the Hoard dashboard, then try again."
+
+
+def explain_refusal(tool_name: str, state: str) -> str:
+    return f"{tool_name} needs the person's approval. {REFUSAL_BY_STATE.get(state, NO_REQUEST)}"
+
+
 ACCESS_TOOL = {
     "name": ACCESS_TOOL_NAME,
     "description": "Ask the person to let this client move and heat the printer. They allow it on the Hoard dashboard.",
@@ -142,11 +161,7 @@ class McpServer:
             return create_tool_result(refusal, True)
         if tool.needs_approval and not self.control_access.is_granted(client.name):
             self.audit(client.name, tool.name, "not_allowed")
-            return create_tool_result(
-                f"{tool.name} needs the person's approval: call {ACCESS_TOOL_NAME}, tell them to allow it on the "
-                "Hoard dashboard, then try again",
-                True,
-            )
+            return create_tool_result(explain_refusal(tool.name, self.control_access.find_state(client.name)), True)
         try:
             request = build_api_request(tool, arguments)
         except ToolArgumentError as error:
