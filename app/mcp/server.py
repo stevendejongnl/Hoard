@@ -134,7 +134,7 @@ class McpServer:
             return create_tool_result(
                 f"{ACCESS_TOOL_NAME} needs the control scope, and this client has {client.scope}", True
             )
-        request = await self.control_access.request(client.name, str(arguments.get("reason") or ""))
+        request = await self.control_access.request(client.access_key, str(arguments.get("reason") or ""))
         self.audit(client.name, ACCESS_TOOL_NAME, "ok")
         if request is None:
             return create_tool_result("This client is already allowed to control the printer.", False)
@@ -159,9 +159,11 @@ class McpServer:
         if refusal:
             self.audit(client.name, tool.name, "forbidden")
             return create_tool_result(refusal, True)
-        if tool.needs_approval and not self.control_access.is_granted(client.name):
+        if tool.needs_approval and not self.control_access.is_granted(client.access_key):
             self.audit(client.name, tool.name, "not_allowed")
-            return create_tool_result(explain_refusal(tool.name, self.control_access.find_state(client.name)), True)
+            return create_tool_result(
+                explain_refusal(tool.name, self.control_access.find_state(client.access_key)), True
+            )
         try:
             request = build_api_request(tool, arguments)
         except ToolArgumentError as error:

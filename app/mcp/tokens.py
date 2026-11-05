@@ -8,12 +8,19 @@ from dataclasses import dataclass
 SCOPES = ("read", "control", "admin")
 TOKEN_PREFIX = "hoard_"
 BEARER_PREFIX = "Bearer "
+SESSION_CHARACTERS_SHOWN = 8
 
 
 @dataclass(frozen=True)
 class McpClient:
     name: str
     scope: str
+    session: str = ""
+
+    @property
+    def access_key(self) -> str:
+        """What a grant of control is for: the token, and the session when the client has one."""
+        return f"{self.name} (session {self.session[:SESSION_CHARACTERS_SHOWN]})" if self.session else self.name
 
     def allows(self, required_scope: str) -> bool:
         return SCOPES.index(self.scope) >= SCOPES.index(required_scope)

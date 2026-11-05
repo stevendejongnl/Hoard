@@ -1,6 +1,9 @@
 """The HTTP side of the MCP server: one POST route, with a bearer token, served under /mcp."""
 
+import re
+import secrets
 from collections.abc import Callable
+from dataclasses import replace
 
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
@@ -9,10 +12,18 @@ from app.mcp.server import INVALID_REQUEST, McpServer, create_error, parse_messa
 from app.mcp.tokens import McpClient, find_client
 
 PARSE_ERROR = -32700
+SESSION_HEADER = "mcp-session-id"
+SESSION_PATTERN = re.compile(r"[A-Za-z0-9_-]{16,64}")
 
 
 def refuse(status_code: int, message: str, headers: dict | None = None) -> JSONResponse:
     return JSONResponse({"error": message}, status_code=status_code, headers=headers)
+
+
+def read_session(request: Request) -> str:
+    """The session the client sent; one that is not plain text is ignored, so it can never be shown on a page."""
+    sent = request.headers.get(SESSION_HEADER, "")
+    return sent if SESSION_PATTERN.fullmatch(sent) else ""
 
 
 def create_mcp_router(
@@ -32,8 +43,12 @@ def create_mcp_router(
             return JSONResponse(create_error(None, PARSE_ERROR, "not JSON"), status_code=400)
         if not isinstance(message, dict):
             return JSONResponse(create_error(None, INVALID_REQUEST, "send one message at a time"), status_code=400)
-        reply = await get_server().handle(message, client)
-        return Response(status_code=202) if reply is None else JSONResponse(reply)
+        is_start = message.get("method") == "initialize"
+        session = secrets.token_urlsafe(16) if is_start else read_session(request)
+        reply = await get_server().handle(message, replace(client, session=session))
+        if reply is None:
+            return Response(status_code=202)
+        return JSONResponse(reply, headers={SESSION_HEADER: session} if is_start else None)
 
     @router.get("/mcp", include_in_schema=False)
     async def refuse_stream() -> Response:
