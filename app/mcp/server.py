@@ -18,7 +18,7 @@ INVALID_PARAMS = -32602
 INSTRUCTIONS = (
     "Hoard manages a 3D printer: print status and control, history, spools, projects and power. Tools that cancel, "
     "stop, cut power or delete need confirm=true: say what will happen to the person before you set it. Tools that "
-    "move or heat the printer need the person's approval: call request_control_access, tell the person to allow it on "
+    "move or heat the printer, start a print or put a file on it need the person's approval: call request_control_access, tell the person to allow it on "
     "the Hoard dashboard, and try again once they have. The access ends by itself after a while."
 )
 ACCESS_TOOL_NAME = "request_control_access"
@@ -43,7 +43,7 @@ def explain_refusal(tool_name: str, state: str) -> str:
 
 ACCESS_TOOL = {
     "name": ACCESS_TOOL_NAME,
-    "description": "Ask the person to let this client move and heat the printer. They allow it on the Hoard dashboard.",
+    "description": "Ask the person to let this client move, heat or start work on the printer. They allow it on the Hoard dashboard.",
     "inputSchema": {
         "type": "object",
         "properties": {"reason": {"type": "string", "description": "What you want to do, shown to the person."}},

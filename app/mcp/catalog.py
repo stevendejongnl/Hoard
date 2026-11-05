@@ -15,7 +15,7 @@ LEFT_OUT_OPERATIONS = {
     "serve_project_cover_api_projects__project_id__cover_get",
 }
 LEFT_OUT_PATH_PREFIXES = ("/mcp", "/api/control/access", "/api/control/layout", "/api/control/logs")
-# Tools that move or heat the printer. A person has to allow the client on the dashboard first.
+# Tools that move, heat or start work on the printer, or put a file on it. A person has to allow the client on the dashboard first.
 NEEDS_APPROVAL_TOOLS = {
     "move",
     "home",
@@ -29,6 +29,8 @@ NEEDS_APPROVAL_TOOLS = {
     "gcode",
     "calibrate",
     "probe",
+    "upload_gcode",
+    "start_print",
 }
 DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "restart_klipper", "power_off", "switch_off"}
 OPERATION_ID_SEPARATOR = "_api_"
