@@ -2,8 +2,11 @@ import { LitElement, html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
 import { customElement, property, state } from 'lit/decorators.js'
 import {
+  cancelAutoPowerOff as cancelAutoPowerOffRequest,
   cancelPrint as cancelPrintRequest,
+  getAutoPowerOff,
   getSwitches,
+  postponeAutoPowerOff as postponeAutoPowerOffRequest,
   pausePrint as pausePrintRequest,
   powerOff,
   powerOn,
@@ -18,7 +21,7 @@ import {
   formatFinishTime,
   formatSpentDuration,
 } from '../print-job-metrics'
-import type { HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
+import type { AutoPowerOffStatus, HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
 import { findDependentSwitches, findRequiredSwitch, joinLabels } from '../switch-dependencies'
 import { askForConfirmation } from './confirmation-dialog'
 
@@ -29,6 +32,9 @@ const CANCEL_QUESTION = 'Cancel this print?'
 const SWITCH_REFRESH_MILLISECONDS = 10_000
 const READ_AFTER_CHANGE_MILLISECONDS = 2_000
 const SWITCHABLE_STATES = ['on', 'off']
+const POSTPONE_MINUTES = 60
+const SECONDS_PER_MINUTE = 60
+const MILLISECONDS_PER_SECOND = 1000
 
 type StopFunction = () => void
 
@@ -62,11 +68,16 @@ export class PrinterParameterPanel extends LitElement {
   @property({ attribute: false }) confirmAction: (message: string) => Promise<boolean> = askForConfirmation
   @property({ attribute: false }) loadSwitches: () => Promise<HomeAssistantSwitch[]> = getSwitches
   @property({ attribute: false }) changeSwitch: (key: string, turnOn: boolean) => Promise<unknown> = setSwitchState
+  @property({ attribute: false }) loadAutoPowerOff: () => Promise<AutoPowerOffStatus> = getAutoPowerOff
+  @property({ attribute: false }) postponeAutoPowerOff: (minutes: number) => Promise<unknown> =
+    postponeAutoPowerOffRequest
+  @property({ attribute: false }) cancelAutoPowerOff: () => Promise<unknown> = cancelAutoPowerOffRequest
   @property({ attribute: false }) repeatEvery: (callback: () => void) => StopFunction = repeatWithInterval
   /** Home Assistant takes a moment before a switched entity reports its new state */
   @property({ attribute: false }) waitBeforeReading: () => Promise<void> = waitForHomeAssistant
 
   @state() private switches: HomeAssistantSwitch[] = []
+  @state() private autoPowerOff: AutoPowerOffStatus | null = null
   private stopRefreshing: StopFunction | null = null
 
   createRenderRoot() {
@@ -76,7 +87,11 @@ export class PrinterParameterPanel extends LitElement {
   connectedCallback(): void {
     super.connectedCallback()
     void this.reloadSwitches()
-    this.stopRefreshing = this.repeatEvery(() => void this.reloadSwitches())
+    void this.reloadAutoPowerOff()
+    this.stopRefreshing = this.repeatEvery(() => {
+      void this.reloadSwitches()
+      void this.reloadAutoPowerOff()
+    })
   }
 
   disconnectedCallback(): void {
@@ -88,6 +103,22 @@ export class PrinterParameterPanel extends LitElement {
     const printerState = this.power?.switch ?? ''
     if (!changed.has('power') || !SWITCHABLE_STATES.includes(printerState)) return
     this.switches = this.switches.map((item) => (item.is_printer ? { ...item, state: printerState } : item))
+  }
+
+  private async reloadAutoPowerOff(): Promise<void> {
+    try {
+      this.autoPowerOff = await this.loadAutoPowerOff()
+    } catch {
+      // the line stays as it is: a failed refresh is not a reason to hide it
+    }
+  }
+
+  private async changeAutoPowerOff(change: () => Promise<unknown>): Promise<void> {
+    try {
+      await change()
+    } finally {
+      await this.reloadAutoPowerOff()
+    }
   }
 
   private async reloadSwitches(): Promise<void> {
@@ -236,21 +267,49 @@ export class PrinterParameterPanel extends LitElement {
     </div>`
   }
 
+  /** when the power goes off by itself, with the buttons to keep it on; nothing when it will not go off */
+  private renderAutoPowerOff(): TemplateResult | typeof nothing {
+    const offAt = this.autoPowerOff?.off_at
+    if (offAt === null || offAt === undefined) return nothing
+    const remainingSeconds = Math.max(0, offAt - this.now() / MILLISECONDS_PER_SECOND)
+    const minutes = Math.round(remainingSeconds / SECONDS_PER_MINUTE)
+    return html`<div class="parameter-row auto-power-off" data-field="auto-power-off">
+      <span class="muted"
+        >Off at ${formatFinishTime(this.now(), remainingSeconds, this.timeZone)} (in ${minutes} min)</span
+      >
+      <button
+        class="button"
+        data-action="postpone-auto-power-off"
+        @click=${() => this.changeAutoPowerOff(() => this.postponeAutoPowerOff(POSTPONE_MINUTES))}
+      >
+        Keep on 1 h
+      </button>
+      <button
+        class="button"
+        data-action="cancel-auto-power-off"
+        @click=${() => this.changeAutoPowerOff(() => this.cancelAutoPowerOff())}
+      >
+        Cancel
+      </button>
+    </div>`
+  }
+
   private renderPowerSwitch(): TemplateResult {
     const isOn = this.power?.switch === 'on'
     return html`<div class="parameter-row">
-      <span class="parameter-label">Printer power</span>
-      <button
-        class="power-switch ${isOn ? 'on' : ''}"
-        role="switch"
-        aria-checked=${isOn ? 'true' : 'false'}
-        aria-label="Printer power"
-        ?disabled=${!SWITCHABLE_STATES.includes(this.power?.switch ?? '')}
-        @click=${() => this.togglePower(!isOn)}
-      >
-        <span class="power-switch-knob"></span>
-      </button>
-    </div>`
+        <span class="parameter-label">Printer power</span>
+        <button
+          class="power-switch ${isOn ? 'on' : ''}"
+          role="switch"
+          aria-checked=${isOn ? 'true' : 'false'}
+          aria-label="Printer power"
+          ?disabled=${!SWITCHABLE_STATES.includes(this.power?.switch ?? '')}
+          @click=${() => this.togglePower(!isOn)}
+        >
+          <span class="power-switch-knob"></span>
+        </button>
+      </div>
+      ${this.renderAutoPowerOff()}`
   }
 
   /** the needed switch that is not on, which keeps this one off */
@@ -268,19 +327,22 @@ export class PrinterParameterPanel extends LitElement {
     const missing = this.findMissingSwitch(item)
     const isOn = !missing && item.state === 'on'
     return html`<div class="parameter-row">
-      <span class="parameter-label">${item.label}</span>${this.renderNeed(missing)}
-      <button
-        class="power-switch ${isOn ? 'on' : ''}"
-        role="switch"
-        aria-checked=${isOn ? 'true' : 'false'}
-        aria-label=${item.label}
-        data-switch=${item.key}
-        ?disabled=${Boolean(missing) || !SWITCHABLE_STATES.includes(item.state)}
-        @click=${() => this.toggleSwitch(item)}
-      >
-        <span class="power-switch-knob"></span>
-      </button>
-    </div>`
+        <span class="parameter-label" title=${item.description || nothing}>${item.label}</span>${this.renderNeed(
+          missing,
+        )}
+        <button
+          class="power-switch ${isOn ? 'on' : ''}"
+          role="switch"
+          aria-checked=${isOn ? 'true' : 'false'}
+          aria-label=${item.label}
+          data-switch=${item.key}
+          ?disabled=${Boolean(missing) || !SWITCHABLE_STATES.includes(item.state)}
+          @click=${() => this.toggleSwitch(item)}
+        >
+          <span class="power-switch-knob"></span>
+        </button>
+      </div>
+      ${item.is_printer ? this.renderAutoPowerOff() : nothing}`
   }
 
   /** the printer power comes first, unless the list of switches places it */

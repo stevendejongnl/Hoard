@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import type { HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
+import type { AutoPowerOffStatus, HomeAssistantSwitch, PiStats, Power, PrinterState, Temps } from '../types'
 import './printer-parameter-panel'
 import type { PrinterParameterPanel } from './printer-parameter-panel'
 
@@ -513,5 +513,110 @@ describe('printer power switch', () => {
     await press(panel, 'button.power-switch')
     expect(calls.confirmations).toEqual([])
     expect(calls.powerSwitches).toEqual([true])
+  })
+})
+
+describe('auto power-off and switch descriptions', () => {
+  const offAt = Date.parse('2026-10-27T15:20:00Z') / 1000
+  const waiting: AutoPowerOffStatus = { enabled: true, idle_minutes: 30, off_at: offAt }
+  const notWaiting: AutoPowerOffStatus = { enabled: true, idle_minutes: 30, off_at: null }
+
+  async function settle(panel: PrinterParameterPanel): Promise<void> {
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await panel.updateComplete
+  }
+
+  async function createAutoPowerOffPanel(
+    status: () => Promise<AutoPowerOffStatus>,
+    properties: Partial<PrinterParameterPanel> = {},
+  ): Promise<PrinterParameterPanel> {
+    const panel = await createPanel(createCalls(), {
+      loadSwitches: async () => [],
+      loadAutoPowerOff: status,
+      ...properties,
+    })
+    await settle(panel)
+    return panel
+  }
+
+  const readLine = (panel: PrinterParameterPanel) =>
+    panel.querySelector('[data-field="auto-power-off"]')?.textContent?.replace(/\s+/g, ' ').trim()
+
+  it('says when the power goes off, under the printer power', async () => {
+    const panel = await createAutoPowerOffPanel(async () => waiting)
+    expect(readLine(panel)).toContain('Off at 15:20 (in 24 min)')
+  })
+
+  it('shows nothing when the power will not go off, or when the status cannot be read', async () => {
+    const quiet = await createAutoPowerOffPanel(async () => notWaiting)
+    expect(readLine(quiet)).toBeUndefined()
+    document.body.replaceChildren()
+    const unreadable = await createAutoPowerOffPanel(async () => {
+      throw new Error('offline')
+    })
+    expect(readLine(unreadable)).toBeUndefined()
+  })
+
+  it('keeps the power on for an hour, and shows the new time', async () => {
+    const postponed: number[] = []
+    let status = waiting
+    const panel = await createAutoPowerOffPanel(async () => status, {
+      postponeAutoPowerOff: async (minutes) => {
+        postponed.push(minutes)
+        status = { ...waiting, off_at: offAt + 3600 }
+      },
+    })
+    await press(panel, '[data-action="postpone-auto-power-off"]')
+    await settle(panel)
+    expect(postponed).toEqual([60])
+    expect(readLine(panel)).toContain('Off at 16:20')
+  })
+
+  it('cancels the power-off, and the line goes away', async () => {
+    let status = waiting
+    let cancelled = 0
+    const panel = await createAutoPowerOffPanel(async () => status, {
+      cancelAutoPowerOff: async () => {
+        cancelled += 1
+        status = notWaiting
+      },
+    })
+    await press(panel, '[data-action="cancel-auto-power-off"]')
+    await settle(panel)
+    expect(cancelled).toBe(1)
+    expect(readLine(panel)).toBeUndefined()
+  })
+
+  it('puts the line under the printer power of the switch list as well', async () => {
+    const printer: HomeAssistantSwitch = {
+      key: 'printer-power',
+      label: 'Printer power',
+      entity_id: 'switch.plug',
+      state: 'on',
+      requires: null,
+      is_printer: true,
+      description: '',
+    }
+    const panel = await createAutoPowerOffPanel(async () => waiting, { loadSwitches: async () => [printer] })
+    expect(readLine(panel)).toContain('Off at 15:20')
+    expect(panel.querySelectorAll('[data-field="auto-power-off"]')).toHaveLength(1)
+  })
+
+  it('shows what a switch powers as the tooltip of its label', async () => {
+    const dryer: HomeAssistantSwitch = {
+      key: 'dryer',
+      label: 'Dryer',
+      entity_id: 'switch.dryer',
+      state: 'off',
+      requires: null,
+      is_printer: false,
+      description: 'Dries the filament',
+    }
+    const panel = await createAutoPowerOffPanel(async () => notWaiting, { loadSwitches: async () => [dryer] })
+    const label = panel
+      .querySelector<HTMLElement>('button[data-switch="dryer"]')!
+      .closest('.parameter-row')!
+      .querySelector<HTMLElement>('.parameter-label')!
+    expect(label.title).toBe('Dries the filament')
   })
 })

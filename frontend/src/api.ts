@@ -5,7 +5,7 @@ import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
 import type { ControlLayout } from './control-layout'
 import type { BedMesh, ConsoleLine, ControlAccessSnapshot, ControlDevice, ControlStatus, Macro } from './types'
-import type { KlipperState, WebClient } from './types'
+import type { AutoPowerOffStatus, KlipperState, WebClient } from './types'
 
 const BAD_GATEWAY_STATUS = 502
 const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
@@ -126,6 +126,14 @@ export const powerOff = () => fetchJson('/api/control/power/off', { method: 'POS
 export const getSwitches = () => fetchJson<HomeAssistantSwitch[]>('/api/control/switches')
 export const setSwitchState = (key: string, turnOn: boolean) =>
   fetchJson(`/api/control/switches/${encodeURIComponent(key)}/${turnOn ? 'on' : 'off'}`, { method: 'POST' })
+export const getAutoPowerOff = () => fetchJson<AutoPowerOffStatus>('/api/control/auto-power-off')
+export const postponeAutoPowerOff = (minutes: number) =>
+  fetchJson('/api/control/auto-power-off/postpone', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ minutes }),
+  })
+export const cancelAutoPowerOff = () => fetchJson('/api/control/auto-power-off/cancel', { method: 'POST' })
 export const getSystem = () => fetchJson<SystemReport>('/api/system')
 export const setHiddenSystemRows = (keys: string[]) =>
   fetchJson('/api/system/hidden', {

@@ -34,6 +34,15 @@ export interface HomeAssistantSwitch {
   requires: string | null
   /** the printer power, which the power events also report */
   is_printer: boolean
+  /** what the switch powers, from the config; empty when it has none */
+  description?: string
+}
+
+/** The automatic power-off of the printer: the setting, and when the power goes off (Unix seconds) or null. */
+export interface AutoPowerOffStatus {
+  enabled: boolean
+  idle_minutes: number
+  off_at: number | null
 }
 
 export interface PiStats {
