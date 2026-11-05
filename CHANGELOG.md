@@ -1,3 +1,10 @@
+## [1.63.0](https://github.com/stevendejongnl/Hoard/compare/v1.62.0...v1.63.0) (2026-11-05)
+
+### Features
+
+* **mcp:** a grant of control covers one MCP session, not every session of the token ([12a154c](https://github.com/stevendejongnl/Hoard/commit/12a154c2b650ec168fefde9383812127f876c165))
+* **mcp:** the refusal says whether access was denied, is waiting, was taken back or ran out ([d0976fc](https://github.com/stevendejongnl/Hoard/commit/d0976fcd835dc1ef8c50ed66031c604e1123d5a0))
+
 ## [1.62.0](https://github.com/stevendejongnl/Hoard/compare/v1.61.0...v1.62.0) (2026-11-05)
 
 ### Features
