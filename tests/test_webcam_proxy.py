@@ -2,7 +2,7 @@ import httpx
 from httpx import AsyncClient
 
 from app.mjpeg_relay import RELAY_CONTENT_TYPE, format_part
-from app.routes.dependencies import provide_printer_client_factory
+from app.routes.dependencies import provide_frame_rates, provide_printer_client_factory
 from tests.route_fakes import FakeMoonraker, install_fakes, override_provider
 
 FRAME = b"\xff\xd8frame"
@@ -38,3 +38,22 @@ async def test_a_stream_is_relayed_as_whole_frames(client: AsyncClient, monkeypa
     response = await client.get("/api/webcams/0/stream")
     assert response.headers["content-type"] == RELAY_CONTENT_TYPE
     assert format_part(FRAME) in response.content
+
+
+class RecordingFrameRates:
+    def __init__(self) -> None:
+        self.noted: list[int] = []
+
+    def note_frame(self, index: int) -> None:
+        self.noted.append(index)
+
+
+async def test_every_frame_of_a_stream_is_counted_for_its_camera(client: AsyncClient, monkeypatch):
+    install_fakes(monkeypatch, moonraker=moonraker_with_camera())
+    part = b"--cam\r\nContent-Type: image/jpeg\r\nContent-Length: %d\r\n\r\n%b\r\n" % (len(FRAME), FRAME)
+    stream = httpx.Response(200, content=part * 3)
+    override_provider(monkeypatch, provide_printer_client_factory, camera_client_factory({"/stream": stream}))
+    rates = RecordingFrameRates()
+    override_provider(monkeypatch, provide_frame_rates, rates)
+    await client.get("/api/webcams/0/stream")
+    assert rates.noted == [0, 0, 0]

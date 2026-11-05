@@ -1,7 +1,8 @@
 from httpx import AsyncClient
 
 from app.config import settings
-from tests.route_fakes import FakeMoonraker, install_fakes
+from app.routes.dependencies import provide_frame_rates
+from tests.route_fakes import FakeMoonraker, install_fakes, override_provider
 
 CLOSED_ADDRESS = "http://127.0.0.1:1"
 
@@ -16,8 +17,18 @@ async def test_the_webcams_are_listed_with_proxied_urls(client: AsyncClient, mon
     install_fakes(monkeypatch, moonraker=moonraker_with_webcams(camera, {"name": "side"}))
     body = (await client.get("/api/webcams")).json()
     assert body == [
-        {"name": "nozzle", "stream_url": "/api/webcams/0/stream", "snapshot_url": "/api/webcams/0/snapshot"},
-        {"name": "side", "stream_url": "/api/webcams/1/stream", "snapshot_url": "/api/webcams/1/snapshot"},
+        {
+            "name": "nozzle",
+            "stream_url": "/api/webcams/0/stream",
+            "snapshot_url": "/api/webcams/0/snapshot",
+            "measured_fps": None,
+        },
+        {
+            "name": "side",
+            "stream_url": "/api/webcams/1/stream",
+            "snapshot_url": "/api/webcams/1/snapshot",
+            "measured_fps": None,
+        },
     ]
 
 
@@ -47,3 +58,20 @@ async def test_a_webcam_that_cannot_be_reached_is_a_502(client: AsyncClient, mon
     install_fakes(monkeypatch, moonraker=moonraker_with_webcams(camera))
     assert (await client.get("/api/webcams/0/snapshot")).status_code == 502
     assert (await client.get("/api/webcams/0/stream")).status_code == 502
+
+
+class FakeFrameRates:
+    def __init__(self, measured: dict[int, float]) -> None:
+        self._measured = measured
+
+    def measured(self, index: int) -> float | None:
+        return self._measured.get(index)
+
+
+async def test_the_list_shows_the_rate_that_was_measured_for_each_camera_rounded_to_one_decimal(
+    client: AsyncClient, monkeypatch
+):
+    install_fakes(monkeypatch, moonraker=moonraker_with_webcams({"name": "nozzle"}, {"name": "side"}))
+    override_provider(monkeypatch, provide_frame_rates, FakeFrameRates({0: 12.4567}))
+    body = (await client.get("/api/webcams")).json()
+    assert [camera["measured_fps"] for camera in body] == [12.5, None]

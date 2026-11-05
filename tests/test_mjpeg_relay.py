@@ -108,3 +108,15 @@ async def test_the_camera_stream_is_closed_when_the_client_goes_away():
     await anext(relay)
     await relay.aclose()
     assert camera.was_closed
+
+
+async def test_every_frame_that_the_camera_sends_is_counted_also_when_a_slow_client_skips_some():
+    seen: list[int] = []
+    camera = FakeCamera()
+    relay = relay_latest_frames(camera.chunks(), on_frame=lambda: seen.append(1))
+    camera.send_frame(b"one")
+    camera.send_frame(b"two")
+    camera.send_frame(b"three")
+    camera.end()
+    await collect(relay)
+    assert len(seen) == 3
