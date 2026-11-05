@@ -7,9 +7,11 @@ SHOWCASE_SCREENS = {
     "project-detail-desktop": "project-detail.png",
     "spools-desktop": "spools.png",
     "print-detail-desktop": "print-detail.png",
+    "system-desktop": "system.png",
     "search-desktop": "search.png",
     "dashboard-phone": "dashboard-phone.png",
     "history-phone": "history-phone.png",
     "spools-phone": "spools-phone.png",
+    "system-phone": "system-phone.png",
     "spool-sheet-phone": "spool-sheet-phone.png",
 }

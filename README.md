@@ -18,6 +18,12 @@ It works on a phone as well, with the same features as on desktop: printer power
 |---|---|---|---|
 | ![](docs/screenshots/dashboard-phone.png) | ![](docs/screenshots/history-phone.png) | ![](docs/screenshots/spools-phone.png) | ![](docs/screenshots/spool-sheet-phone.png) |
 
+The Control page moves, heats and tunes the printer from cards, and the System page shows what the printer's host and boards report.
+
+| Control | System | Control (phone) |
+|---|---|---|
+| ![The Control page: camera, temperatures, move and home, extruder, speed, flow and fans](docs/screenshots/control.png) | ![The System page: the host and its network](docs/screenshots/system.png) | ![The Control page on a phone](docs/screenshots/control-phone.png) |
+
 Print failure detection is optional and off until you give it a detector ([how](https://github.com/stevendejongnl/Hoard/wiki/Failure-detection)). When a print looks failed, a banner shows the image and asks whether the alert was real; the settings, including whether Hoard only notifies or also pauses the print, are on the Failure detection page of the System page.
 
 | A failed print | The Detections page | Settings |
