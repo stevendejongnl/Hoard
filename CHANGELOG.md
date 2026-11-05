@@ -1,3 +1,13 @@
+## [1.62.0](https://github.com/stevendejongnl/Hoard/compare/v1.61.0...v1.62.0) (2026-11-05)
+
+### Features
+
+* **control:** errors from the printer name the cause and say what to do ([432845e](https://github.com/stevendejongnl/Hoard/commit/432845e2f33f3ee99ef8ec119632147944dac8c0))
+
+### Documentation
+
+* **readme:** screenshots of the Control and System pages, and the old ones taken again with the Control tab ([6c3005a](https://github.com/stevendejongnl/Hoard/commit/6c3005adb09fb05f38a73b1bd5c1618e1a1b5bb8))
+
 ## [1.61.0](https://github.com/stevendejongnl/Hoard/compare/v1.60.0...v1.61.0) (2026-11-04)
 
 ### Features
