@@ -1,3 +1,12 @@
+## [1.66.0](https://github.com/stevendejongnl/Hoard/compare/v1.65.0...v1.66.0) (2026-11-05)
+
+### Features
+
+* **control:** no load and unload buttons on the extruder card ([cdaa81c](https://github.com/stevendejongnl/Hoard/commit/cdaa81c716d37385768b15119141b1cc4f742354))
+* **files:** upload G-code as text, so an MCP client can put a file on the printer ([aef9e0f](https://github.com/stevendejongnl/Hoard/commit/aef9e0f22deff87f1d7cbe7848161efe362f4b9a))
+* **mcp:** request_control_access waits for the answer; a request lasts 30 seconds ([f65169d](https://github.com/stevendejongnl/Hoard/commit/f65169d2dae2ba8b8abeb31350518d7c37a26232))
+* **mcp:** upload_gcode and start_print need the approval of a person ([b28e391](https://github.com/stevendejongnl/Hoard/commit/b28e391a07378350e7f7e66b972792b3a1749cc9))
+
 ## [1.65.0](https://github.com/stevendejongnl/Hoard/compare/v1.64.1...v1.65.0) (2026-11-05)
 
 ### Features
