@@ -1,3 +1,11 @@
+## [1.65.0](https://github.com/stevendejongnl/Hoard/compare/v1.64.1...v1.65.0) (2026-11-05)
+
+### Features
+
+* **control:** a console with times, search, filters and follow ([b6cbf8f](https://github.com/stevendejongnl/Hoard/commit/b6cbf8fc6b7cf3ce39e5a8311aaecf64dfb60681))
+* **control:** list macros with their description and the category from Fluidd ([bad98c8](https://github.com/stevendejongnl/Hoard/commit/bad98c8f7d959b49b666af8746125bc29064fe61))
+* **control:** macros in the categories of Fluidd, a row each with its description ([cff7f7c](https://github.com/stevendejongnl/Hoard/commit/cff7f7cd1870fa5dd08cee08b9eafaeb3d9552ef))
+
 ## [1.64.1](https://github.com/stevendejongnl/Hoard/compare/v1.64.0...v1.64.1) (2026-11-05)
 
 ### Bug Fixes
