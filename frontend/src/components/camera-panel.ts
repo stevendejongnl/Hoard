@@ -366,6 +366,7 @@ export class CameraPanel extends LitElement {
   private renderViewAction(
     action: string,
     label: string,
+    spokenLabel: string,
     icon: Parameters<typeof renderIcon>[0],
     isPressed: boolean | null,
     onClick: () => void,
@@ -373,7 +374,7 @@ export class CameraPanel extends LitElement {
     return html`<button
       class="button"
       data-action=${action}
-      aria-label=${label}
+      aria-label=${spokenLabel}
       aria-pressed=${isPressed === null ? nothing : String(isPressed)}
       @click=${onClick}
     >
@@ -390,11 +391,18 @@ export class CameraPanel extends LitElement {
         ${this.renderFitButton(webcam, view, 'stretch', 'Stretch')}
       </div>
       <div class="camera-view-group">
-        ${this.renderViewAction('rotate', 'Rotate', 'refresh', null, () => this.changeView(webcam, rotateView))}
-        ${this.renderViewAction('flip-horizontal', 'Flip', 'flip-horizontal', view.flipHorizontal, () =>
-          this.flipPicture(webcam, 'horizontal'),
+        ${this.renderViewAction('rotate', 'Rotate', 'Rotate a quarter turn', 'refresh', null, () =>
+          this.changeView(webcam, rotateView),
         )}
-        ${this.renderViewAction('flip-vertical', 'Flip', 'flip-vertical', view.flipVertical, () =>
+        ${this.renderViewAction(
+          'flip-horizontal',
+          'Flip H',
+          'Flip horizontally',
+          'flip-horizontal',
+          view.flipHorizontal,
+          () => this.flipPicture(webcam, 'horizontal'),
+        )}
+        ${this.renderViewAction('flip-vertical', 'Flip V', 'Flip vertically', 'flip-vertical', view.flipVertical, () =>
           this.flipPicture(webcam, 'vertical'),
         )}
       </div>
