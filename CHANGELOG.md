@@ -1,3 +1,18 @@
+## [1.70.0](https://github.com/stevendejongnl/Hoard/compare/v1.69.0...v1.70.0) (2026-11-05)
+
+### Features
+
+* **camera:** a view menu with fit, fill and stretch, rotate and flip, a snapshot with the same turns, and a switch button only with more than one camera ([2360a4a](https://github.com/stevendejongnl/Hoard/commit/2360a4aaee4c1c33f3fe7bf16959b8f360806ac8))
+* **camera:** a view of a camera: fit, fill or stretch, quarter turns and flips, kept for each camera in the browser ([5fde139](https://github.com/stevendejongnl/Hoard/commit/5fde1391cff7a409f6359852e6bd4de7aa8c5b62))
+* **camera:** the camera shows the measured frame rate, with the target as secondary text ([f100168](https://github.com/stevendejongnl/Hoard/commit/f100168ef2419906f95e8cd69fdf1d0d7dfeb050))
+* **camera:** the frame rate is measured in the relay, and the list shows it for each camera ([f3ef57a](https://github.com/stevendejongnl/Hoard/commit/f3ef57af887e5698d5303dabc221ad847f5993b4))
+* **control:** starting a print while the printer is off switches the power on and waits for Klipper ([8f5c5e1](https://github.com/stevendejongnl/Hoard/commit/8f5c5e18d5f79fdc6e752fd4f0512c5ad0ca29ca))
+
+### Bug Fixes
+
+* **camera:** the two flip buttons have their own names, and the README says what the camera does now ([0981b12](https://github.com/stevendejongnl/Hoard/commit/0981b126e8b878cb221d81480210f2f2deb0f62c))
+* **camera:** while nothing is measured the camera shows its target as before, so the screens keep their pixels ([c75b42b](https://github.com/stevendejongnl/Hoard/commit/c75b42bdd95ef0af408f6aa8f46ba809a1d318b3))
+
 ## [1.69.0](https://github.com/stevendejongnl/Hoard/compare/v1.68.0...v1.69.0) (2026-11-05)
 
 ### Features
