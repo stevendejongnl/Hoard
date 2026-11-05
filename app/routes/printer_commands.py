@@ -20,6 +20,7 @@ from app.printer_commands import (
     visible_macros,
 )
 from app.routes.dependencies import Moonraker
+from app.routes.printer_failure import explain_failure
 
 router = APIRouter(prefix="/api/control", tags=["control"])
 
@@ -32,7 +33,7 @@ async def read_print_state(moonraker: MoonrakerClient) -> str:
     try:
         answer = await moonraker.get(OBJECTS_QUERY, print_stats="")
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return answer["status"]["print_stats"]["state"]
 
 
@@ -48,7 +49,7 @@ async def run_script(moonraker: MoonrakerClient, script: str) -> dict:
     try:
         await moonraker.post(GCODE_SCRIPT, script=script)
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return {"ok": True}
 
 
@@ -68,7 +69,7 @@ async def status(moonraker: Moonraker) -> dict:
         queried = dict.fromkeys([*STATUS_OBJECTS, *fan_objects], "")
         answer = await moonraker.get(OBJECTS_QUERY, **queried)
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return describe_status(answer["status"], fan_objects)
 
 
@@ -139,7 +140,7 @@ async def macros(moonraker: Moonraker) -> list[str]:
     try:
         answer = await moonraker.get("/printer/objects/list")
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return visible_macros(answer["objects"])
 
 
@@ -151,7 +152,7 @@ async def console(moonraker: Moonraker) -> list[dict]:
     try:
         answer = await moonraker.get("/server/gcode_store", count=CONSOLE_LINES)
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return answer["gcode_store"]
 
 
@@ -160,5 +161,5 @@ async def bed_mesh(moonraker: Moonraker) -> dict:
     try:
         answer = await moonraker.get(OBJECTS_QUERY, bed_mesh="")
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return answer["status"]["bed_mesh"]

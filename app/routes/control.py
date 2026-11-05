@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Response
 from app.config import settings
 from app.moonraker import MoonrakerClient
 from app.routes.dependencies import HomeAssistant, HttpClientFactory, Moonraker
+from app.routes.printer_failure import explain_failure
 from app.switches import SwitchDefinition, configured_switches, find_dependents, find_printer_switch, find_switch
 
 router = APIRouter(prefix="/api/control", tags=["control"])
@@ -152,7 +153,7 @@ async def _command_printer(moonraker: MoonrakerClient, path: str, answer: dict |
     try:
         await moonraker.post(path, **data)
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     return answer if answer is not None else {"ok": True}
 
 
@@ -172,7 +173,7 @@ async def klipper_state(moonraker: Moonraker) -> dict:
     try:
         return {"state": (await moonraker.get("/server/info"))["klippy_state"], "message": ""}
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
 
 
 LOG_NAMES = ("klippy", "moonraker")
@@ -185,7 +186,7 @@ async def download_log(name: str, moonraker: Moonraker) -> Response:
     try:
         content = await moonraker.download_log(name)
     except Exception as exc:
-        raise HTTPException(502, str(exc)) from exc
+        raise await explain_failure(moonraker, exc) from exc
     headers = {"Content-Disposition": f'attachment; filename="{name}.log"'}
     return Response(content, media_type="text/plain; charset=utf-8", headers=headers)
 
