@@ -61,9 +61,9 @@ async def test_a_printer_that_cannot_be_reached_is_explained(client: AsyncClient
     )
 
 
-def test_an_mcp_client_gets_the_upload_as_a_tool_that_needs_no_approval():
+def test_an_mcp_client_gets_the_upload_as_a_tool_that_needs_the_approval_of_a_person():
     tools = {tool.name: tool for tool in build_tool_definitions(app.openapi())}
     tool = tools["upload_gcode"]
     assert (tool.method, tool.path, tool.required_scope) == ("POST", "/api/files/gcode", "control")
-    assert not tool.needs_approval
+    assert tool.needs_approval
     assert set(tool.body_property_names) == {"filename", "content"}

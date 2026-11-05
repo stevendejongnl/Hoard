@@ -90,7 +90,7 @@ async def test_the_instructions_tell_the_assistant_to_ask_first():
     assert "request_control_access" in reply["result"]["instructions"]
 
 
-def test_the_commands_that_move_or_heat_the_printer_need_approval_and_the_person_s_own_buttons_are_not_tools():
+def test_the_commands_that_move_heat_or_start_work_on_the_printer_need_approval_and_the_person_s_own_buttons_are_not_tools():
     tools = {tool.name: tool for tool in build_tool_definitions(app.openapi())}
     needing = {
         "move",
@@ -105,6 +105,8 @@ def test_the_commands_that_move_or_heat_the_printer_need_approval_and_the_person
         "gcode",
         "calibrate",
         "probe",
+        "upload_gcode",
+        "start_print",
     }
     assert {name for name, tool in tools.items() if tool.needs_approval} == needing
     assert not [tool for tool in tools.values() if tool.path.startswith(("/api/control/access", "/api/control/layout"))]
