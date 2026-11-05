@@ -123,3 +123,37 @@ async def test_the_power_switch_is_a_502_when_home_assistant_cannot_be_reached(
 ):
     monkeypatch.setattr(settings, "ha_url", CLOSED_ADDRESS)
     assert (await getattr(client, method)(f"/api/control/{path}")).status_code == 502
+
+
+async def test_switching_the_printer_off_prepares_it_first_so_the_power_off_is_expected(
+    client: AsyncClient, monkeypatch, printer_power
+):
+    monkeypatch.setattr(settings, "ha_power_switch", "switch.plug")
+    requests: list[httpx.Request] = []
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
+    await client.post("/api/control/power/off")
+    assert printer_power.calls == ["prepare_power_off"]
+    assert requests[-1].url.path == "/api/services/homeassistant/turn_off"
+
+
+async def test_switching_the_printer_on_starts_the_recovery_of_klipper(client: AsyncClient, monkeypatch, printer_power):
+    monkeypatch.setattr(settings, "ha_power_switch", "switch.plug")
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory([]))
+    await client.post("/api/control/power/on")
+    assert printer_power.calls == ["power_came_on"]
+
+
+async def test_switching_another_switch_leaves_klipper_alone(client: AsyncClient, monkeypatch, printer_power):
+    monkeypatch.setattr(settings, "ha_switches", "Pi=switch.pi")
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory([]))
+    await client.post("/api/control/switches/pi/off")
+    await client.post("/api/control/switches/pi/on")
+    assert printer_power.calls == []
+
+
+async def test_a_power_off_that_home_assistant_refuses_is_not_expected_to_have_happened(
+    client: AsyncClient, monkeypatch, printer_power
+):
+    monkeypatch.setattr(settings, "ha_url", CLOSED_ADDRESS)
+    assert (await client.post("/api/control/power/off")).status_code == 502
+    assert printer_power.calls == ["prepare_power_off", "power_came_on"]

@@ -6,7 +6,12 @@ from typing import Any
 import httpx
 
 from app.main import app
-from app.routes.dependencies import provide_home_assistant, provide_influx, provide_moonraker
+from app.routes.dependencies import (
+    provide_home_assistant,
+    provide_influx,
+    provide_moonraker,
+    provide_printer_power,
+)
 
 
 class FakeMoonraker:
@@ -137,10 +142,29 @@ class FakeHomeAssistant:
         return {"state": self.states[entity_id]}
 
 
+class FakePrinterPower:
+    """Records what the routes ask of the printer's power, and answers that the printer gets ready."""
+
+    def __init__(self, ready: bool = True) -> None:
+        self.ready = ready
+        self.calls: list[str] = []
+
+    async def prepare_power_off(self) -> None:
+        self.calls.append("prepare_power_off")
+
+    def power_came_on(self) -> None:
+        self.calls.append("power_came_on")
+
+    async def wait_until_ready(self) -> bool:
+        self.calls.append("wait_until_ready")
+        return self.ready
+
+
 PROVIDERS = {
     "moonraker": provide_moonraker,
     "influx": provide_influx,
     "home_assistant": provide_home_assistant,
+    "printer_power": provide_printer_power,
 }
 
 
