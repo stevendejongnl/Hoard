@@ -1,3 +1,9 @@
+## [1.64.0](https://github.com/stevendejongnl/Hoard/compare/v1.63.0...v1.64.0) (2026-11-05)
+
+### Features
+
+* **api:** a refused value says which field, the limit and what was sent, in one sentence ([845541f](https://github.com/stevendejongnl/Hoard/commit/845541fb4ce78caaff85877404e6cb38edb22a38))
+
 ## [1.63.0](https://github.com/stevendejongnl/Hoard/compare/v1.62.0...v1.63.0) (2026-11-05)
 
 ### Features
