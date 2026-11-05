@@ -146,3 +146,50 @@ async def test_a_power_off_that_home_assistant_refuses_is_not_noted(client: Asyn
     monkeypatch.setattr(settings, "ha_url", CLOSED_ADDRESS)
     assert (await client.post("/api/control/power/off")).status_code == 502
     assert printer_power.calls == []
+
+
+async def start_print_with_the_printer_switch(
+    client, monkeypatch, printer_power, switch_state: str, ready: bool = True
+):
+    monkeypatch.setattr(settings, "ha_power_switch", "switch.plug")
+    monkeypatch.setattr(settings, "ha_switches", "")
+    requests: list[httpx.Request] = []
+    moonraker = FakeMoonraker()
+    printer_power.ready = ready
+    install_fakes(
+        monkeypatch, moonraker=moonraker, home_assistant=FakeHomeAssistant(states={"switch.plug": switch_state})
+    )
+    override_provider(monkeypatch, provide_http_client_factory, recording_client_factory(requests))
+    response = await client.post("/api/control/print", params={"filename": "part.gcode"})
+    return response, requests, moonraker
+
+
+async def test_a_print_started_while_the_printer_is_off_switches_the_power_on_and_waits_for_klipper(
+    client: AsyncClient, monkeypatch, printer_power
+):
+    response, requests, moonraker = await start_print_with_the_printer_switch(client, monkeypatch, printer_power, "off")
+    assert response.status_code == 200
+    assert [request.url.path for request in requests] == ["/api/services/homeassistant/turn_on"]
+    assert printer_power.calls == ["wait_until_ready"]
+    assert moonraker.posted == [("/printer/print/start", {"filename": "part.gcode"})]
+
+
+async def test_a_print_is_not_started_when_klipper_does_not_get_ready_after_the_power_came_on(
+    client: AsyncClient, monkeypatch, printer_power
+):
+    response, _, moonraker = await start_print_with_the_printer_switch(
+        client, monkeypatch, printer_power, "off", ready=False
+    )
+    assert response.status_code == 502
+    assert "did not get ready" in response.json()["detail"]
+    assert moonraker.posted == []
+
+
+async def test_a_print_started_while_the_printer_is_on_does_not_touch_the_power(
+    client: AsyncClient, monkeypatch, printer_power
+):
+    response, requests, moonraker = await start_print_with_the_printer_switch(client, monkeypatch, printer_power, "on")
+    assert response.status_code == 200
+    assert requests == []
+    assert printer_power.calls == []
+    assert len(moonraker.posted) == 1
