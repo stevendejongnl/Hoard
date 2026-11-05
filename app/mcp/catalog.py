@@ -32,6 +32,8 @@ NEEDS_APPROVAL_TOOLS = {
     "upload_gcode",
     "start_print",
     "change_auto_power_off",
+    "power_off",
+    "switch_off",
 }
 DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "restart_klipper", "power_off", "switch_off"}
 OPERATION_ID_SEPARATOR = "_api_"
