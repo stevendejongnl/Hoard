@@ -1,3 +1,5 @@
+import hashlib
+
 import httpx
 import pytest
 from httpx import AsyncClient
@@ -9,6 +11,10 @@ from tests.route_fakes import FakeMoonraker, install_fakes
 GCODE = "G28\nG1 X10 Y10 F3000\n"
 
 
+def fingerprint(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
 async def upload(client: AsyncClient, monkeypatch, body: dict, moonraker: FakeMoonraker | None = None):
     moonraker = moonraker or FakeMoonraker()
     install_fakes(monkeypatch, moonraker=moonraker)
@@ -17,7 +23,10 @@ async def upload(client: AsyncClient, monkeypatch, body: dict, moonraker: FakeMo
 
 async def test_the_text_is_put_on_the_printer_under_the_name_that_was_given(client: AsyncClient, monkeypatch):
     response, moonraker = await upload(client, monkeypatch, {"filename": "plate.gcode", "content": GCODE})
-    assert (response.status_code, response.json()) == (201, {"filename": "plate.gcode", "size_bytes": len(GCODE)})
+    assert (response.status_code, response.json()) == (
+        201,
+        {"filename": "plate.gcode", "size_bytes": len(GCODE), "sha256": fingerprint(GCODE)},
+    )
     assert moonraker.uploaded == [("plate.gcode", GCODE.encode())]
 
 
@@ -66,4 +75,44 @@ def test_an_mcp_client_gets_the_upload_as_a_tool_that_needs_the_approval_of_a_pe
     tool = tools["upload_gcode"]
     assert (tool.method, tool.path, tool.required_scope) == ("POST", "/api/files/gcode", "control")
     assert tool.needs_approval
-    assert set(tool.body_property_names) == {"filename", "content"}
+    assert set(tool.body_property_names) == {"filename", "content", "expected_sha256"}
+    assert "expected_sha256" not in tool.input_schema["required"]
+
+
+async def test_the_fingerprint_covers_the_bytes_and_not_the_characters(client: AsyncClient, monkeypatch):
+    response, _ = await upload(client, monkeypatch, {"filename": "plate.gcode", "content": "; °C\n"})
+    assert response.json()["sha256"] == fingerprint("; °C\n")
+
+
+@pytest.mark.parametrize("write", [str.lower, str.upper])
+async def test_text_that_matches_the_expected_fingerprint_is_uploaded(client: AsyncClient, monkeypatch, write):
+    body = {"filename": "plate.gcode", "content": GCODE, "expected_sha256": write(fingerprint(GCODE))}
+    response, moonraker = await upload(client, monkeypatch, body)
+    assert response.status_code == 201
+    assert moonraker.uploaded == [("plate.gcode", GCODE.encode())]
+
+
+async def test_text_with_one_changed_digit_is_not_uploaded_and_both_fingerprints_are_named(
+    client: AsyncClient, monkeypatch
+):
+    original = "G1 X10 Y86.301 E1\n"
+    retyped = "G1 X10 Y86.801 E1\n"
+    body = {"filename": "plate.gcode", "content": retyped, "expected_sha256": fingerprint(original)}
+    response, moonraker = await upload(client, monkeypatch, body)
+    assert response.status_code == 422
+    assert response.json()["detail"] == (
+        f"The text arrived with SHA-256 {fingerprint(retyped)}, not {fingerprint(original)}. "
+        "Nothing was uploaded: send it again."
+    )
+    assert moonraker.uploaded == []
+
+
+@pytest.mark.parametrize("expected", ["abc", "g" * 64, fingerprint(GCODE) + "0", ""])
+async def test_an_expected_fingerprint_that_is_not_64_hexadecimal_characters_is_refused(
+    client: AsyncClient, monkeypatch, expected
+):
+    body = {"filename": "plate.gcode", "content": GCODE, "expected_sha256": expected}
+    response, moonraker = await upload(client, monkeypatch, body)
+    assert response.status_code == 422
+    assert response.json()["detail"] == "expected_sha256 must be 64 hexadecimal characters."
+    assert moonraker.uploaded == []
