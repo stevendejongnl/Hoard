@@ -17,6 +17,7 @@ from app.auto_power_off_setup import auto_power_off
 from app.control_access import ControlAccess, control_access
 from app.db import Database as SqliteDatabase
 from app.db import default_database
+from app.frame_rate import FrameRates, frame_rates
 from app.gcode_meta import extract_gcode_meta
 from app.influx import InfluxClient, influx
 from app.moonraker import MoonrakerClient, moonraker
@@ -42,6 +43,10 @@ def provide_control_access() -> ControlAccess:
 
 def provide_auto_power_off() -> AutoPowerOff:
     return auto_power_off
+
+
+def provide_frame_rates() -> FrameRates:
+    return frame_rates
 
 
 def provide_printer_power() -> PrinterPower:
@@ -79,6 +84,7 @@ Moonraker = Annotated[MoonrakerClient, Depends(provide_moonraker)]
 Influx = Annotated[InfluxClient, Depends(provide_influx)]
 HomeAssistant = Annotated[ModuleType, Depends(provide_home_assistant)]
 AutoPowerOffControl = Annotated[AutoPowerOff, Depends(provide_auto_power_off)]
+FrameRatesControl = Annotated[FrameRates, Depends(provide_frame_rates)]
 PrinterPowerControl = Annotated[PrinterPower, Depends(provide_printer_power)]
 Database = Annotated[SqliteDatabase, Depends(provide_database)]
 Cache = Annotated[ModuleType, Depends(provide_cache)]

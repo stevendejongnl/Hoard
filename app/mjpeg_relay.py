@@ -7,7 +7,7 @@ still busy, so a slow client gets fewer frames instead of half frames.
 
 import asyncio
 import re
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Callable
 
 HEADER_END = b"\r\n\r\n"
 CONTENT_LENGTH = re.compile(rb"^Content-Length:\s*(\d+)\s*$", re.IGNORECASE | re.MULTILINE)
@@ -88,17 +88,23 @@ async def read_frames(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
             yield frame
 
 
-async def publish_frames(chunks: AsyncIterator[bytes], latest: LatestFrame) -> None:
+async def publish_frames(
+    chunks: AsyncIterator[bytes], latest: LatestFrame, on_frame: Callable[[], None] = lambda: None
+) -> None:
     try:
         async for frame in read_frames(chunks):
+            on_frame()
             latest.publish(frame)
     finally:
         latest.finish()
 
 
-async def relay_latest_frames(chunks: AsyncIterator[bytes]) -> AsyncGenerator[bytes, None]:
+async def relay_latest_frames(
+    chunks: AsyncIterator[bytes], on_frame: Callable[[], None] = lambda: None
+) -> AsyncGenerator[bytes, None]:
+    """on_frame is called for every frame the camera sends, also for the ones a slow client does not get."""
     latest = LatestFrame()
-    publisher = asyncio.create_task(publish_frames(chunks, latest))
+    publisher = asyncio.create_task(publish_frames(chunks, latest, on_frame))
     try:
         while (frame := await latest.take()) is not None:
             yield format_part(frame)

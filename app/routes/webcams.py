@@ -1,5 +1,6 @@
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import aclosing, contextmanager
+from functools import partial
 
 import httpx
 from fastapi import APIRouter, HTTPException, Request, Response
@@ -8,7 +9,7 @@ from fastapi.responses import StreamingResponse
 from app.mjpeg_relay import RELAY_CONTENT_TYPE, relay_latest_frames
 from app.moonraker import MoonrakerClient
 from app.moonraker_connection import CONNECT_TIMEOUT_SECONDS
-from app.routes.dependencies import Moonraker, PrinterClientFactory
+from app.routes.dependencies import FrameRatesControl, Moonraker, PrinterClientFactory
 
 router = APIRouter(prefix="/api/webcams", tags=["webcams"])
 
@@ -50,11 +51,20 @@ def _proxy_paths(index: int) -> dict[str, str]:
     return {"snapshot_url": f"/api/webcams/{index}/snapshot", "stream_url": f"/api/webcams/{index}/stream"}
 
 
+def _show_measured_rate(frame_rates: FrameRatesControl, index: int) -> float | None:
+    measured = frame_rates.measured(index)
+    return None if measured is None else round(measured, 1)
+
+
 @router.get("")
-async def list_webcams(moonraker: Moonraker):
+async def list_webcams(moonraker: Moonraker, frame_rates: FrameRatesControl):
+    """The cameras with the frame rate that was measured while a stream was open; null when none was."""
     with _translate_webcam_errors():
         cams = await _resolved_cams(moonraker)
-        return [{**cam, **_proxy_paths(index)} for index, cam in enumerate(cams)]
+        return [
+            {**cam, **_proxy_paths(index), "measured_fps": _show_measured_rate(frame_rates, index)}
+            for index, cam in enumerate(cams)
+        ]
 
 
 @router.get("/{index}/snapshot")
@@ -70,10 +80,12 @@ async def proxy_snapshot(index: int, moonraker: Moonraker, create_client: Printe
         )
 
 
-async def _relay_stream(client: httpx.AsyncClient, upstream: httpx.Response, request: Request) -> AsyncIterator[bytes]:
+async def _relay_stream(
+    client: httpx.AsyncClient, upstream: httpx.Response, request: Request, on_frame: Callable[[], None]
+) -> AsyncIterator[bytes]:
     try:
         # Whole frames, newest first: a slow client drops frames instead of seeing half of one.
-        async with aclosing(relay_latest_frames(upstream.aiter_bytes(4096))) as parts:
+        async with aclosing(relay_latest_frames(upstream.aiter_bytes(4096), on_frame)) as parts:
             async for part in parts:
                 if await request.is_disconnected():
                     break
@@ -84,9 +96,16 @@ async def _relay_stream(client: httpx.AsyncClient, upstream: httpx.Response, req
 
 
 @router.get("/{index}/stream")
-async def proxy_stream(index: int, request: Request, moonraker: Moonraker, create_client: PrinterClientFactory):
+async def proxy_stream(
+    index: int,
+    request: Request,
+    moonraker: Moonraker,
+    create_client: PrinterClientFactory,
+    frame_rates: FrameRatesControl,
+):
     with _translate_webcam_errors():
         url = await _find_webcam_url(moonraker, index, "stream_url", "No stream URL configured for this webcam")
         client = create_client(timeout=httpx.Timeout(None, connect=CONNECT_TIMEOUT_SECONDS))
         upstream = await client.send(client.build_request("GET", url), stream=True)
-        return StreamingResponse(_relay_stream(client, upstream, request), media_type=RELAY_CONTENT_TYPE)
+        on_frame = partial(frame_rates.note_frame, index)
+        return StreamingResponse(_relay_stream(client, upstream, request, on_frame), media_type=RELAY_CONTENT_TYPE)

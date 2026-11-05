@@ -1,3 +1,5 @@
+import pytest
+
 from app.frame_rate import FrameRateMeter, FrameRates
 
 
@@ -25,7 +27,7 @@ def test_the_rate_is_the_number_of_intervals_over_the_time_they_took():
     for _ in range(11):
         meter.note_frame()
         clock.now += 0.1
-    assert meter.frames_per_second() == 10.0
+    assert meter.frames_per_second() == pytest.approx(10.0)
 
 
 def test_frames_older_than_the_window_are_forgotten():
@@ -38,7 +40,7 @@ def test_frames_older_than_the_window_are_forgotten():
     for _ in range(3):
         meter.note_frame()
         clock.now += 0.5
-    assert meter.frames_per_second() == 2.0
+    assert meter.frames_per_second() == pytest.approx(2.0)
 
 
 def test_a_stream_that_stopped_has_no_rate_any_more():
