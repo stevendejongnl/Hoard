@@ -5,7 +5,7 @@ from httpx import AsyncClient
 
 from app.config import settings
 from app.routes.dependencies import provide_http_client_factory
-from app.switches import SwitchDefinition, read_switch_definitions
+from app.switches import PRINTER_POWER_DESCRIPTION, SwitchDefinition, read_switch_definitions
 from tests.route_fakes import FakeHomeAssistant, install_fakes, override_provider, recording_client_factory
 
 PRINTER_ENTITY = "switch.machine_outlet"
@@ -32,7 +32,12 @@ def test_a_json_list_keeps_its_order_and_names_what_each_switch_needs() -> None:
             key="raspberry-pi", label="Raspberry Pi", entity_id="switch.pi_outlet", requires="power-strip"
         ),
         SwitchDefinition(
-            key="printer", label="Printer", entity_id=PRINTER_ENTITY, requires="raspberry-pi", is_printer=True
+            key="printer",
+            label="Printer",
+            entity_id=PRINTER_ENTITY,
+            requires="raspberry-pi",
+            is_printer=True,
+            description=PRINTER_POWER_DESCRIPTION,
         ),
         SwitchDefinition(
             key="filament-dryer", label="Filament dryer", entity_id="switch.dryer_outlet", requires="power-strip"

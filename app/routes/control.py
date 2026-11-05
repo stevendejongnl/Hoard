@@ -49,6 +49,7 @@ def describe_switch(definition: SwitchDefinition, state: str) -> dict:
         "state": state,
         "requires": definition.requires,
         "is_printer": definition.is_printer,
+        "description": definition.description,
     }
 
 

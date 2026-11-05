@@ -9,6 +9,7 @@ from app.config import settings
 log = logging.getLogger(__name__)
 
 PRINTER_POWER_LABEL = "Printer power"
+PRINTER_POWER_DESCRIPTION = "Powers the printer's boards: Klipper cannot connect to the MCU while it is off"
 
 
 @dataclass(frozen=True)
@@ -19,6 +20,8 @@ class SwitchDefinition:
     # the key of the switch that must be on before this one may be switched on
     requires: str | None = None
     is_printer: bool = False
+    # what the switch powers, for the person and for an assistant: for example that Klipper needs it for the MCU
+    description: str = ""
 
 
 @dataclass(frozen=True)
@@ -29,6 +32,7 @@ class SwitchEntry:
     entity_id: str
     requires_label: str | None = None
     is_printer: bool = False
+    description: str = ""
 
 
 def create_switch_key(label: str) -> str:
@@ -76,7 +80,8 @@ def read_json_entry(item: Any, printer_entity_id: str) -> SwitchEntry | None:
     if not create_switch_key(label) or not entity_id:
         return None
     requires = item.get("requires")
-    return SwitchEntry(label, entity_id, str(requires).strip() if requires else None, is_printer)
+    description = str(item.get("description", "")).strip()
+    return SwitchEntry(label, entity_id, str(requires).strip() if requires else None, is_printer, description)
 
 
 def read_json_entries(text: str, printer_entity_id: str) -> list[SwitchEntry]:
@@ -100,7 +105,8 @@ def read_entries(text: str, printer_entity_id: str) -> list[SwitchEntry]:
 def place_printer_power(entries: list[SwitchEntry], printer_entity_id: str) -> list[SwitchEntry]:
     if any(entry.is_printer for entry in entries):
         return entries
-    return [SwitchEntry(PRINTER_POWER_LABEL, printer_entity_id, is_printer=True), *entries]
+    printer = SwitchEntry(PRINTER_POWER_LABEL, printer_entity_id, is_printer=True)
+    return [printer, *entries]
 
 
 def give_keys(entries: list[SwitchEntry]) -> list[SwitchDefinition]:
@@ -109,7 +115,10 @@ def give_keys(entries: list[SwitchEntry]) -> list[SwitchDefinition]:
     for entry in entries:
         key = create_unique_key(entry.label, taken_keys)
         taken_keys.add(key)
-        definitions.append(SwitchDefinition(key, entry.label, entry.entity_id, is_printer=entry.is_printer))
+        description = entry.description or (PRINTER_POWER_DESCRIPTION if entry.is_printer else "")
+        definitions.append(
+            SwitchDefinition(key, entry.label, entry.entity_id, is_printer=entry.is_printer, description=description)
+        )
     return definitions
 
 
