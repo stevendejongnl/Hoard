@@ -34,8 +34,17 @@ NEEDS_APPROVAL_TOOLS = {
     "change_auto_power_off",
     "power_off",
     "switch_off",
+    "save_config",
 }
-DESTRUCTIVE_TOOLS = {"cancel_print", "emergency_stop", "firmware_restart", "restart_klipper", "power_off", "switch_off"}
+DESTRUCTIVE_TOOLS = {
+    "cancel_print",
+    "emergency_stop",
+    "firmware_restart",
+    "restart_klipper",
+    "power_off",
+    "switch_off",
+    "save_config",
+}
 OPERATION_ID_SEPARATOR = "_api_"
 HTTP_METHODS = ("get", "post", "put", "patch", "delete")
 BODY_MEDIA_TYPE = "application/json"

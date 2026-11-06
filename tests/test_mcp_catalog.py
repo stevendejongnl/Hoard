@@ -31,6 +31,9 @@ OPENAPI = {
         "/api/control/power/off": {
             "post": {"operationId": "power_off_api_control_power_off_post", "summary": "Power Off"},
         },
+        "/api/control/config/save": {
+            "post": {"operationId": "save_config_api_control_config_save_post", "summary": "Save Config"},
+        },
         "/api/files/upload": {
             "post": {
                 "operationId": "upload_file_api_files_upload_post",

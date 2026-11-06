@@ -49,6 +49,10 @@ class PrinterPower:
 
     def note_power_cut(self) -> None:
         """Hoard cuts the power: until the switch has been read again, the loss of Klipper is expected."""
+        self.note_expected_restart()
+
+    def note_expected_restart(self) -> None:
+        """Hoard restarts Klipper or cuts its power: for a while, the loss of Klipper is expected."""
         self._grace_until = self._clock() + self._grace_seconds
 
     def observe(self, switch_state: str) -> None:

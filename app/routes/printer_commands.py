@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
+from app.config_save import CONFIGFILE_ATTRIBUTES, SAVE_CONFIG_SCRIPT, describe_pending_changes
 from app.moonraker import MoonrakerClient
 from app.printer_commands import (
     CALIBRATION_STEPS,
@@ -21,7 +22,7 @@ from app.printer_commands import (
     is_locked,
     list_fan_objects,
 )
-from app.routes.dependencies import Moonraker
+from app.routes.dependencies import Moonraker, PrinterPowerControl
 from app.routes.printer_failure import explain_failure
 
 router = APIRouter(prefix="/api/control", tags=["control"])
@@ -135,6 +136,29 @@ async def calibrate(step: str, moonraker: Moonraker) -> dict:
     if step not in CALIBRATION_STEPS:
         raise HTTPException(404, "Calibration step not found")
     return await run_script(moonraker, CALIBRATION_STEPS[step])
+
+
+async def read_config_file(moonraker: MoonrakerClient) -> dict:
+    try:
+        answer = await moonraker.get(OBJECTS_QUERY, configfile=CONFIGFILE_ATTRIBUTES)
+    except Exception as exc:
+        raise await explain_failure(moonraker, exc) from exc
+    return answer["status"]["configfile"]
+
+
+@router.get("/config/pending")
+async def pending_config_changes(moonraker: Moonraker) -> dict:
+    return describe_pending_changes(await read_config_file(moonraker))
+
+
+@router.post("/config/save", dependencies=[Idle])
+async def save_config(moonraker: Moonraker, printer_power: PrinterPowerControl) -> dict:
+    """Writes the pending changes to the printer's config. Klipper restarts, and Hoard expects that."""
+    if not describe_pending_changes(await read_config_file(moonraker))["pending"]:
+        raise HTTPException(409, "Nothing is waiting to be saved")
+    answer = await run_script(moonraker, SAVE_CONFIG_SCRIPT)
+    printer_power.note_expected_restart()
+    return answer
 
 
 async def read_optional(moonraker: Moonraker, path: str, **params: str) -> dict:
