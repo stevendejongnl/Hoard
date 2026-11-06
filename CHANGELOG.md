@@ -1,3 +1,15 @@
+## [1.73.0](https://github.com/stevendejongnl/Hoard/compare/v1.72.0...v1.73.0) (2026-11-06)
+
+### Features
+
+* **probe:** a guided dialog measures the offset of the probe, shows the old and the new offset and hands over to the save dialog ([8a70412](https://github.com/stevendejongnl/Hoard/commit/8a70412494e4b2bb8566b3a397bd5eab618d3272))
+* **probe:** the camera view has a button that applies the babystep to the probe offset and opens the save dialog ([2291f83](https://github.com/stevendejongnl/Hoard/commit/2291f8370d8969ea97b524ba461f7e590d469727))
+* **probe:** the probe calibration and the apply of a babystep are calibration steps, and the offset of the probe can be read ([5f7c121](https://github.com/stevendejongnl/Hoard/commit/5f7c121d9d8fcaaf9c67c57f3a46c5b1857b7cf0))
+
+### Documentation
+
+* **readme:** the calibration card measures the probe offset in a guided dialog ([665acc4](https://github.com/stevendejongnl/Hoard/commit/665acc4224ef3af280c39870e40c885154035d0f))
+
 ## [1.72.0](https://github.com/stevendejongnl/Hoard/compare/v1.71.0...v1.72.0) (2026-11-06)
 
 ### Features
