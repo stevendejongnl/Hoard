@@ -111,8 +111,8 @@ export class ControlCalibrationCard extends ControlCard {
           ${this.renderStart('Calibrate bed mesh', () => void this.command('calibrate/bed_mesh'))}
           ${this.renderStart('Screws tilt adjust', () => void this.adjustScrews())}
           ${this.renderStart('Manual probe', () => void this.command('calibrate/manual_probe'))}
-          ${this.renderStart('Save config', () => this.openSaveDialog())}
         </div>
+        <div class="control-button-row">${this.renderStart('Save config', () => this.openSaveDialog())}</div>
         ${this.renderProbePanel()} ${this.renderScrews()} ${this.renderLockNote()}`,
     )
   }
