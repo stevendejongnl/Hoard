@@ -1,3 +1,9 @@
+## [1.71.0](https://github.com/stevendejongnl/Hoard/compare/v1.70.0...v1.71.0) (2026-11-06)
+
+### Features
+
+* **config:** pending changes can be read, and saving runs SAVE_CONFIG when idle and expects the restart ([6477481](https://github.com/stevendejongnl/Hoard/commit/64774816a0ffa6021a70fa8f05830562ae007064))
+
 ## [1.70.0](https://github.com/stevendejongnl/Hoard/compare/v1.69.0...v1.70.0) (2026-11-05)
 
 ### Features
