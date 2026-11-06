@@ -24,9 +24,24 @@ async function mount(options: { status?: ControlStatus; locked?: boolean; lines?
 }
 
 describe('the calibration card', () => {
-  it('has the three ways to calibrate', async () => {
+  it('has the three ways to calibrate, and a way to save what they found', async () => {
     const { card } = await mount()
-    expect(listButtonLabels(card)).toEqual(['Calibrate bed mesh', 'Screws tilt adjust', 'Manual probe'])
+    expect(listButtonLabels(card)).toEqual(['Calibrate bed mesh', 'Screws tilt adjust', 'Manual probe', 'Save config'])
+  })
+
+  it('opens the save config dialog from its button', async () => {
+    const { card } = await mount()
+    let opened = 0
+    card.openSaveDialog = () => {
+      opened += 1
+    }
+    await press(card, 'Save config')
+    expect(opened).toBe(1)
+  })
+
+  it('has the save config button locked while printing', async () => {
+    const { card } = await mount({ locked: true })
+    expect(findButton(card, 'Save config').disabled).toBe(true)
   })
 
   it('starts each one with its own command', async () => {
