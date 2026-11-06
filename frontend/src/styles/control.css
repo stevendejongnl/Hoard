@@ -941,7 +941,7 @@
 }
 
 /* The save config dialog: a focused window for one task, from the design "Save config". */
-.config-save-overlay {
+.guided-dialog-overlay {
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -953,7 +953,7 @@
   background: rgba(10, 10, 12, 0.66);
 }
 
-.config-save-modal {
+.guided-dialog-modal {
   display: flex;
   flex-direction: column;
   width: min(640px, 100%);
@@ -965,7 +965,7 @@
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
 }
 
-.config-save-header {
+.guided-dialog-header {
   display: flex;
   align-items: center;
   min-height: 56px;
@@ -973,12 +973,12 @@
   border-bottom: 1px solid var(--border-color);
 }
 
-.config-save-title {
+.guided-dialog-title {
   font-size: 17px;
   font-weight: 600;
 }
 
-.config-save-body {
+.guided-dialog-body {
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -986,7 +986,7 @@
   overflow-y: auto;
 }
 
-.config-save-footer {
+.guided-dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
@@ -995,11 +995,11 @@
   border-top: 1px solid var(--border-color);
 }
 
-.config-save-footer .button {
+.guided-dialog-footer .button {
   min-height: 44px;
 }
 
-.config-save-heading {
+.guided-dialog-heading {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -1027,7 +1027,7 @@
   font-size: 12px;
 }
 
-.config-save-warning {
+.guided-dialog-warning {
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -1038,18 +1038,18 @@
   font-size: 13px;
 }
 
-.config-save-warning.error {
+.guided-dialog-warning.error {
   background: #2e1c1c;
   border-color: #7a2a2a;
 }
 
-.config-save-warning svg {
+.guided-dialog-warning svg {
   flex: none;
   margin-top: 1px;
   color: var(--hotend-color);
 }
 
-.config-save-warning.error svg {
+.guided-dialog-warning.error svg {
   color: var(--danger-color);
 }
 
@@ -1092,18 +1092,18 @@
   position: relative;
 }
 
-.config-save-hint {
+.guided-dialog-hint {
   font-size: 12px;
   text-align: center;
 }
 
-.config-save-steps {
+.guided-dialog-steps {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.config-save-step {
+.guided-dialog-step {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1115,16 +1115,16 @@
   font-size: 13px;
 }
 
-.config-save-step.failed {
+.guided-dialog-step.failed {
   border-color: #7a2a2a;
 }
 
-.config-save-note {
+.guided-dialog-note {
   margin-left: auto;
   font-size: 12px;
 }
 
-.config-save-dot {
+.guided-dialog-dot {
   flex: none;
   width: 12px;
   height: 12px;
@@ -1132,34 +1132,247 @@
   border-radius: 50%;
 }
 
-.config-save-step.done .config-save-dot {
+.guided-dialog-step.done .guided-dialog-dot {
   background: var(--ok-color);
   border-color: var(--ok-color);
 }
 
-.config-save-step.failed .config-save-dot {
+.guided-dialog-step.failed .guided-dialog-dot {
   background: var(--danger-color);
   border-color: var(--danger-color);
 }
 
-.config-save-step.running .config-save-dot {
+.guided-dialog-step.running .guided-dialog-dot {
   border-color: var(--accent);
   border-right-color: transparent;
-  animation: config-save-spin 1s linear infinite;
+  animation: guided-dialog-spin 1s linear infinite;
 }
 
 .config-save-firmware-restart {
   min-height: 44px;
 }
 
-@keyframes config-save-spin {
+@keyframes guided-dialog-spin {
   to {
     transform: rotate(360deg);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .config-save-step.running .config-save-dot {
+  .guided-dialog-step.running .guided-dialog-dot {
     animation: none;
+  }
+}
+
+.guided-dialog-spacer {
+  flex: 1;
+}
+
+.guided-dialog-footer {
+  align-items: center;
+}
+
+/* The probe offset dialog: a wizard with one step per screen, from the design "Probe offset". */
+.probe-offset-modal {
+  width: min(760px, 100%);
+}
+
+.probe-offset-steps {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  padding: 14px 20px;
+  list-style: none;
+  background: var(--chrome-color);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.probe-offset-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted-text-color);
+}
+
+.probe-offset-step-number {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--strong-border-color);
+  border-radius: 50%;
+  font-size: 12px;
+}
+
+.probe-offset-step.current {
+  color: var(--text-color);
+}
+
+.probe-offset-step.current .probe-offset-step-number {
+  background: var(--selection-tint);
+  border-color: var(--accent);
+}
+
+.probe-offset-step.done .probe-offset-step-number {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.probe-offset-checks {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.probe-offset-check {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--well-color);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.probe-offset-check.good .guided-dialog-dot {
+  background: var(--ok-color);
+  border-color: var(--ok-color);
+}
+
+.probe-offset-check.bad .guided-dialog-dot {
+  background: var(--hotend-color);
+  border-color: var(--hotend-color);
+}
+
+.probe-offset-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.probe-offset-value {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px;
+  background: var(--well-color);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.probe-offset-number {
+  font-size: 22px;
+}
+
+.probe-offset-height {
+  font-size: 40px;
+}
+
+.probe-offset-change {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.probe-offset-measure {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.probe-offset-controls {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.probe-offset-keys {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.probe-offset-key {
+  flex-direction: column;
+  gap: 2px;
+  min-height: 56px;
+}
+
+.probe-offset-side {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: 12px;
+  width: 260px;
+}
+
+.probe-offset-camera {
+  min-height: 190px;
+  overflow: hidden;
+  background: var(--well-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+}
+
+.probe-offset-instruction {
+  font-size: 13px;
+}
+
+.probe-offset-apply {
+  min-height: 44px;
+}
+
+@media (max-width: 700px) {
+  .guided-dialog-overlay {
+    padding: 0;
+  }
+
+  .probe-offset-modal,
+  .guided-dialog-modal {
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border: 0;
+  }
+
+  .probe-offset-steps {
+    gap: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+  }
+
+  .probe-offset-values {
+    grid-template-columns: 1fr;
+  }
+
+  .probe-offset-measure {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+
+  .guided-dialog-body {
+    flex: 1;
+  }
+
+  .guided-dialog-footer .muted {
+    display: none;
+  }
+
+  .probe-offset-side {
+    width: 100%;
+  }
+
+  .guided-dialog-footer .button {
+    flex: 1;
   }
 }

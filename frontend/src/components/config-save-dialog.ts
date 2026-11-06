@@ -165,15 +165,15 @@ export class ConfigSaveDialog extends LitElement {
   }
 
   private renderConfirm(): TemplateResult {
-    return html`<div class="config-save-heading">Waiting to be saved</div>
+    return html`<div class="guided-dialog-heading">Waiting to be saved</div>
       ${this.renderChanges()}
-      <div class="config-save-warning" role="note">
+      <div class="guided-dialog-warning" role="note">
         ${renderIcon('alert', 16)}
         <span><strong>Saving restarts Klipper.</strong> ${RESTART_WARNING}</span>
       </div>
       ${this.message ? html`<div class="control-card-failure" role="alert">${this.message}</div>` : nothing}
       ${this.renderHoldButton()}
-      <div class="muted config-save-hint">Hold for one second. With a keyboard, hold Space or Enter.</div>`
+      <div class="muted guided-dialog-hint">Hold for one second. With a keyboard, hold Space or Enter.</div>`
   }
 
   private renderProgressRow(
@@ -181,14 +181,14 @@ export class ConfigSaveDialog extends LitElement {
     status: 'done' | 'running' | 'waiting' | 'failed',
     note = '',
   ): TemplateResult {
-    return html`<div class="config-save-step ${status}">
-      <span class="config-save-dot"></span>${label}<span class="muted monospace config-save-note">${note}</span>
+    return html`<div class="guided-dialog-step ${status}">
+      <span class="guided-dialog-dot"></span>${label}<span class="muted monospace guided-dialog-note">${note}</span>
     </div>`
   }
 
   private renderRestart(): TemplateResult {
     const waiting = this.progress.stage === 'waiting'
-    return html`<div class="config-save-steps">
+    return html`<div class="guided-dialog-steps">
         ${this.renderProgressRow('Config saved to printer.cfg', this.phase === 'saving' ? 'running' : 'done')}
         ${this.renderProgressRow(
           'Restarting Klipper',
@@ -197,24 +197,24 @@ export class ConfigSaveDialog extends LitElement {
         )}
         ${this.renderProgressRow('Waiting for Klipper to be ready', waiting ? 'running' : 'waiting')}
       </div>
-      <div class="muted config-save-hint">
+      <div class="muted guided-dialog-hint">
         Keep this window open. It is ready when Klipper is. This restart is expected and is not recorded as a fault.
       </div>`
   }
 
   private renderDone(): TemplateResult {
-    return html`<div class="config-save-steps">
+    return html`<div class="guided-dialog-steps">
       ${this.renderProgressRow('Config saved to printer.cfg', 'done')}
       ${this.renderProgressRow('Klipper is ready', 'done')}
     </div>`
   }
 
   private renderFailed(): TemplateResult {
-    return html`<div class="config-save-steps">
+    return html`<div class="guided-dialog-steps">
         ${this.renderProgressRow('Config saved to printer.cfg', 'done')}
         ${this.renderProgressRow('Klipper is not ready', 'failed')}
       </div>
-      <div class="config-save-warning error" role="alert">${renderIcon('alert', 16)}<span>${this.message}</span></div>
+      <div class="guided-dialog-warning error" role="alert">${renderIcon('alert', 16)}<span>${this.message}</span></div>
       <button class="button primary config-save-firmware-restart" @click=${() => void this.restartTheFirmware()}>
         ${renderIcon('refresh', 16)}Firmware restart
       </button>`
@@ -241,19 +241,19 @@ export class ConfigSaveDialog extends LitElement {
   }
 
   render(): TemplateResult {
-    return html`<div class="config-save-overlay" @click=${() => this.isClosable() && this.close()}>
+    return html`<div class="guided-dialog-overlay" @click=${() => this.isClosable() && this.close()}>
       <div
-        class="config-save-modal"
+        class="guided-dialog-modal"
         role="dialog"
         aria-modal="true"
         aria-label="Save config"
         @click=${(event: Event) => event.stopPropagation()}
       >
-        <div class="config-save-header">
-          <span class="config-save-title">Save config</span>
+        <div class="guided-dialog-header">
+          <span class="guided-dialog-title">Save config</span>
         </div>
-        <div class="config-save-body">${this.renderBody()}</div>
-        <div class="config-save-footer">
+        <div class="guided-dialog-body">${this.renderBody()}</div>
+        <div class="guided-dialog-footer">
           <button class="button config-save-close" ?disabled=${!this.isClosable()} @click=${() => this.close()}>
             ${this.phase === 'done' ? 'Close' : 'Cancel'}
           </button>

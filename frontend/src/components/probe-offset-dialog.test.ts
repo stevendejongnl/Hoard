@@ -1,3 +1,4 @@
+import { nothing } from 'lit'
 import { afterEach, describe, expect, it } from 'vitest'
 import './probe-offset-dialog'
 import type { ProbeOffsetDialog } from './probe-offset-dialog'
@@ -56,6 +57,7 @@ async function mount(setup: Setup = {}) {
     return { ok: true }
   }
   dialog.sleep = () => new Promise(() => undefined)
+  dialog.renderCamera = () => nothing
   dialog.close = () => calls.push('close')
   dialog.openSaveDialog = () => calls.push('open save dialog')
   document.body.appendChild(dialog)

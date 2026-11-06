@@ -5,7 +5,7 @@ import type { PrintJob, PrintPhoto } from './types'
 import type { TemperatureSample } from './temperature-chart-geometry'
 import type { ControlLayout } from './control-layout'
 import type { BedMesh, ConsoleLine, ControlAccessSnapshot, ControlDevice, ControlStatus, Macro } from './types'
-import type { AutoPowerOffStatus, KlipperState, PendingConfig, WebClient } from './types'
+import type { AutoPowerOffStatus, KlipperState, PendingConfig, ProbeOffset, WebClient } from './types'
 
 const BAD_GATEWAY_STATUS = 502
 const PRINTER_UNREACHABLE_MESSAGE = 'The printer cannot be reached'
@@ -306,5 +306,6 @@ export const takeControlAccessBack = (client: string) =>
 export const getKlipperState = () => fetchJson<KlipperState>('/api/control/klipper')
 export const getPendingConfig = () => fetchJson<PendingConfig>('/api/control/config/pending')
 export const saveConfig = () => postJson('/api/control/config/save')
+export const getProbeOffset = () => fetchJson<ProbeOffset>('/api/control/probe_offset')
 export const restartKlipper = () => postJson('/api/control/restart')
 export const getWebClients = () => fetchJson<WebClient[]>('/api/control/web_clients')

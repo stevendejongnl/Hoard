@@ -7,6 +7,7 @@ import { parseScrewsTilt } from '../screws-tilt'
 import type { ScrewAdvice } from '../screws-tilt'
 import type { ConsoleLine } from '../types'
 import { openConfigSaveDialog } from './config-save-dialog'
+import { openProbeOffsetDialog } from './probe-offset-dialog'
 import { ControlCard } from './control-card'
 
 const PROBE_STEPS = [0.01, 0.05, 0.1, 0.5]
@@ -22,6 +23,7 @@ function describeAdvice(screw: ScrewAdvice): string {
 export class ControlCalibrationCard extends ControlCard {
   @property({ attribute: false }) loadLines: () => Promise<ConsoleLine[]> = getConsole
   @property({ attribute: false }) openSaveDialog: () => void = openConfigSaveDialog
+  @property({ attribute: false }) openProbeOffsetDialog: () => void = openProbeOffsetDialog
 
   @state() private probeStep = 0.1
   @state() private screws: ScrewAdvice[] = []
@@ -112,7 +114,10 @@ export class ControlCalibrationCard extends ControlCard {
           ${this.renderStart('Screws tilt adjust', () => void this.adjustScrews())}
           ${this.renderStart('Manual probe', () => void this.command('calibrate/manual_probe'))}
         </div>
-        <div class="control-button-row">${this.renderStart('Save config', () => this.openSaveDialog())}</div>
+        <div class="control-button-row">
+          ${this.renderStart('Calibrate probe offset', () => this.openProbeOffsetDialog())}
+          ${this.renderStart('Save config', () => this.openSaveDialog())}
+        </div>
         ${this.renderProbePanel()} ${this.renderScrews()} ${this.renderLockNote()}`,
     )
   }

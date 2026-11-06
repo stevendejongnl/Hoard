@@ -411,6 +411,12 @@ export interface PendingChange {
   new: string
 }
 
+/** The offset between the probe and the nozzle in the printer's config; none when the printer has no probe */
+export interface ProbeOffset {
+  section: string | null
+  z_offset: string | null
+}
+
 export interface PendingConfig {
   pending: boolean
   changes: PendingChange[]
