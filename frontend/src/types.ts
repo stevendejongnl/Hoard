@@ -403,6 +403,19 @@ export interface KlipperState {
   message: string
 }
 
+/** One value that waits for a save: what the printer runs with now, and what it will have after the save */
+export interface PendingChange {
+  section: string
+  key: string
+  old: string | null
+  new: string
+}
+
+export interface PendingConfig {
+  pending: boolean
+  changes: PendingChange[]
+}
+
 /** A web client of the printer host, such as Fluidd or Mainsail, and where it is served. */
 export interface WebClient {
   name: string

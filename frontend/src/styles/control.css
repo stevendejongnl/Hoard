@@ -939,3 +939,227 @@
   display: flex;
   flex-direction: column;
 }
+
+/* The save config dialog: a focused window for one task, from the design "Save config". */
+.config-save-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+  background: rgba(10, 10, 12, 0.66);
+}
+
+.config-save-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(640px, 100%);
+  max-height: 100%;
+  overflow: hidden;
+  background: var(--panel-color);
+  border: 1px solid var(--field-border-color);
+  border-radius: 2px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
+}
+
+.config-save-header {
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.config-save-title {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.config-save-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.config-save-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 20px;
+  background: var(--chrome-color);
+  border-top: 1px solid var(--border-color);
+}
+
+.config-save-footer .button {
+  min-height: 44px;
+}
+
+.config-save-heading {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-text-color);
+}
+
+.config-save-changes {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: 4px 12px;
+  padding: 12px;
+  background: var(--well-color);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.config-save-section {
+  color: var(--secondary-text-color);
+}
+
+.config-save-value {
+  text-align: right;
+  font-size: 12px;
+}
+
+.config-save-warning {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  background: #2e2a1a;
+  border: 1px solid #5a4a1a;
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.config-save-warning.error {
+  background: #2e1c1c;
+  border-color: #7a2a2a;
+}
+
+.config-save-warning svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--hotend-color);
+}
+
+.config-save-warning.error svg {
+  color: var(--danger-color);
+}
+
+.config-save-hold {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  overflow: hidden;
+  background: var(--well-color);
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  color: var(--text-color);
+  font: 700 14px var(--font-family);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.config-save-hold:focus-visible {
+  outline: 2px solid var(--text-color);
+  outline-offset: 2px;
+}
+
+.config-save-hold-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: var(--selection-tint);
+}
+
+.config-save-hold-fill.holding {
+  width: 100%;
+  transition: width 1000ms linear;
+}
+
+.config-save-hold-label {
+  position: relative;
+}
+
+.config-save-hint {
+  font-size: 12px;
+  text-align: center;
+}
+
+.config-save-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.config-save-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 12px;
+  background: var(--well-color);
+  border: 1px solid var(--border-color);
+  border-radius: 2px;
+  font-size: 13px;
+}
+
+.config-save-step.failed {
+  border-color: #7a2a2a;
+}
+
+.config-save-note {
+  margin-left: auto;
+  font-size: 12px;
+}
+
+.config-save-dot {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--field-border-color);
+  border-radius: 50%;
+}
+
+.config-save-step.done .config-save-dot {
+  background: var(--ok-color);
+  border-color: var(--ok-color);
+}
+
+.config-save-step.failed .config-save-dot {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.config-save-step.running .config-save-dot {
+  border-color: var(--accent);
+  border-right-color: transparent;
+  animation: config-save-spin 1s linear infinite;
+}
+
+.config-save-firmware-restart {
+  min-height: 44px;
+}
+
+@keyframes config-save-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .config-save-step.running .config-save-dot {
+    animation: none;
+  }
+}

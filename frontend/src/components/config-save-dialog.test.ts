@@ -134,6 +134,7 @@ describe('the save config dialog', () => {
 
   it('cannot be closed while Klipper restarts', async () => {
     const { dialog, timers } = await mount({ klipper: [new Error('offline')] })
+    dialog.sleep = () => new Promise(() => undefined)
     void hold(dialog, timers)
     await flush()
     await dialog.updateComplete

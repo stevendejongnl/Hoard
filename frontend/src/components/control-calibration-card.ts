@@ -6,6 +6,7 @@ import { renderIcon } from '../icons'
 import { parseScrewsTilt } from '../screws-tilt'
 import type { ScrewAdvice } from '../screws-tilt'
 import type { ConsoleLine } from '../types'
+import { openConfigSaveDialog } from './config-save-dialog'
 import { ControlCard } from './control-card'
 
 const PROBE_STEPS = [0.01, 0.05, 0.1, 0.5]
@@ -20,6 +21,7 @@ function describeAdvice(screw: ScrewAdvice): string {
 @customElement('control-calibration-card')
 export class ControlCalibrationCard extends ControlCard {
   @property({ attribute: false }) loadLines: () => Promise<ConsoleLine[]> = getConsole
+  @property({ attribute: false }) openSaveDialog: () => void = openConfigSaveDialog
 
   @state() private probeStep = 0.1
   @state() private screws: ScrewAdvice[] = []
@@ -109,6 +111,7 @@ export class ControlCalibrationCard extends ControlCard {
           ${this.renderStart('Calibrate bed mesh', () => void this.command('calibrate/bed_mesh'))}
           ${this.renderStart('Screws tilt adjust', () => void this.adjustScrews())}
           ${this.renderStart('Manual probe', () => void this.command('calibrate/manual_probe'))}
+          ${this.renderStart('Save config', () => this.openSaveDialog())}
         </div>
         ${this.renderProbePanel()} ${this.renderScrews()} ${this.renderLockNote()}`,
     )
