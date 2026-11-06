@@ -26,7 +26,23 @@ async function mount(options: { status?: ControlStatus; locked?: boolean; lines?
 describe('the calibration card', () => {
   it('has the three ways to calibrate, and a way to save what they found', async () => {
     const { card } = await mount()
-    expect(listButtonLabels(card)).toEqual(['Calibrate bed mesh', 'Screws tilt adjust', 'Manual probe', 'Save config'])
+    expect(listButtonLabels(card)).toEqual([
+      'Calibrate bed mesh',
+      'Screws tilt adjust',
+      'Manual probe',
+      'Calibrate probe offset',
+      'Save config',
+    ])
+  })
+
+  it('opens the probe offset dialog from its button', async () => {
+    const { card } = await mount()
+    let opened = 0
+    card.openProbeOffsetDialog = () => {
+      opened += 1
+    }
+    await press(card, 'Calibrate probe offset')
+    expect(opened).toBe(1)
   })
 
   it('opens the save config dialog from its button', async () => {
