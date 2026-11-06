@@ -152,6 +152,9 @@ class FakePrinterPower:
     def note_power_cut(self) -> None:
         self.calls.append("note_power_cut")
 
+    def note_expected_restart(self) -> None:
+        self.calls.append("note_expected_restart")
+
     async def wait_until_ready(self) -> bool:
         self.calls.append("wait_until_ready")
         return self.ready

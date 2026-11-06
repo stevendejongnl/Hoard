@@ -100,7 +100,7 @@ def test_reading_needs_read_changing_needs_control_and_deleting_needs_admin() ->
 
 
 def test_cancelling_and_cutting_power_and_deleting_are_destructive_and_need_a_confirmation() -> None:
-    for name in ("delete_spool", "cancel_print", "power_off"):
+    for name in ("delete_spool", "cancel_print", "power_off", "save_config"):
         tool = find(name)
         assert tool.is_destructive
         assert tool.input_schema["properties"]["confirm"]["type"] == "boolean"

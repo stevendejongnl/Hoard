@@ -159,3 +159,12 @@ async def test_a_switch_that_fails_to_read_is_unknown_and_the_watcher_goes_on():
     with pytest.raises(StopTestError):
         await watch_printer_power(read_switch_state, power, sleep)
     assert not power.is_expected_off()
+
+
+def test_a_restart_that_hoard_starts_makes_the_loss_of_klipper_expected_for_a_while():
+    power, _, _, clock = make_power([{"state": "ready"}])
+    assert power.is_expected_off() is False
+    power.note_expected_restart()
+    assert power.is_expected_off() is True
+    clock.now += 61
+    assert power.is_expected_off() is False
