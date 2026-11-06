@@ -16,6 +16,8 @@ CALIBRATION_STEPS = {
     "manual_probe": "MANUAL_PROBE",
     "accept": "ACCEPT",
     "abort": "ABORT",
+    "probe_calibrate": "PROBE_CALIBRATE",
+    "apply_probe_offset": "Z_OFFSET_APPLY_PROBE",
 }
 
 

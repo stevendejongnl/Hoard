@@ -22,6 +22,7 @@ from app.printer_commands import (
     is_locked,
     list_fan_objects,
 )
+from app.probe_offset import find_probe_offset
 from app.routes.dependencies import Moonraker, PrinterPowerControl
 from app.routes.printer_failure import explain_failure
 
@@ -149,6 +150,12 @@ async def read_config_file(moonraker: MoonrakerClient) -> dict:
 @router.get("/config/pending")
 async def pending_config_changes(moonraker: Moonraker) -> dict:
     return describe_pending_changes(await read_config_file(moonraker))
+
+
+@router.get("/probe_offset")
+async def probe_offset(moonraker: Moonraker) -> dict:
+    """The z_offset of the probe in the printer's config, not the temporary offset of a babystep."""
+    return find_probe_offset((await read_config_file(moonraker)).get("settings", {}))
 
 
 @router.post("/config/save", dependencies=[Idle])
