@@ -1,3 +1,17 @@
+## [1.72.0](https://github.com/stevendejongnl/Hoard/compare/v1.71.0...v1.72.0) (2026-11-06)
+
+### Features
+
+* **config:** a save dialog that holds to save, follows the restart until Klipper is ready, and opens from the calibration card ([5c7caee](https://github.com/stevendejongnl/Hoard/commit/5c7caee71838298981a40fa7089ecfd5e48cbf99))
+
+### Bug Fixes
+
+* **config:** the save config button has a row of its own in the calibration card ([4a50cba](https://github.com/stevendejongnl/Hoard/commit/4a50cba842a5a89dd0b021c930c0c2150e0780ce))
+
+### Documentation
+
+* **readme:** the calibration card saves the result to the printer's config ([e060720](https://github.com/stevendejongnl/Hoard/commit/e060720b1445c952ce89e6f8424cd396c76540db))
+
 ## [1.71.0](https://github.com/stevendejongnl/Hoard/compare/v1.70.0...v1.71.0) (2026-11-06)
 
 ### Features
