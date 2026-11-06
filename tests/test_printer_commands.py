@@ -29,6 +29,8 @@ LOCKED_WHILE_PRINTING = [
     ("macro", {"name": "CLEAN_NOZZLE"}),
     ("gcode", {"script": "M115"}),
     ("calibrate/bed_mesh", {}),
+    ("calibrate/probe_calibrate", {}),
+    ("calibrate/apply_probe_offset", {}),
 ]
 
 OPEN_WHILE_PRINTING = [
@@ -319,6 +321,8 @@ async def test_macros_in_a_category_come_in_the_order_of_fluidd_and_the_rest_las
         ("manual_probe", "MANUAL_PROBE"),
         ("accept", "ACCEPT"),
         ("abort", "ABORT"),
+        ("probe_calibrate", "PROBE_CALIBRATE"),
+        ("apply_probe_offset", "Z_OFFSET_APPLY_PROBE"),
     ],
 )
 async def test_the_calibration_steps_run_their_klipper_command(client: AsyncClient, monkeypatch, step, expected):

@@ -75,3 +75,16 @@ async def test_a_printer_that_refuses_the_save_is_a_502_and_the_restart_is_not_e
     response = await client.post("/api/control/config/save")
     assert response.status_code == 502
     assert printer_power.calls == []
+
+
+async def test_the_offset_of_the_probe_is_read_from_the_config(client: AsyncClient, monkeypatch):
+    configfile = {"settings": {"bltouch": {"z_offset": -2.35}}}
+    install_fakes(monkeypatch, moonraker=FakeMoonraker({QUERY_PATH: {"status": {"configfile": configfile}}}))
+    response = await client.get("/api/control/probe_offset")
+    assert response.json() == {"section": "bltouch", "z_offset": "-2.35"}
+
+
+async def test_the_offset_of_the_probe_is_a_502_when_the_printer_does_not_answer(client: AsyncClient, monkeypatch):
+    install_fakes(monkeypatch, moonraker=FakeMoonraker({QUERY_PATH: RuntimeError("offline")}))
+    response = await client.get("/api/control/probe_offset")
+    assert (response.status_code, response.json()["detail"]) == (502, "offline")
