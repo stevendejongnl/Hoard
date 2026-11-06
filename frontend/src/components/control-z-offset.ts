@@ -1,7 +1,8 @@
-import { html } from 'lit'
+import { html, nothing } from 'lit'
 import type { TemplateResult } from 'lit'
-import { customElement, state } from 'lit/decorators.js'
+import { customElement, property, state } from 'lit/decorators.js'
 import { renderIcon } from '../icons'
+import { openConfigSaveDialog } from './config-save-dialog'
 import { ControlCard } from './control-card'
 
 const Z_STEPS = [0.01, 0.05, 0.1]
@@ -9,6 +10,10 @@ const Z_STEPS = [0.01, 0.05, 0.1]
 /** The Z offset and the keys that nudge it. It stays available during a print: that is when it is needed. */
 @customElement('control-z-offset')
 export class ControlZOffset extends ControlCard {
+  /** the camera view keeps the babystep: it applies it to the probe offset and opens the save dialog */
+  @property({ type: Boolean }) showSave = false
+  @property({ attribute: false }) openSaveDialog: () => void = openConfigSaveDialog
+
   @state() private zStep = 0.05
 
   private renderStepChips(): TemplateResult {
@@ -36,15 +41,36 @@ export class ControlZOffset extends ControlCard {
     </button>`
   }
 
-  render(): TemplateResult {
+  private async saveToConfig(): Promise<void> {
+    await this.command('calibrate/apply_probe_offset')
+    if (this.failure) return
+    this.openSaveDialog()
+  }
+
+  private renderSave(): TemplateResult | typeof nothing {
+    if (!this.showSave) return nothing
+    return html`<button
+        class="button control-wide-button"
+        ?disabled=${this.locked}
+        @click=${() => void this.saveToConfig()}
+      >
+        Save Z offset to config
+      </button>
+      ${this.renderLockNote()}`
+  }
+
+  private renderOffsetRow(): TemplateResult {
     const offset = this.status?.z_offset ?? 0
     return html`<div class="control-z-offset">
-        <span class="control-z-offset-label">Z offset</span>
-        ${this.renderKey(`Lower ${this.zStep}`, 'arrow-down', -this.zStep)}
-        <span class="monospace control-z-offset-value">${offset.toFixed(3)} mm</span>
-        ${this.renderKey(`Raise ${this.zStep}`, 'arrow-up', this.zStep)}
-      </div>
-      ${this.renderStepChips()} ${this.renderFailure()}`
+      <span class="control-z-offset-label">Z offset</span>
+      ${this.renderKey(`Lower ${this.zStep}`, 'arrow-down', -this.zStep)}
+      <span class="monospace control-z-offset-value">${offset.toFixed(3)} mm</span>
+      ${this.renderKey(`Raise ${this.zStep}`, 'arrow-up', this.zStep)}
+    </div>`
+  }
+
+  render(): TemplateResult {
+    return html`${this.renderOffsetRow()} ${this.renderStepChips()} ${this.renderSave()} ${this.renderFailure()}`
   }
 }
 

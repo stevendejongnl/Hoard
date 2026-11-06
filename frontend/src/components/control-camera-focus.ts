@@ -40,6 +40,20 @@ export class ControlCameraFocus extends LitElement {
     this.dispatchEvent(new CustomEvent('control-camera-focus-close', { bubbles: true, composed: true }))
   }
 
+  private renderBabystep(): TemplateResult {
+    return html`<section class="control-card control-focus-babystep">
+      <div class="control-card-header">${renderIcon('crosshair', 14)}Z babystep</div>
+      <div class="control-card-body">
+        <control-z-offset
+          .status=${this.status}
+          .send=${this.send}
+          .showSave=${true}
+          ?locked=${this.locked}
+        ></control-z-offset>
+      </div>
+    </section>`
+  }
+
   render(): TemplateResult {
     return html`<div class="control-focus" role="dialog" aria-modal="true" aria-label="Camera with controls">
       <div class="control-focus-header">
@@ -56,12 +70,7 @@ export class ControlCameraFocus extends LitElement {
         <div class="control-focus-camera"><camera-panel></camera-panel></div>
         <div class="control-focus-controls">
           <control-move-card .status=${this.status} .send=${this.send} ?locked=${this.locked}></control-move-card>
-          <section class="control-card control-focus-babystep">
-            <div class="control-card-header">${renderIcon('crosshair', 14)}Z babystep</div>
-            <div class="control-card-body">
-              <control-z-offset .status=${this.status} .send=${this.send}></control-z-offset>
-            </div>
-          </section>
+          ${this.renderBabystep()}
         </div>
       </div>
     </div>`
